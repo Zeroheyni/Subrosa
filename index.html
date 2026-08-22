@@ -1,0 +1,1823 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SUBROSA // Painel do Império</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#050912;
+    --bg-panel:#0a1220;
+    --bg-panel-2:#0e1a2e;
+    --bg-panel-3:#122139;
+    --border:#1c3350;
+    --border-soft:#142538;
+    --text:#e7eefc;
+    --text-dim:#8996b3;
+    --text-faint:#4c5a78;
+
+    --clean-1:#00d4ff;
+    --clean-2:#2f6bff;
+    --clean-glow:rgba(0,212,255,0.35);
+
+    --dirty-1:#ff1f4b;
+    --dirty-2:#ff5233;
+    --dirty-glow:rgba(255,31,75,0.4);
+
+    --warn:#ffb020;
+    --danger:#ff4d4d;
+
+    --accent-1:var(--clean-1);
+    --accent-2:var(--clean-2);
+    --accent-glow:var(--clean-glow);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      repeating-linear-gradient(0deg, rgba(47,107,255,0.05) 0px, rgba(47,107,255,0.05) 1px, transparent 1px, transparent 42px),
+      repeating-linear-gradient(90deg, rgba(47,107,255,0.05) 0px, rgba(47,107,255,0.05) 1px, transparent 1px, transparent 42px),
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(0,212,255,0.12), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 0%, rgba(47,107,255,0.10), transparent 60%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    transition:background 0.6s ease;
+  }
+  body.mode-sujo{
+    --bg:#020202;
+    --bg-panel:#0a0505;
+    --bg-panel-2:#120707;
+    --bg-panel-3:#1a0909;
+    --border:#3a1015;
+    --border-soft:#260c0f;
+    --accent-1:var(--dirty-1);
+    --accent-2:var(--dirty-2);
+    --accent-glow:var(--dirty-glow);
+    background:
+      repeating-linear-gradient(0deg, rgba(255,31,75,0.05) 0px, rgba(255,31,75,0.05) 1px, transparent 1px, transparent 42px),
+      repeating-linear-gradient(90deg, rgba(255,31,75,0.05) 0px, rgba(255,31,75,0.05) 1px, transparent 1px, transparent 42px),
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(255,31,75,0.14), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 0%, rgba(255,31,75,0.08), transparent 60%),
+      var(--bg);
+  }
+
+  #root{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;}
+
+  .login-screen{
+    flex:1;display:flex;align-items:center;justify-content:center;padding:20px;
+  }
+  .login-card{
+    width:100%;max-width:360px;
+    background:linear-gradient(160deg, var(--bg-panel-2), var(--bg-panel));
+    border:1px solid var(--border);border-radius:18px;padding:28px 24px;
+  }
+  .login-title{
+    font-family:'Chakra Petch',sans-serif;font-size:17px;font-weight:700;
+    text-align:center;margin-bottom:6px;
+  }
+  .login-error{
+    color:var(--danger);font-size:12px;text-align:center;margin:-6px 0 12px;
+  }
+
+  ::-webkit-scrollbar{width:6px;height:6px;}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+  /* ---------- HEADER ---------- */
+  .topbar{
+    padding:18px 16px 12px;
+    display:flex;flex-direction:column;gap:14px;
+    position:sticky;top:0;z-index:20;
+    background:linear-gradient(180deg, var(--bg) 70%, transparent);
+    backdrop-filter:blur(6px);
+  }
+  .brand-row{display:flex;align-items:center;justify-content:space-between;}
+  .brand{
+    font-family:'Chakra Petch',sans-serif;
+    font-weight:700;
+    font-size:19px;
+    letter-spacing:1px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .brand .dot{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--accent-1);
+    box-shadow:0 0 8px var(--accent-glow), 0 0 16px var(--accent-glow);
+    animation:pulse 2.2s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+
+  .brand-actions{display:flex;align-items:center;gap:8px;}
+
+  .role-badge{
+    font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:1.5px;
+    padding:7px 11px;border-radius:10px;
+    background:var(--bg-panel);border:1px solid var(--border-soft);color:var(--text-faint);
+    cursor:default;user-select:none;
+  }
+  .role-badge.is-master{
+    color:var(--accent-1);border-color:var(--accent-1);
+    background:color-mix(in srgb, var(--accent-1) 12%, var(--bg-panel));
+    box-shadow:0 0 10px var(--accent-glow);
+    cursor:pointer;
+  }
+
+  .mode-cat-btn{
+    width:38px;height:38px;border-radius:10px;
+    background:var(--bg-panel);
+    border:1px solid var(--border-soft);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;position:relative;
+    transition:border-color .3s ease, background .3s ease;
+  }
+  .mode-cat-btn:hover{border-color:var(--accent-1);background:var(--bg-panel-2);}
+  .mode-cat-btn svg{
+    width:19px;height:19px;color:var(--accent-1);
+    filter:drop-shadow(0 0 3px var(--accent-glow));
+    transition:color .4s ease, filter .4s ease;
+  }
+  .mode-cat-btn.glitching svg{animation:catGlitch .5s ease;}
+  @keyframes catGlitch{
+    0%{transform:scale(1) rotate(0);}
+    20%{transform:scale(1.18) rotate(-5deg);filter:drop-shadow(0 0 9px var(--accent-glow));}
+    45%{transform:scale(0.88) rotate(4deg);}
+    65%{transform:scale(1.1) rotate(-2deg);}
+    100%{transform:scale(1) rotate(0);}
+  }
+
+  .day-row{
+    display:flex;align-items:center;justify-content:space-between;
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:10px 14px;
+  }
+  .day-info{display:flex;flex-direction:column;gap:2px;}
+  .day-label{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;}
+  .day-value{font-family:'Chakra Petch',sans-serif;font-size:16px;font-weight:700;}
+  .day-actions{display:flex;gap:8px;}
+  .icon-btn{
+    width:36px;height:36px;border-radius:10px;
+    border:1px solid var(--border);
+    background:var(--bg-panel-2);
+    color:var(--text);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;font-size:16px;
+    transition:all .2s ease;
+  }
+  .icon-btn:hover{border-color:var(--accent-1);color:var(--accent-1);}
+  .icon-btn:disabled{opacity:0.3;cursor:not-allowed;}
+  .icon-btn.primary{
+    width:auto;height:auto;
+    padding:9px 14px;
+    gap:7px;
+    background:linear-gradient(120deg,var(--accent-1),var(--accent-2));
+    color:#04140f;border:none;font-weight:700;font-size:12.5px;font-family:'JetBrains Mono',monospace;
+    letter-spacing:0.3px;
+    box-shadow:0 4px 14px var(--accent-glow);
+  }
+  .icon-btn.primary:hover{color:#04140f;filter:brightness(1.08);}
+
+  /* ---------- NAV ---------- */
+  .tabbar{
+    display:flex;
+    gap:6px;
+    padding:0 16px 10px;
+  }
+  .tab-btn{
+    flex:1;
+    padding:10px 8px;
+    border-radius:12px;
+    border:1px solid var(--border);
+    background:var(--bg-panel);
+    color:var(--text-dim);
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    font-weight:600;
+    letter-spacing:0.5px;
+    text-transform:uppercase;
+    cursor:pointer;
+    text-align:center;
+    transition:all .2s ease;
+  }
+  .tab-btn.active{
+    color:var(--bg);
+    background:linear-gradient(120deg,var(--accent-1),var(--accent-2));
+    border-color:transparent;
+    box-shadow:0 4px 16px var(--accent-glow);
+  }
+
+  main{flex:1;padding:4px 16px 100px;display:flex;flex-direction:column;gap:14px;}
+
+  /* ---------- CARDS ---------- */
+  .card{
+    background:linear-gradient(160deg, var(--bg-panel-2), var(--bg-panel));
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:18px;
+    position:relative;
+    overflow:hidden;
+  }
+  .card::before{
+    content:'';position:absolute;top:0;left:0;right:0;height:1px;
+    background:linear-gradient(90deg, transparent, var(--accent-1), transparent);
+    opacity:0.5;
+  }
+  .card-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-faint);
+    margin-bottom:6px;
+  }
+  .card-label-row{display:flex;align-items:center;justify-content:space-between;}
+  .card-label-row .card-label{margin-bottom:0;}
+  .edit-link{
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--accent-1);cursor:pointer;font-weight:600;
+  }
+
+  .chart-wrap{padding-top:2px;}
+  .chart-bars{display:flex;align-items:flex-end;gap:4px;height:90px;}
+  .chart-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;position:relative;}
+  .chart-bar{width:100%;border-radius:3px;min-height:2px;}
+  .chart-zero{position:absolute;left:0;right:0;top:50%;border-top:1px dashed var(--border);}
+  .chart-legend{display:flex;justify-content:space-between;margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-faint);}
+  .chart-legend .item{display:flex;align-items:center;gap:5px;}
+  .chart-legend .sw{width:8px;height:8px;border-radius:2px;}
+  .balance-hero{font-family:'Chakra Petch',sans-serif;font-size:38px;font-weight:700;letter-spacing:0.5px;}
+  .balance-hero small{font-size:16px;color:var(--text-dim);font-weight:500;}
+  .balance-sub{display:flex;gap:18px;margin-top:14px;flex-wrap:wrap;}
+  .stat{display:flex;flex-direction:column;gap:3px;}
+  .stat-label{font-size:10px;color:var(--text-faint);text-transform:uppercase;letter-spacing:1px;font-family:'JetBrains Mono',monospace;}
+  .stat-value{font-size:15px;font-weight:600;font-family:'JetBrains Mono',monospace;}
+  .stat-value.pos{color:var(--clean-1);}
+  .stat-value.neg{color:var(--danger);}
+
+  .section-title{
+    font-family:'Chakra Petch',sans-serif;
+    font-size:15px;font-weight:600;
+    display:flex;align-items:center;justify-content:space-between;
+    margin:4px 2px 0;
+  }
+  .section-title .add-link{
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent-1);cursor:pointer;font-weight:600;
+  }
+
+  .list-row{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:11px 0;
+    border-bottom:1px solid var(--border-soft);
+    font-size:13px;
+  }
+  .list-row:last-child{border-bottom:none;}
+  .list-row .l-name{color:var(--text);}
+  .list-row .l-sub{color:var(--text-faint);font-size:11px;margin-top:2px;}
+  .list-row .l-amount{font-family:'JetBrains Mono',monospace;font-weight:600;}
+
+  .txn-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border-soft);}
+  .txn-row:last-child{border-bottom:none;}
+  .txn-day{
+    font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-faint);
+    background:var(--bg-panel-3);border-radius:6px;padding:2px 6px;margin-right:10px;flex-shrink:0;
+  }
+  .txn-label{flex:1;font-size:12.5px;color:var(--text-dim);}
+  .txn-amount{font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;white-space:nowrap;}
+
+  .empty-state{
+    text-align:center;padding:26px 10px;color:var(--text-faint);font-size:12.5px;
+    border:1px dashed var(--border);border-radius:12px;
+  }
+
+  /* ---------- BUTTONS ---------- */
+  .btn{
+    border:1px solid var(--border);
+    background:var(--bg-panel-3);
+    color:var(--text);
+    padding:10px 14px;border-radius:10px;font-size:13px;font-weight:600;
+    cursor:pointer;transition:all .2s ease;font-family:'Inter',sans-serif;
+  }
+  .btn:hover{border-color:var(--accent-1);}
+  .btn-accent{
+    background:linear-gradient(120deg,var(--accent-1),var(--accent-2));
+    color:#04140f;border:none;
+  }
+  .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text-dim);}
+  .btn-danger{background:transparent;border:1px solid var(--danger);color:var(--danger);}
+  .btn-block{width:100%;}
+  .btn-sm{padding:6px 10px;font-size:11px;border-radius:8px;}
+
+  /* ---------- SUBTABS ---------- */
+  .subtabs{display:flex;gap:6px;margin-bottom:2px;}
+  .subtab{
+    padding:7px 14px;border-radius:999px;font-size:11.5px;font-weight:600;
+    border:1px solid var(--border);color:var(--text-dim);cursor:pointer;font-family:'JetBrains Mono',monospace;
+  }
+  .subtab.active{border-color:var(--accent-1);color:var(--accent-1);background:color-mix(in srgb, var(--accent-1) 12%, transparent);}
+
+  /* ---------- BUSINESS / PROPERTY CARD ---------- */
+  .entity-card{
+    background:var(--bg-panel-2);border:1px solid var(--border);border-radius:14px;padding:14px;cursor:pointer;
+    transition:all .2s ease;
+  }
+  .entity-card:hover{border-color:var(--accent-1);}
+  .entity-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .entity-name{font-weight:700;font-size:14px;}
+  .entity-tag{
+    font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:1px;
+    padding:3px 7px;border-radius:6px;color:var(--text-faint);border:1px solid var(--border);white-space:nowrap;
+  }
+  .entity-tag.developing{color:var(--warn);border-color:var(--warn);}
+  .entity-tag.mature{color:var(--clean-1);border-color:var(--clean-1);}
+  .entity-income{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;margin-top:8px;}
+  .progress-track{height:6px;background:var(--bg-panel-3);border-radius:99px;margin-top:8px;overflow:hidden;}
+  .progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--clean-1),var(--clean-2));transition:width .4s ease;}
+  .entity-meta{display:flex;gap:14px;margin-top:10px;flex-wrap:wrap;}
+  .entity-meta .m{font-size:10.5px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;}
+
+  .heat-track{height:8px;background:var(--bg-panel-3);border-radius:99px;margin-top:10px;overflow:hidden;position:relative;}
+  .heat-fill{height:100%;border-radius:99px;transition:width .4s ease;}
+  .heat-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--text-faint);margin-top:4px;font-family:'JetBrains Mono',monospace;}
+
+  .badge-event{
+    display:inline-flex;align-items:center;gap:5px;
+    font-size:10.5px;font-family:'JetBrains Mono',monospace;font-weight:600;
+    padding:5px 9px;border-radius:8px;margin-top:10px;
+  }
+  .badge-event.buff{color:var(--clean-1);background:rgba(0,230,168,0.1);}
+  .badge-event.debuff{color:var(--danger);background:rgba(255,77,77,0.1);}
+
+  /* ---------- CALENDAR ---------- */
+  .cal-nav{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:2px;}
+  .cal-nav-label{flex:1;text-align:center;}
+  .cal-month{font-family:'Chakra Petch',sans-serif;font-size:16px;font-weight:700;}
+  .cal-year{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent-1);letter-spacing:1px;}
+  .cal-today-link{
+    text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent-1);
+    cursor:pointer;margin:-4px 0 4px;
+  }
+  .month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+  .month-day-cell{
+    aspect-ratio:1;border-radius:9px;background:var(--bg-panel-2);border:1px solid var(--border);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;
+    font-family:'JetBrains Mono',monospace;transition:all .15s ease;
+  }
+  .month-day-cell:hover{border-color:var(--accent-1);}
+  .month-day-cell.today{border-color:var(--accent-1);background:color-mix(in srgb, var(--accent-1) 10%, var(--bg-panel-2));box-shadow:0 0 10px var(--accent-glow);}
+  .month-day-cell .n{font-size:13px;font-weight:600;}
+  .month-day-cell .dot{width:4px;height:4px;border-radius:50%;background:var(--warn);margin-top:3px;}
+
+  .event-card{background:var(--bg-panel-2);border:1px solid var(--border);border-radius:14px;padding:14px;}
+  .event-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+  .event-title{font-weight:700;font-size:13.5px;}
+  .event-day{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent-1);}
+  .event-desc{font-size:12px;color:var(--text-dim);margin-top:6px;line-height:1.5;}
+  .event-tags{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+  .event-tag{font-size:9.5px;font-family:'JetBrains Mono',monospace;padding:3px 8px;border-radius:6px;border:1px solid var(--border);color:var(--text-faint);}
+
+  /* ---------- NOTIFICATIONS ---------- */
+  .notif{
+    display:flex;gap:10px;padding:11px 0;border-bottom:1px solid var(--border-soft);
+  }
+  .notif:last-child{border-bottom:none;}
+  .notif-icon{font-size:15px;flex-shrink:0;}
+  .notif-body{flex:1;}
+  .notif-text{font-size:12px;color:var(--text-dim);line-height:1.4;}
+  .notif-day{font-size:9.5px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;margin-top:2px;}
+
+  /* ---------- MODAL ---------- */
+  .overlay{
+    position:fixed;inset:0;background:rgba(4,5,9,0.75);backdrop-filter:blur(3px);
+    display:flex;align-items:flex-end;justify-content:center;z-index:100;
+    animation:fadeIn .2s ease;
+  }
+  @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+  .modal{
+    width:100%;max-width:520px;max-height:88vh;overflow-y:auto;
+    background:var(--bg-panel);border:1px solid var(--border);border-radius:20px 20px 0 0;
+    padding:20px 18px 28px;
+    animation:slideUp .25s ease;
+  }
+  @keyframes slideUp{from{transform:translateY(30px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+  .modal-title{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:17px;}
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:11px;color:var(--text-faint);margin-bottom:5px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.5px;}
+  .field input, .field select, .field textarea{
+    width:100%;background:var(--bg-panel-3);border:1px solid var(--border);border-radius:10px;
+    padding:10px 12px;color:var(--text);font-size:13.5px;font-family:'Inter',sans-serif;
+  }
+  .field textarea{resize:vertical;min-height:60px;}
+  .field-row{display:flex;gap:10px;}
+  .field-row .field{flex:1;}
+  .seg-group{display:flex;gap:6px;}
+  .seg-opt{
+    flex:1;text-align:center;padding:9px 6px;border-radius:9px;border:1px solid var(--border);
+    font-size:11.5px;font-weight:600;cursor:pointer;color:var(--text-dim);font-family:'JetBrains Mono',monospace;
+  }
+  .seg-opt.active{border-color:var(--accent-1);color:var(--accent-1);background:color-mix(in srgb, var(--accent-1) 12%, transparent);}
+  .modal-actions{display:flex;gap:10px;margin-top:18px;}
+  .modal-actions .btn{flex:1;}
+
+  .toast{
+    position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
+    background:var(--bg-panel-3);border:1px solid var(--accent-1);color:var(--text);
+    padding:11px 18px;border-radius:12px;font-size:12.5px;z-index:200;
+    box-shadow:0 6px 20px rgba(0,0,0,0.4);
+    animation:toastIn .25s ease;
+  }
+  @keyframes toastIn{from{opacity:0;transform:translate(-50%,10px);}to{opacity:1;transform:translate(-50%,0);}}
+
+  .hint{font-size:11px;color:var(--text-faint);line-height:1.5;margin-top:2px;}
+
+  /* ---------- TRANSIÇÃO DE MODO (glitch cyberpunk) ---------- */
+  #modeFlash{
+    position:fixed;inset:0;pointer-events:none;z-index:500;opacity:0;
+    mix-blend-mode:screen;
+  }
+  #modeFlash::before, #modeFlash::after{
+    content:'';position:absolute;inset:0;opacity:0;mix-blend-mode:screen;
+  }
+  #modeFlash::before{
+    background:repeating-linear-gradient(0deg, var(--flash-color, var(--accent-1)) 0px, var(--flash-color, var(--accent-1)) 2px, transparent 2px, transparent 7px);
+  }
+  #modeFlash::after{
+    background:repeating-linear-gradient(0deg, rgba(255,25,90,0.55) 0px, rgba(255,25,90,0.55) 2px, transparent 2px, transparent 8px);
+  }
+  #modeFlash.active{ background:rgba(255,255,255,0.02); animation:glitchBase .5s steps(1,end); }
+  #modeFlash.active::before{ animation:glitchStripeA .5s steps(1,end); }
+  #modeFlash.active::after{ animation:glitchStripeB .5s steps(1,end); }
+  @keyframes glitchBase{
+    0%{opacity:0;} 4%{opacity:.5;} 9%{opacity:.05;} 15%{opacity:.4;} 22%{opacity:0;}
+    30%{opacity:.3;} 38%{opacity:.05;} 50%{opacity:.2;} 65%{opacity:.03;} 100%{opacity:0;}
+  }
+  @keyframes glitchStripeA{
+    0%{opacity:0;transform:translateX(0);}
+    6%{opacity:.6;transform:translateX(-16px);}
+    13%{opacity:.15;transform:translateX(9px);}
+    20%{opacity:.5;transform:translateX(-11px);}
+    28%{opacity:.1;transform:translateX(5px);}
+    38%{opacity:.4;transform:translateX(-4px);}
+    50%{opacity:.1;transform:translateX(2px);}
+    65%{opacity:.2;transform:translateX(0);}
+    100%{opacity:0;transform:translateX(0);}
+  }
+  @keyframes glitchStripeB{
+    0%{opacity:0;transform:translateX(0);}
+    8%{opacity:.5;transform:translateX(13px);}
+    16%{opacity:.1;transform:translateX(-10px);}
+    24%{opacity:.45;transform:translateX(8px);}
+    34%{opacity:.08;transform:translateX(-5px);}
+    46%{opacity:.3;transform:translateX(3px);}
+    60%{opacity:.08;transform:translateX(0);}
+    100%{opacity:0;transform:translateX(0);}
+  }
+
+  #root.mode-glitch{animation:rootGlitch .5s steps(2,end);}
+  @keyframes rootGlitch{
+    0%{transform:translate(0,0) skewX(0);filter:none;}
+    8%{transform:translate(-5px,1px) skewX(1.5deg);filter:hue-rotate(25deg) saturate(1.6);}
+    16%{transform:translate(4px,-2px) skewX(-2deg);filter:none;}
+    24%{transform:translate(-3px,0) skewX(1deg);filter:contrast(1.3) saturate(1.8);}
+    33%{transform:translate(4px,2px) skewX(-1deg);filter:none;}
+    42%{transform:translate(-4px,-1px);filter:hue-rotate(-20deg);}
+    52%{transform:translate(2px,1px);filter:none;}
+    63%{transform:translate(-2px,0);filter:none;}
+    75%{transform:translate(1px,-1px);filter:none;}
+    100%{transform:translate(0,0) skewX(0);filter:none;}
+  }
+
+  /* ---------- TRANSIÇÃO SUAVE ENTRE ABAS ---------- */
+  main{animation:viewIn .28s cubic-bezier(.2,.8,.2,1);}
+  @keyframes viewIn{
+    from{opacity:0;transform:translateY(8px);filter:blur(2px);}
+    to{opacity:1;transform:translateY(0);filter:blur(0);}
+  }
+  .tabbar, .subtabs{position:relative;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="modeFlash"></div>
+
+<script>
+/* ============================================================
+   ESTADO
+   ============================================================ */
+/* ============================================================
+   SUPABASE — conexão, login e tempo real
+   ============================================================ */
+const SUPABASE_URL = 'https://tvhdlqapeofyxfxppjov.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_NUWJIuwNHS0Y5tWeC-3aWw_nT4oS805';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const MASTER_TOKEN_KEY = 'subrosa-master-token';
+let isMaster = false;
+let masterToken = localStorage.getItem(MASTER_TOKEN_KEY) || null;
+
+function uid(prefix){ return prefix + '_' + Math.random().toString(36).slice(2,9); }
+
+async function loginAsMaster(pin){
+  const { data, error } = await sb.rpc('master_login', { pin });
+  if(error){ throw new Error('PIN incorreto'); }
+  masterToken = data;
+  localStorage.setItem(MASTER_TOKEN_KEY, masterToken);
+  isMaster = true;
+}
+
+function logoutMaster(){
+  isMaster = false;
+  masterToken = null;
+  localStorage.removeItem(MASTER_TOKEN_KEY);
+  render();
+}
+
+function enterAsPlayer(){
+  isMaster = false;
+  render();
+}
+
+/* ============================================================
+   CALENDÁRIO FICTÍCIO
+   ============================================================ */
+const START_YEAR = 3430;
+const MONTH_NAMES = ['Nivar','Ferrai','Marcelle','Abrenn','Maelis','Junara','Solvinn','Augrist','Setrune','Octaven','Novembrys','Decarion'];
+const MONTH_LENGTHS = [31,28,31,30,31,30,31,31,30,31,30,31];
+const YEAR_LENGTH = MONTH_LENGTHS.reduce((s,n)=>s+n,0); // 365
+
+// dia absoluto (state.day, começa em 1) -> {year, month(0-11), dayOfMonth(1-N)}
+function dayToDate(dayNum){
+  let remaining = dayNum - 1;
+  let year = START_YEAR;
+  while(remaining >= YEAR_LENGTH){ remaining -= YEAR_LENGTH; year++; }
+  let month = 0;
+  while(remaining >= MONTH_LENGTHS[month]){ remaining -= MONTH_LENGTHS[month]; month++; }
+  return { year, month, dayOfMonth: remaining + 1 };
+}
+
+// primeiro dia absoluto de um determinado mês/ano
+function firstDayNumberOfMonth(year, month){
+  let total = (year - START_YEAR) * YEAR_LENGTH;
+  for(let m=0; m<month; m++) total += MONTH_LENGTHS[m];
+  return total + 1;
+}
+
+function formatDate(dayNum){
+  const { year, month, dayOfMonth } = dayToDate(dayNum);
+  return `${dayOfMonth} de ${MONTH_NAMES[month]} de ${year}`;
+}
+
+function formatDateShort(dayNum){
+  const { year, month, dayOfMonth } = dayToDate(dayNum);
+  return `${dayOfMonth} ${MONTH_NAMES[month].slice(0,3)} ${year}`;
+}
+
+
+function defaultState(){
+  return {
+    day: 1,
+    mode: 'limpo',
+    tab: 'saldo',
+    investSubTab: 'negocios',
+    clean: {
+      balance: 0,
+      credit: 0,
+      fixedExpenses: [],
+      transactions: []
+    },
+    dirty: {
+      balance: 0,
+      transactions: []
+    },
+    businesses: [],
+    properties: [],
+    events: [],
+    notifications: [],
+    history: []
+  };
+}
+
+let state = null;
+let realtimeChannel = null;
+
+async function loadState(){
+  try{
+    const { data, error } = await sb.from('game_state').select('data').eq('id', 1).single();
+    if(error) throw error;
+    state = data.data || defaultState();
+  } catch(e){
+    console.error('Falha ao carregar estado do Supabase', e);
+    state = defaultState();
+  }
+  render();
+  subscribeRealtime();
+}
+
+function subscribeRealtime(){
+  if(realtimeChannel) return;
+  realtimeChannel = sb
+    .channel('game_state_changes')
+    .on('postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'game_state', filter: 'id=eq.1' },
+      (payload)=>{
+        state = payload.new.data;
+        render();
+      }
+    )
+    .subscribe();
+}
+
+let saveTimer = null;
+let isSaving = false;
+let pendingSave = false;
+let saveErrorShown = false;
+
+// Só o mestre grava o estado inteiro; o jogador nunca chama isso
+// diretamente (as ações dele passam por funções próprias e restritas).
+function saveState(){
+  if(!isMaster) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=> flushSave(), 350);
+}
+
+async function flushSave(attempt = 1){
+  if(!isMaster) return;
+  if(isSaving){
+    pendingSave = true;
+    return;
+  }
+  isSaving = true;
+  try{
+    const { error } = await sb.rpc('master_update_state', { token: masterToken, new_data: state });
+    if(error) throw error;
+    saveErrorShown = false;
+  } catch(e){
+    console.error('Falha ao salvar', e);
+    if(attempt < 3){
+      setTimeout(()=> { isSaving = false; flushSave(attempt+1); }, 800 * attempt);
+      return;
+    }
+    if(!saveErrorShown){
+      saveErrorShown = true;
+      showToast('Não consegui salvar agora. Tentando de novo em segundo plano.');
+      setTimeout(()=> flushSave(1), 5000);
+    }
+  } finally {
+    isSaving = false;
+    if(pendingSave){
+      pendingSave = false;
+      flushSave();
+    }
+  }
+}
+
+function fmt(n){
+  const v = Math.round(n);
+  return (v<0?'-':'') + 'R$ ' + Math.abs(v).toLocaleString('pt-BR');
+}
+function fmtSigned(n){
+  const v = Math.round(n);
+  return (v>=0?'+':'-') + 'R$ ' + Math.abs(v).toLocaleString('pt-BR');
+}
+
+/* ============================================================
+   MOTOR DE SIMULAÇÃO — AVANÇAR / VOLTAR DIA
+   ============================================================ */
+/* ============================================================
+   MOTOR DE SIMULAÇÃO — AVANÇAR / VOLTAR DIA
+   Roda no servidor (Edge Functions). O resultado chega de volta
+   automaticamente pelo canal em tempo real.
+   ============================================================ */
+function pushNotification(icon, text){
+  state.notifications.unshift({ id: uid('ntf'), day: state.day, icon, text });
+  if(state.notifications.length > 60) state.notifications.pop();
+}
+
+let dayActionInFlight = false;
+
+async function callDayFunction(fnName){
+  if(!isMaster || dayActionInFlight) return;
+  dayActionInFlight = true;
+  render();
+  try{
+    const { data, error } = await sb.functions.invoke(fnName, { body: { token: masterToken } });
+    if(error || (data && data.error)){
+      throw new Error((data && data.error) || error.message || 'falha desconhecida');
+    }
+    // o estado atualizado chega pelo Realtime; não precisa fazer nada aqui
+  } catch(e){
+    console.error(`Falha ao chamar ${fnName}`, e);
+    showToast('Não consegui avançar/voltar o dia agora. Tenta de novo em alguns segundos.');
+  } finally {
+    dayActionInFlight = false;
+    render();
+  }
+}
+
+function advanceDay(){
+  callDayFunction('advance-day');
+}
+
+function goBackDay(){
+  callDayFunction('go-back-day');
+}
+
+function triggerHeatEvent(biz, tier, automatic){
+  if(tier === 'investigacao'){
+    pushNotification('🔎', `Investigação preliminar aberta sobre "${biz.name}" (calor ${Math.round(biz.heat)}%).`);
+  } else if(tier === 'congelamento'){
+    biz.frozenDaysLeft = 3 + Math.floor(Math.random()*3);
+    pushNotification('🧊', `"${biz.name}" foi congelado por ${biz.frozenDaysLeft} dias após alerta financeiro.`);
+  } else if(tier === 'invasao'){
+    const loss = biz.illegal ? 0 : state.clean.balance * 0.15;
+    biz.frozenDaysLeft = 6 + Math.floor(Math.random()*4);
+    if(loss > 0){
+      state.clean.balance -= loss;
+      state.clean.transactions.push({ day: state.day, label: `Perda por invasão — ${biz.name}`, amount: -loss });
+    }
+    pushNotification('🚨', `Invasão em "${biz.name}"! Operação parada e perdas registradas.`);
+  }
+}
+
+function triggerPropertyHeatEvent(prop, tier){
+  if(tier === 'investigacao'){
+    pushNotification('🔎', `Investigação preliminar aberta sobre "${prop.name}" (calor ${Math.round(prop.heat)}%).`);
+  } else if(tier === 'congelamento'){
+    prop.frozenDaysLeft = 3 + Math.floor(Math.random()*3);
+    pushNotification('🧊', `"${prop.name}" foi congelada por ${prop.frozenDaysLeft} dias após alerta financeiro.`);
+  } else if(tier === 'invasao'){
+    const loss = state.clean.balance * 0.1;
+    prop.frozenDaysLeft = 6 + Math.floor(Math.random()*4);
+    if(loss > 0){
+      state.clean.balance -= loss;
+      state.clean.transactions.push({ day: state.day, label: `Perda por invasão — ${prop.name}`, amount: -loss });
+    }
+    pushNotification('🚨', `Invasão em "${prop.name}"! Propriedade interditada e perdas registradas.`);
+  }
+}
+
+function triggerPropertyEvent(prop, forcedType, automatic){
+  const buffs = [
+    { label: 'Pico de produtividade', percent: 12 + Math.floor(Math.random()*13) },
+    { label: 'Contrato bônus fechado', percent: 8 + Math.floor(Math.random()*10) }
+  ];
+  const debuffs = [
+    { label: 'Fornecimento atrasado', percent: -(10 + Math.floor(Math.random()*15)) },
+    { label: 'Funcionários doentes', percent: -(8 + Math.floor(Math.random()*12)) },
+    { label: 'Equipamento com defeito', percent: -(12 + Math.floor(Math.random()*10)) }
+  ];
+  const pool = forcedType === 'buff' ? buffs : forcedType === 'debuff' ? debuffs : [...buffs, ...debuffs];
+  const pick = pool[Math.floor(Math.random()*pool.length)];
+  const days = 1 + Math.floor(Math.random()*7);
+  prop.activeEvent = { label: pick.label, percent: pick.percent, daysLeft: days, totalDays: days };
+  pushNotification(pick.percent>=0?'📈':'📉', `"${prop.name}": ${pick.label} (${pick.percent>0?'+':''}${pick.percent}% por ${days} dia(s)).`);
+}
+
+/* (aplicação de eventos de calendário e "voltar dia" agora rodam
+   dentro da Edge Function advance-day / go-back-day, no servidor) */
+
+/* ============================================================
+   UI STATE (modal / toasts, não persistido)
+   ============================================================ */
+let ui = { modal: null, modalData: {}, toast: null };
+
+function showToast(msg){
+  ui.toast = msg;
+  render();
+  setTimeout(()=>{ ui.toast = null; render(); }, 2200);
+}
+
+function toggleMode(btnEl){
+  const newMode = state.mode === 'limpo' ? 'sujo' : 'limpo';
+  const flash = document.getElementById('modeFlash');
+  const root = document.getElementById('root');
+  if(flash){
+    flash.style.setProperty('--flash-color', newMode === 'sujo' ? 'var(--dirty-1)' : 'var(--clean-1)');
+    flash.classList.remove('active');
+    void flash.offsetWidth; // reinicia a animação
+    flash.classList.add('active');
+  }
+  if(root){
+    root.classList.remove('mode-glitch');
+    void root.offsetWidth; // reinicia a animação
+    root.classList.add('mode-glitch');
+  }
+  if(btnEl) btnEl.classList.add('glitching');
+  setTimeout(()=>{
+    state.mode = newMode;
+    saveState();
+    render();
+  }, 190);
+}
+
+function openModal(type, data={}){
+  ui.modal = type;
+  ui.modalData = data;
+  render();
+}
+function closeModal(){
+  ui.modal = null;
+  ui.modalData = {};
+  render();
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function render(){
+  const root = document.getElementById('root');
+
+  if(state === null){
+    document.body.className = '';
+    root.innerHTML = renderLoginScreen();
+    attachLoginHandlers();
+    return;
+  }
+
+  document.body.className = state.mode === 'sujo' ? 'mode-sujo' : '';
+  root.innerHTML = `
+    ${renderTopbar()}
+    ${renderTabbar()}
+    <main>${renderTabContent()}</main>
+    ${ui.modal ? renderModal() : ''}
+    ${ui.toast ? `<div class="toast">${ui.toast}</div>` : ''}
+  `;
+  attachHandlers();
+}
+
+let loginMode = 'choose'; // 'choose' | 'pin'
+let loginError = '';
+let loginLoading = false;
+
+function renderLoginScreen(){
+  if(loginMode === 'pin'){
+    return `
+    <div class="login-screen">
+      <div class="login-card">
+        <div class="brand" style="justify-content:center;margin-bottom:18px;"><span class="dot"></span>SUBROSA</div>
+        <div class="login-title">Entrar como mestre</div>
+        <div class="field"><label>PIN de mestre</label><input id="pinInput" type="password" autocomplete="off" placeholder="••••"></div>
+        ${loginError ? `<div class="login-error">${loginError}</div>` : ''}
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="pinBack">Voltar</button>
+          <button class="btn btn-accent" id="pinSubmit" ${loginLoading?'disabled':''}>${loginLoading?'Entrando…':'Entrar'}</button>
+        </div>
+      </div>
+    </div>`;
+  }
+  return `
+  <div class="login-screen">
+    <div class="login-card">
+      <div class="brand" style="justify-content:center;margin-bottom:18px;"><span class="dot"></span>SUBROSA</div>
+      <div class="login-title">Como você vai entrar?</div>
+      <div class="hint" style="text-align:center;margin-bottom:18px;">O painel atualiza ao vivo pros dois lados.</div>
+      <button class="btn btn-accent btn-block" id="choosePlayer" style="margin-bottom:10px;">Entrar como jogador</button>
+      <button class="btn btn-ghost btn-block" id="chooseMaster">Entrar como mestre</button>
+    </div>
+  </div>`;
+}
+
+function attachLoginHandlers(){
+  const $ = sel => document.querySelector(sel);
+
+  const choosePlayer = $('#choosePlayer');
+  if(choosePlayer) choosePlayer.onclick = ()=>{ enterAsPlayer(); loadState(); };
+
+  const chooseMaster = $('#chooseMaster');
+  if(chooseMaster) chooseMaster.onclick = ()=>{ loginMode = 'pin'; loginError=''; render(); };
+
+  const pinBack = $('#pinBack');
+  if(pinBack) pinBack.onclick = ()=>{ loginMode = 'choose'; loginError=''; render(); };
+
+  const pinSubmit = $('#pinSubmit');
+  const pinInput = $('#pinInput');
+  if(pinInput) pinInput.focus();
+
+  async function submitPin(){
+    const pin = pinInput.value.trim();
+    if(!pin) return;
+    loginLoading = true; loginError=''; render();
+    try{
+      await loginAsMaster(pin);
+      loadState();
+    } catch(e){
+      loginLoading = false;
+      loginError = 'PIN incorreto. Tenta de novo.';
+      render();
+    }
+  }
+
+  if(pinSubmit) pinSubmit.onclick = submitPin;
+  if(pinInput) pinInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') submitPin(); });
+}
+
+function renderTopbar(){
+  return `
+  <div class="topbar">
+    <div class="brand-row">
+      <div class="brand"><span class="dot"></span>SUBROSA</div>
+      <div class="brand-actions">
+        <div class="role-badge ${isMaster?'is-master':''}" id="roleBadge" title="${isMaster?'Clique pra sair do modo mestre':'Você está vendo como jogador'}">
+          ${isMaster?'MESTRE':'JOGADOR'}
+        </div>
+        <button class="mode-cat-btn" id="modeCatBtn" title="Alternar limpo / sujo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 9 L7 3 L9.3 8.2"/>
+            <path d="M20 9 L17 3 L14.7 8.2"/>
+            <path d="M4 9 C4 15.2 8 19 12 19 C16 19 20 15.2 20 9 C20 9 16.8 10.6 12 10.6 C7.2 10.6 4 9 4 9 Z"/>
+            <circle cx="9.2" cy="13.2" r="0.55" fill="currentColor" stroke="none"/>
+            <circle cx="14.8" cy="13.2" r="0.55" fill="currentColor" stroke="none"/>
+            <path d="M10.4 15.4 Q12 16.5 13.6 15.4"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="day-row">
+      <div class="day-info">
+        <div class="day-label">Data corrente</div>
+        <div class="day-value">${formatDate(state.day)}</div>
+      </div>
+      ${isMaster ? `
+      <div class="day-actions">
+        <button class="icon-btn" id="btnBack" ${(state.history.length===0 || dayActionInFlight)?'disabled':''} title="Voltar um dia">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7 L3 12 L9 17"/><path d="M3 12 H15 A6 6 0 1 0 15 3"/></svg>
+        </button>
+        <button class="icon-btn primary" id="btnForward" ${dayActionInFlight?'disabled':''} title="Avançar um dia">
+          <span>${dayActionInFlight?'Processando…':'Avançar dia'}</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4 L11 12 L5 20"/><path d="M13 4 L19 12 L13 20"/></svg>
+        </button>
+      </div>` : ''}
+    </div>
+  </div>`;
+}
+
+function renderTabbar(){
+  const tabs = [
+    {k:'saldo', l:'Saldo'},
+    {k:'investimentos', l:'Investimentos'},
+    {k:'calendario', l:'Calendário'}
+  ];
+  return `<div class="tabbar">
+    ${tabs.map(t=>`<div class="tab-btn ${state.tab===t.k?'active':''}" data-tab="${t.k}">${t.l}</div>`).join('')}
+  </div>`;
+}
+
+function renderTabContent(){
+  if(state.tab === 'saldo') return renderSaldo();
+  if(state.tab === 'investimentos') return renderInvestimentos();
+  if(state.tab === 'calendario') return renderCalendario();
+  return '';
+}
+
+/* ---------------- SALDO ---------------- */
+function renderSaldo(){
+  if(state.mode === 'limpo'){
+    const acct = state.clean;
+    const totalExp = acct.fixedExpenses.reduce((s,e)=>s+e.amount,0);
+    return `
+    <div class="card">
+      <div class="card-label-row">
+        <div class="card-label">Saldo em conta — legítimo</div>
+        ${isMaster ? `<div class="edit-link" data-action="editBalance">✎ editar</div>` : ''}
+      </div>
+      <div class="balance-hero">${fmt(acct.balance)}</div>
+      <div class="balance-sub">
+        <div class="stat"><div class="stat-label">Crédito disponível</div><div class="stat-value">${fmt(acct.credit)}</div></div>
+        <div class="stat"><div class="stat-label">Gastos fixos / mês</div><div class="stat-value neg">${fmt(totalExp)}</div></div>
+      </div>
+    </div>
+
+    <div class="section-title">Visão geral</div>
+    <div class="card">${renderOverviewChart(acct.transactions)}</div>
+
+    <div class="section-title">Gastos fixos ${isMaster ? `<span class="add-link" data-action="addExpense">+ adicionar</span>` : ''}</div>
+    <div class="card">
+      ${acct.fixedExpenses.length ? acct.fixedExpenses.map(e=>`
+        <div class="list-row">
+          <div><div class="l-name">${e.label}</div></div>
+          <div class="l-amount neg">${fmt(e.amount)}</div>
+        </div>`).join('') : '<div class="empty-state">Nenhum gasto fixo cadastrado.</div>'}
+    </div>
+
+    <div class="section-title">Extrato recente</div>
+    <div class="card">
+      ${renderTxnList(acct.transactions)}
+    </div>
+    `;
+  } else {
+    const acct = state.dirty;
+    const legalLaunderers = state.businesses.filter(b=>!b.illegal && b.launderPercent>0);
+    const propertyLaunderers = state.properties.filter(p=>!p.illegal && p.launderPercent>0);
+    const dailyLaundering =
+      legalLaunderers.reduce((s,b)=> s + Math.min(b.dailyIncome*(b.launderPercent/100), acct.balance), 0) +
+      propertyLaunderers.reduce((s,p)=> s + Math.min(p.dailyIncome*(p.launderPercent/100), acct.balance), 0);
+    const totalLaunderedLifetime = acct.transactions.filter(t=>t.label.startsWith('Lavagem')).reduce((s,t)=>s+Math.abs(t.amount),0);
+    return `
+    <div class="card">
+      <div class="card-label-row">
+        <div class="card-label">Saldo sujo — não declarado</div>
+        ${isMaster ? `<div class="edit-link" data-action="editBalance">✎ editar</div>` : ''}
+      </div>
+      <div class="balance-hero">${fmt(acct.balance)}</div>
+      <div class="balance-sub">
+        <div class="stat"><div class="stat-label">Lavagem estimada / dia</div><div class="stat-value pos">${fmt(dailyLaundering)}</div></div>
+        <div class="stat"><div class="stat-label">Total já lavado</div><div class="stat-value">${fmt(totalLaunderedLifetime)}</div></div>
+      </div>
+    </div>
+
+    <div class="section-title">Visão geral</div>
+    <div class="card">${renderOverviewChart(acct.transactions)}</div>
+
+    <div class="section-title">Canais de lavagem ativos</div>
+    <div class="card">
+      ${(legalLaunderers.length || propertyLaunderers.length) ? [
+        ...legalLaunderers.map(b=>`
+        <div class="list-row">
+          <div><div class="l-name">${b.name}</div><div class="l-sub">Negócio · ${b.launderPercent}% hiperfaturado · calor ${Math.round(b.heat)}%</div></div>
+          <div class="l-amount pos">${fmt(b.dailyIncome*(b.launderPercent/100))}/dia</div>
+        </div>`),
+        ...propertyLaunderers.map(p=>`
+        <div class="list-row">
+          <div><div class="l-name">${p.name}</div><div class="l-sub">Propriedade · ${p.launderPercent}% hiperfaturado · calor ${Math.round(p.heat)}%</div></div>
+          <div class="l-amount pos">${fmt(p.dailyIncome*(p.launderPercent/100))}/dia</div>
+        </div>`)
+      ].join('') : '<div class="empty-state">Nenhum negócio ou propriedade legal está sendo usado para lavagem. Ajuste o % de hiperfaturamento em Investimentos.</div>'}
+    </div>
+
+    <div class="section-title">Extrato sujo recente</div>
+    <div class="card">
+      ${renderTxnList(acct.transactions)}
+    </div>
+    `;
+  }
+}
+
+function renderOverviewChart(txns){
+  if(!txns.length){
+    return '<div class="empty-state">Sem movimentação suficiente pra montar o gráfico ainda.</div>';
+  }
+  // agrupa por dia (net = ganhos - perdas)
+  const byDay = {};
+  txns.forEach(t=>{ byDay[t.day] = (byDay[t.day]||0) + t.amount; });
+  const days = Object.keys(byDay).map(Number).sort((a,b)=>a-b);
+  const lastDays = days.slice(-14);
+  const values = lastDays.map(d=>byDay[d]);
+  const maxAbs = Math.max(1, ...values.map(v=>Math.abs(v)));
+
+  const cols = lastDays.map((d,i)=>{
+    const v = values[i];
+    const h = Math.max(2, Math.round((Math.abs(v)/maxAbs)*42));
+    const isPos = v >= 0;
+    const color = isPos ? 'var(--clean-1)' : 'var(--danger)';
+    const posStyle = isPos ? `bottom:50%;height:${h}px;` : `top:50%;height:${h}px;`;
+    return `
+      <div class="chart-col" title="Dia ${d}: ${fmtSigned(v)}">
+        <div class="chart-zero"></div>
+        <div class="chart-bar" style="position:absolute;left:10%;right:10%;${posStyle}background:${color};"></div>
+      </div>`;
+  }).join('');
+
+  const totalNet = values.reduce((s,v)=>s+v,0);
+  return `
+    <div class="chart-wrap">
+      <div class="chart-bars">${cols}</div>
+      <div class="chart-legend">
+        <div class="item"><span class="sw" style="background:var(--clean-1)"></span>Ganho no dia</div>
+        <div class="item"><span class="sw" style="background:var(--danger)"></span>Perda no dia</div>
+        <div class="item">Saldo do período: <strong style="color:${totalNet>=0?'var(--clean-1)':'var(--danger)'};margin-left:4px;">${fmtSigned(totalNet)}</strong></div>
+      </div>
+    </div>
+  `;
+}
+
+function renderTxnList(txns){
+  if(!txns.length) return '<div class="empty-state">Nenhuma transação ainda. Avance o dia para gerar movimentação.</div>';
+  const recent = [...txns].slice(-12).reverse();
+  return recent.map(t=>`
+    <div class="txn-row">
+      <div class="txn-day">D${t.day}</div>
+      <div class="txn-label">${t.label}</div>
+      <div class="txn-amount ${t.amount>=0?'pos':'neg'}" style="color:${t.amount>=0?'var(--clean-1)':'var(--danger)'}">${fmtSigned(t.amount)}</div>
+    </div>
+  `).join('');
+}
+
+/* ---------------- INVESTIMENTOS ---------------- */
+function renderInvestimentos(){
+  const sub = state.investSubTab;
+  return `
+    <div class="subtabs">
+      <div class="subtab ${sub==='negocios'?'active':''}" data-subtab="negocios">Negócios</div>
+      <div class="subtab ${sub==='propriedades'?'active':''}" data-subtab="propriedades">Propriedades</div>
+    </div>
+    ${sub==='negocios' ? renderNegocios() : renderPropriedades()}
+  `;
+}
+
+function renderNegocios(){
+  const list = state.mode === 'sujo'
+    ? state.businesses
+    : state.businesses.filter(b => !b.illegal);
+  return `
+    <div class="section-title">${state.mode==='sujo'?'Negócios — visão do submundo':'Negócios'} ${isMaster ? `<span class="add-link" data-action="addBusiness">+ novo</span>` : ''}</div>
+    ${list.length ? list.map(b=>renderBusinessCard(b)).join('') : `<div class="empty-state">Nenhum negócio ${state.mode==='sujo'?'':'legal '}cadastrado ainda.</div>`}
+  `;
+}
+
+function renderBusinessCard(b){
+  if(b.status === 'developing'){
+    const accel = Math.floor(b.investment/10000);
+    const effectiveDays = Math.max(1, b.daysToComplete - accel);
+    const pct = Math.min(100, Math.round((b.daysElapsed/effectiveDays)*100));
+    const remaining = Math.max(0, effectiveDays - b.daysElapsed);
+    return `
+    <div class="entity-card" data-open-business="${b.id}">
+      <div class="entity-head">
+        <div class="entity-name">${b.name}</div>
+        <div class="entity-tag developing">Em desenvolvimento</div>
+      </div>
+      <div class="hint">Investimento: ${fmt(b.investment)} · Renda prevista: ${fmt(b.dailyIncome)}/dia</div>
+      <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+      <div class="entity-meta">
+        <div class="m">${pct}% concluído</div>
+        <div class="m">~${remaining} dia(s) restante(s)</div>
+      </div>
+    </div>`;
+  }
+  const heatColor = b.heat > 80 ? 'var(--danger)' : b.heat > 50 ? 'var(--warn)' : b.heat > 20 ? 'var(--dirty-1)' : 'var(--clean-1)';
+  const showHeat = state.mode === 'sujo' && !b.illegal;
+  const launderedPerDay = b.dailyIncome * ((b.launderPercent||0)/100);
+  return `
+    <div class="entity-card" data-open-business="${b.id}">
+      <div class="entity-head">
+        <div class="entity-name">${b.name}</div>
+        <div class="entity-tag mature">${b.illegal?'Ilegal · ':''}${b.frozenDaysLeft>0?'Congelado':'Operando'}</div>
+      </div>
+      <div class="entity-income">${fmt(b.dailyIncome)}<span style="font-size:11px;color:var(--text-faint);font-weight:500;"> /dia</span></div>
+      ${showHeat ? `
+      <div class="heat-track"><div class="heat-fill" style="width:${b.heat}%;background:${heatColor}"></div></div>
+      <div class="heat-labels"><span>Calor ${Math.round(b.heat)}%</span><span>${b.launderPercent||0}% hiperfaturado · ${fmt(launderedPerDay)}/dia lavado</span></div>
+      ` : ''}
+      ${b.frozenDaysLeft>0?`<div class="badge-event debuff">🧊 congelado por mais ${b.frozenDaysLeft} dia(s)</div>`:''}
+    </div>`;
+}
+
+function renderPropriedades(){
+  const list = state.mode === 'sujo'
+    ? state.properties
+    : state.properties.filter(p => !p.illegal);
+  return `
+    <div class="section-title">${state.mode==='sujo'?'Propriedades — visão do submundo':'Propriedades'} ${isMaster ? `<span class="add-link" data-action="addProperty">+ nova</span>` : ''}</div>
+    ${list.length ? list.map(p=>renderPropertyCard(p)).join('') : `<div class="empty-state">Nenhuma propriedade ${state.mode==='sujo'?'':'legal '}cadastrada ainda.</div>`}
+  `;
+}
+
+function renderPropertyCard(p){
+  const net = p.dailyIncome - p.maintenance;
+  const heatColor = p.heat > 80 ? 'var(--danger)' : p.heat > 50 ? 'var(--warn)' : p.heat > 20 ? 'var(--dirty-1)' : 'var(--clean-1)';
+  const showHeat = state.mode === 'sujo' && !p.illegal;
+  const launderedPerDay = p.dailyIncome * ((p.launderPercent||0)/100);
+  return `
+    <div class="entity-card" data-open-property="${p.id}">
+      <div class="entity-head">
+        <div class="entity-name">${p.name}</div>
+        <div class="entity-tag mature">${p.illegal?'Ilegal · ':''}${p.employees} func.</div>
+      </div>
+      <div class="entity-income">${fmtSigned(net)}<span style="font-size:11px;color:var(--text-faint);font-weight:500;"> líquido/dia</span></div>
+      <div class="entity-meta">
+        <div class="m">Renda ${fmt(p.dailyIncome)}</div>
+        <div class="m">Manutenção ${fmt(p.maintenance)}</div>
+      </div>
+      ${showHeat ? `
+      <div class="heat-track"><div class="heat-fill" style="width:${p.heat||0}%;background:${heatColor}"></div></div>
+      <div class="heat-labels"><span>Calor ${Math.round(p.heat||0)}%</span><span>${p.launderPercent||0}% hiperfaturado · ${fmt(launderedPerDay)}/dia lavado</span></div>
+      ` : ''}
+      ${p.frozenDaysLeft>0?`<div class="badge-event debuff">🧊 congelada por mais ${p.frozenDaysLeft} dia(s)</div>`:''}
+      ${p.activeEvent ? `<div class="badge-event ${p.activeEvent.percent>=0?'buff':'debuff'}">${p.activeEvent.percent>=0?'📈':'📉'} ${p.activeEvent.label} (${p.activeEvent.percent>0?'+':''}${p.activeEvent.percent}%) · ${p.activeEvent.daysLeft}d restantes</div>` : ''}
+    </div>`;
+}
+
+/* ---------------- CALENDÁRIO ---------------- */
+function ensureCalView(){
+  if(ui.calYear == null || ui.calMonth == null){
+    const d = dayToDate(state.day);
+    ui.calYear = d.year;
+    ui.calMonth = d.month;
+  }
+}
+
+function renderCalendario(){
+  ensureCalView();
+  const year = ui.calYear;
+  const month = ui.calMonth;
+  const monthLength = MONTH_LENGTHS[month];
+  const firstDay = firstDayNumberOfMonth(year, month);
+  const todayDate = dayToDate(state.day);
+  const isCurrentMonth = todayDate.year===year && todayDate.month===month;
+
+  const cells = [];
+  for(let i=0;i<monthLength;i++){
+    const dayNum = firstDay + i;
+    const dayOfMonth = i + 1;
+    const hasEvent = state.events.some(e=> e.day===dayNum || (e.recurring && dayNum>=e.day && (!e.recurEndDay||dayNum<=e.recurEndDay)));
+    const isToday = dayNum === state.day;
+    cells.push(`<div class="month-day-cell ${isToday?'today':''}" data-goto-day="${dayNum}">
+      <div class="n">${dayOfMonth}</div>
+      ${hasEvent?'<div class="dot"></div>':''}
+    </div>`);
+  }
+
+  const monthEvents = [...state.events]
+    .filter(e => {
+      const evStart = dayToDate(e.day);
+      if(e.recurring){
+        const endDay = e.recurEndDay || (firstDay + monthLength - 1);
+        return e.day <= (firstDay + monthLength - 1) && endDay >= firstDay;
+      }
+      return evStart.year===year && evStart.month===month;
+    })
+    .sort((a,b)=>a.day-b.day);
+
+  const notifs = state.notifications.slice(0,10);
+
+  return `
+    <div class="cal-nav">
+      <button class="icon-btn" id="calPrevYear" title="Ano anterior">«</button>
+      <button class="icon-btn" id="calPrevMonth" title="Mês anterior">‹</button>
+      <div class="cal-nav-label">
+        <div class="cal-month">${MONTH_NAMES[month]}</div>
+        <div class="cal-year">${year}</div>
+      </div>
+      <button class="icon-btn" id="calNextMonth" title="Próximo mês">›</button>
+      <button class="icon-btn" id="calNextYear" title="Próximo ano">»</button>
+    </div>
+    ${!isCurrentMonth ? `<div class="cal-today-link" id="calGoToday">↺ voltar para ${formatDateShort(state.day)}</div>` : ''}
+
+    <div class="card">
+      <div class="month-grid">${cells.join('')}</div>
+    </div>
+
+    <div class="section-title">Eventos em ${MONTH_NAMES[month]} <span class="add-link" data-action="addEvent">+ novo</span></div>
+    ${monthEvents.length ? monthEvents.map(e=>renderEventCard(e)).join('') : '<div class="empty-state">Nenhum evento marcado para este mês.</div>'}
+
+    <div class="section-title">Registro de acontecimentos</div>
+    <div class="card">
+      ${notifs.length ? notifs.map(n=>`
+        <div class="notif">
+          <div class="notif-icon">${n.icon}</div>
+          <div class="notif-body">
+            <div class="notif-text">${n.text}</div>
+            <div class="notif-day">${formatDateShort(n.day)}</div>
+          </div>
+        </div>`).join('') : '<div class="empty-state">Nada registrado ainda.</div>'}
+    </div>
+  `;
+}
+
+function renderEventCard(e){
+  const targetName = e.targetType==='business' ? state.businesses.find(b=>b.id===e.targetId)?.name
+    : e.targetType==='property' ? state.properties.find(p=>p.id===e.targetId)?.name : null;
+  return `
+    <div class="event-card" style="margin-bottom:10px;">
+      <div class="event-head">
+        <div class="event-title">${e.title}</div>
+        <div class="event-day">${formatDateShort(e.day)}${e.recurring?` → ${e.recurEndDay?formatDateShort(e.recurEndDay):'∞'}`:''}</div>
+      </div>
+      ${e.description?`<div class="event-desc">${e.description}</div>`:''}
+      <div class="event-tags">
+        <div class="event-tag">${e.type==='efeito'?'Com efeito':'Apenas visual'}</div>
+        ${targetName?`<div class="event-tag">${targetName}</div>`:''}
+        ${e.type==='efeito'?`<div class="event-tag">${e.valueType==='percent'?e.value+'%':fmt(e.value)}</div>`:''}
+        <div class="event-tag">${e.mode==='sujo'?'Sujo':'Limpo'}</div>
+      </div>
+    </div>
+  `;
+}
+
+/* ============================================================
+   MODAIS
+   ============================================================ */
+function renderModal(){
+  const type = ui.modal;
+  let body = '';
+  let title = '';
+
+  if(type === 'editBalance'){
+    if(state.mode === 'limpo'){
+      title = 'Editar saldo — legítimo';
+      body = `
+        <div class="field"><label>Saldo em conta</label><input id="mBalance" type="number" value="${state.clean.balance}"></div>
+        <div class="field"><label>Limite de crédito</label><input id="mCredit" type="number" value="${state.clean.credit}"></div>
+        <div class="hint">Editar aqui não gera lançamento no extrato — é um ajuste direto (útil pra começar o RPG ou corrigir algo).</div>
+      `;
+    } else {
+      title = 'Editar saldo — sujo';
+      body = `
+        <div class="field"><label>Saldo sujo</label><input id="mBalance" type="number" value="${state.dirty.balance}"></div>
+        <div class="hint">Editar aqui não gera lançamento no extrato — é um ajuste direto.</div>
+      `;
+    }
+  }
+
+  if(type === 'addExpense'){
+    title = 'Novo gasto fixo';
+    body = `
+      <div class="field"><label>Descrição</label><input id="mLabel" placeholder="Ex: Aluguel do cofre"></div>
+      <div class="field"><label>Valor mensal</label><input id="mAmount" type="number" placeholder="0"></div>
+      <div class="hint">Gastos fixos são descontados automaticamente a cada 30 dias avançados.</div>
+    `;
+  }
+
+  if(type === 'addBusiness'){
+    title = state.mode==='sujo' ? 'Novo negócio ilegal / fachada' : 'Novo negócio legal';
+    body = `
+      <div class="field"><label>Nome</label><input id="mName" placeholder="Ex: Distribuidora Nortel"></div>
+      <div class="field"><label>Status inicial</label>
+        <div class="seg-group">
+          <div class="seg-opt active" data-seg="status" data-val="developing">Em desenvolvimento</div>
+          <div class="seg-opt" data-seg="status" data-val="mature">Pronto (maduro)</div>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Investimento inicial</label><input id="mInvestment" type="number" placeholder="0"></div>
+        <div class="field"><label>Dias estimados p/ ficar pronto</label><input id="mDays" type="number" placeholder="20"></div>
+      </div>
+      <div class="field"><label>Renda diária (quando maduro)</label><input id="mIncome" type="number" placeholder="0"></div>
+      ${state.mode!=='sujo' ? `<div class="field"><label>% da renda hiperfaturada (lavagem)</label><input id="mLaunder" type="number" placeholder="0" value="0"></div>` : ''}
+      <div class="hint">Investimento acelera o desenvolvimento: a cada R$ 10.000 investidos, 1 dia a menos de espera.</div>
+    `;
+  }
+
+  if(type === 'addProperty'){
+    title = state.mode==='sujo' ? 'Nova propriedade' : 'Nova propriedade';
+    body = `
+      <div class="field"><label>Nome</label><input id="mName" placeholder="Ex: Cobertura no centro"></div>
+      <div class="field-row">
+        <div class="field"><label>Renda diária</label><input id="mIncome" type="number" placeholder="0"></div>
+        <div class="field"><label>Manutenção diária</label><input id="mMaint" type="number" placeholder="0"></div>
+      </div>
+      <div class="field"><label>Nº de funcionários</label><input id="mEmployees" type="number" placeholder="0"></div>
+      ${state.mode!=='sujo' ? `<div class="field"><label>% da renda hiperfaturada (lavagem)</label><input id="mLaunder" type="number" placeholder="0" value="0"></div>` : ''}
+      ${state.mode==='sujo' ? `<div class="hint">Propriedades criadas aqui são consideradas ilegais e só aparecem na visão do submundo.</div>` : `<div class="hint">Propriedades legais aparecem nas duas visões — na sujo você controla o hiperfaturamento dela.</div>`}
+    `;
+  }
+
+  if(type === 'businessDetail'){
+    const b = state.businesses.find(x=>x.id===ui.modalData.id);
+    title = b.name;
+    if((!isMaster)){
+      if(b.status==='mature' && !b.illegal && state.mode==='sujo'){
+        body = `
+          <div class="field"><label>% da renda hiperfaturada (lavagem)</label><input id="mLaunder" type="number" value="${b.launderPercent}"></div>
+          <div class="hint">Calor atual: ${Math.round(b.heat)}% · acima de 20% risco de investigação, 50% congelamento, 80% invasão/fechamento.</div>
+        `;
+      } else {
+        body = `<div class="hint">${state.mode!=='sujo' ? 'Mude para o modo sujo pra ajustar o hiperfaturamento deste negócio.' : 'Nada pra ajustar aqui no momento.'}</div>`;
+      }
+    } else {
+      body = `
+      ${b.status==='mature' && !b.illegal && state.mode==='sujo' ? `
+      <div class="field"><label>% da renda hiperfaturada (lavagem)</label><input id="mLaunder" type="number" value="${b.launderPercent}"></div>
+      <div class="hint">Calor atual: ${Math.round(b.heat)}% · acima de 20% risco de investigação, 50% congelamento, 80% invasão/fechamento.</div>
+      ` : ''}
+      ${b.status==='mature' && !b.illegal && state.mode!=='sujo' ? `<div class="hint">Mude para o modo sujo pra ajustar o hiperfaturamento e ver o calor deste negócio.</div>` : ''}
+      <div class="field"><label>Renda diária</label><input id="mIncome" type="number" value="${b.dailyIncome}"></div>
+      <div class="modal-actions">
+        ${!b.illegal && b.status==='mature' && state.mode==='sujo' ? `<button class="btn btn-danger btn-sm" id="forceHeat">Forçar evento de risco</button>` : ''}
+        <button class="btn btn-danger btn-sm" id="deleteBusiness">Remover</button>
+      </div>
+    `;
+    }
+  }
+
+  if(type === 'propertyDetail'){
+    const p = state.properties.find(x=>x.id===ui.modalData.id);
+    title = p.name;
+    if((!isMaster)){
+      if(!p.illegal && state.mode==='sujo'){
+        body = `
+          <div class="field"><label>% da renda hiperfaturada (lavagem)</label><input id="mLaunder" type="number" value="${p.launderPercent||0}"></div>
+          <div class="hint">Calor atual: ${Math.round(p.heat||0)}% · acima de 20% risco de investigação, 50% congelamento, 80% invasão.</div>
+        `;
+      } else {
+        body = `<div class="hint">${state.mode!=='sujo' ? 'Mude para o modo sujo pra ajustar o hiperfaturamento desta propriedade.' : 'Nada pra ajustar aqui no momento.'}</div>`;
+      }
+    } else {
+      body = `
+      <div class="field-row">
+        <div class="field"><label>Renda diária</label><input id="mIncome" type="number" value="${p.dailyIncome}"></div>
+        <div class="field"><label>Manutenção diária</label><input id="mMaint" type="number" value="${p.maintenance}"></div>
+      </div>
+      <div class="field"><label>Nº de funcionários</label><input id="mEmployees" type="number" value="${p.employees}"></div>
+      ${!p.illegal && state.mode==='sujo' ? `
+      <div class="field"><label>% da renda hiperfaturada (lavagem)</label><input id="mLaunder" type="number" value="${p.launderPercent||0}"></div>
+      <div class="hint">Calor atual: ${Math.round(p.heat||0)}% · acima de 20% risco de investigação, 50% congelamento, 80% invasão.</div>
+      ` : ''}
+      ${!p.illegal && state.mode!=='sujo' ? `<div class="hint">Mude para o modo sujo pra ajustar o hiperfaturamento e ver o calor desta propriedade.</div>` : ''}
+      <div class="modal-actions">
+        <button class="btn btn-ghost btn-sm" id="forceBuff">Forçar evento positivo</button>
+        <button class="btn btn-ghost btn-sm" id="forceDebuff">Forçar evento negativo</button>
+      </div>
+      <div class="modal-actions">
+        ${!p.illegal && state.mode==='sujo' ? `<button class="btn btn-danger btn-sm" id="forcePropertyHeat">Forçar evento de risco</button>` : ''}
+        <button class="btn btn-danger btn-sm" id="deleteProperty">Remover propriedade</button>
+      </div>
+    `;
+    }
+  }
+
+  if(type === 'addEvent'){
+    title = 'Novo evento no calendário';
+    const bizOpts = state.businesses.map(b=>`<option value="${b.id}">${b.name}</option>`).join('');
+    const propOpts = state.properties.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+    const defaultDay = ui.modalData.presetDay || state.day;
+    body = `
+      <div class="field"><label>Título</label><input id="mTitle" placeholder="Ex: Fornecedor atrasa entrega"></div>
+      <div class="field"><label>Descrição (opcional)</label><textarea id="mDesc"></textarea></div>
+      <div class="field"><label>Dia do evento (nº absoluto)</label><input id="mDay" type="number" value="${defaultDay}" oninput="document.getElementById('mDayHint').textContent = formatDate(parseInt(this.value)||1)"></div>
+      <div class="hint" id="mDayHint">${formatDate(defaultDay)}</div>
+      ${isMaster ? `
+      <div class="field"><label>Tipo</label>
+        <div class="seg-group">
+          <div class="seg-opt active" data-seg="etype" data-val="visual">Apenas visual</div>
+          <div class="seg-opt" data-seg="etype" data-val="efeito">Com efeito</div>
+        </div>
+      </div>
+      <div id="effectFields" style="display:none;">
+        <div class="field"><label>Afeta</label>
+          <select id="mTargetType">
+            <option value="none">Nenhum alvo específico (saldo geral)</option>
+            <option value="business">Um negócio</option>
+            <option value="property">Uma propriedade</option>
+          </select>
+        </div>
+        <div class="field" id="targetIdField" style="display:none;"><label>Selecionar</label>
+          <select id="mTargetId">${bizOpts}${propOpts}</select>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Tipo de valor</label>
+            <select id="mValueType"><option value="fixed">Fixo (R$)</option><option value="percent">Percentual (%)</option></select>
+          </div>
+          <div class="field"><label>Valor (use negativo p/ gasto)</label><input id="mValue" type="number" placeholder="0"></div>
+        </div>
+        <div class="field"><label>Modo afetado</label>
+          <div class="seg-group">
+            <div class="seg-opt active" data-seg="emode" data-val="limpo">Limpo</div>
+            <div class="seg-opt" data-seg="emode" data-val="sujo">Sujo</div>
+          </div>
+        </div>
+        <div class="field"><label>Recorrência</label>
+          <div class="seg-group">
+            <div class="seg-opt active" data-seg="erecur" data-val="no">Único</div>
+            <div class="seg-opt" data-seg="erecur" data-val="yes">Recorrente</div>
+          </div>
+        </div>
+        <div class="field" id="recurEndField" style="display:none;"><label>Recorrente até o dia</label><input id="mRecurEnd" type="number"></div>
+      </div>
+      ` : `<div class="hint">Sua marcação será registrada como um evento visual (sem efeito automático no saldo).</div>`}
+    `;
+  }
+
+  return `
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <div class="modal-head">
+        <div class="modal-title">${title}</div>
+        <div class="icon-btn" id="closeModal">✕</div>
+      </div>
+      ${body}
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="cancelModal">Cancelar</button>
+        <button class="btn btn-accent" id="confirmModal">Salvar</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   HANDLERS
+   ============================================================ */
+function attachHandlers(){
+  const $ = sel => document.querySelector(sel);
+  const $$ = sel => document.querySelectorAll(sel);
+
+  const modeCatBtn = $('#modeCatBtn');
+  if(modeCatBtn) modeCatBtn.onclick = ()=> toggleMode(modeCatBtn);
+
+  const roleBadge = $('#roleBadge');
+  if(roleBadge) roleBadge.onclick = ()=>{
+    if(isMaster && confirm('Sair do modo mestre? Você vai continuar vendo o jogo, só que como jogador.')){
+      logoutMaster();
+    }
+  };
+
+  const btnBack = $('#btnBack');
+  if(btnBack) btnBack.onclick = ()=>{ if(!btnBack.disabled) goBackDay(); };
+
+  const btnForward = $('#btnForward');
+  if(btnForward) btnForward.onclick = ()=> advanceDay();
+
+  $$('.tab-btn').forEach(el=>{
+    el.onclick = ()=>{ state.tab = el.dataset.tab; saveState(); render(); };
+  });
+  $$('.subtab').forEach(el=>{
+    el.onclick = ()=>{ state.investSubTab = el.dataset.subtab; saveState(); render(); };
+  });
+
+  $$('[data-action]').forEach(el=>{
+    el.onclick = ()=>{
+      const a = el.dataset.action;
+      if(a==='editBalance') openModal('editBalance');
+      if(a==='addExpense') openModal('addExpense');
+      if(a==='addBusiness') openModal('addBusiness');
+      if(a==='addProperty') openModal('addProperty');
+      if(a==='addEvent') openModal('addEvent');
+    };
+  });
+
+  const calPrevMonth = $('#calPrevMonth');
+  if(calPrevMonth) calPrevMonth.onclick = ()=>{
+    ensureCalView();
+    ui.calMonth -= 1;
+    if(ui.calMonth < 0){ ui.calMonth = 11; ui.calYear -= 1; }
+    render();
+  };
+  const calNextMonth = $('#calNextMonth');
+  if(calNextMonth) calNextMonth.onclick = ()=>{
+    ensureCalView();
+    ui.calMonth += 1;
+    if(ui.calMonth > 11){ ui.calMonth = 0; ui.calYear += 1; }
+    render();
+  };
+  const calPrevYear = $('#calPrevYear');
+  if(calPrevYear) calPrevYear.onclick = ()=>{ ensureCalView(); ui.calYear -= 1; render(); };
+  const calNextYear = $('#calNextYear');
+  if(calNextYear) calNextYear.onclick = ()=>{ ensureCalView(); ui.calYear += 1; render(); };
+  const calGoToday = $('#calGoToday');
+  if(calGoToday) calGoToday.onclick = ()=>{
+    const d = dayToDate(state.day);
+    ui.calYear = d.year; ui.calMonth = d.month;
+    render();
+  };
+  $$('[data-goto-day]').forEach(el=>{
+    el.onclick = ()=>{
+      openModal('addEvent', { presetDay: parseInt(el.dataset.gotoDay) });
+    };
+  });
+
+
+  $$('[data-open-business]').forEach(el=>{
+    el.onclick = ()=> openModal('businessDetail', { id: el.dataset.openBusiness });
+  });
+  $$('[data-open-property]').forEach(el=>{
+    el.onclick = ()=> openModal('propertyDetail', { id: el.dataset.openProperty });
+  });
+
+  // modal generic
+  const overlay = $('#overlay');
+  if(overlay){
+    overlay.addEventListener('click', (e)=>{ if(e.target.id==='overlay') closeModal(); });
+    $('#closeModal') && ($('#closeModal').onclick = closeModal);
+    $('#cancelModal') && ($('#cancelModal').onclick = closeModal);
+
+    $$('.seg-opt').forEach(el=>{
+      el.onclick = ()=>{
+        const group = el.dataset.seg;
+        $$(`.seg-opt[data-seg="${group}"]`).forEach(x=>x.classList.remove('active'));
+        el.classList.add('active');
+        if(ui.modal==='addEvent') updateEventFieldsVisibility();
+      };
+    });
+
+    if(ui.modal==='addEvent'){
+      updateEventFieldsVisibility();
+      const targetTypeSel = $('#mTargetType');
+      if(targetTypeSel) targetTypeSel.onchange = updateEventFieldsVisibility;
+    }
+
+    $('#confirmModal') && ($('#confirmModal').onclick = handleConfirm);
+
+    $('#forceHeat') && ($('#forceHeat').onclick = ()=>{
+      const b = state.businesses.find(x=>x.id===ui.modalData.id);
+      const tier = b.heat>80?'invasao':b.heat>50?'congelamento':'investigacao';
+      triggerHeatEvent(b, tier, false);
+      saveState(); closeModal();
+    });
+    $('#deleteBusiness') && ($('#deleteBusiness').onclick = ()=>{
+      state.businesses = state.businesses.filter(x=>x.id!==ui.modalData.id);
+      saveState(); closeModal();
+    });
+    $('#forceBuff') && ($('#forceBuff').onclick = ()=>{
+      const p = state.properties.find(x=>x.id===ui.modalData.id);
+      triggerPropertyEvent(p, 'buff', false);
+      saveState(); closeModal();
+    });
+    $('#forceDebuff') && ($('#forceDebuff').onclick = ()=>{
+      const p = state.properties.find(x=>x.id===ui.modalData.id);
+      triggerPropertyEvent(p, 'debuff', false);
+      saveState(); closeModal();
+    });
+    $('#forcePropertyHeat') && ($('#forcePropertyHeat').onclick = ()=>{
+      const p = state.properties.find(x=>x.id===ui.modalData.id);
+      const tier = p.heat>80?'invasao':p.heat>50?'congelamento':'investigacao';
+      triggerPropertyHeatEvent(p, tier);
+      saveState(); closeModal();
+    });
+    $('#deleteProperty') && ($('#deleteProperty').onclick = ()=>{
+      state.properties = state.properties.filter(x=>x.id!==ui.modalData.id);
+      saveState(); closeModal();
+    });
+  }
+}
+
+function updateEventFieldsVisibility(){
+  const typeVal = document.querySelector('.seg-opt[data-seg="etype"].active')?.dataset.val;
+  const effectFields = document.getElementById('effectFields');
+  if(effectFields) effectFields.style.display = typeVal==='efeito' ? 'block' : 'none';
+
+  const targetType = document.getElementById('mTargetType')?.value;
+  const targetIdField = document.getElementById('targetIdField');
+  if(targetIdField) targetIdField.style.display = (targetType==='business'||targetType==='property') ? 'block' : 'none';
+
+  const recurVal = document.querySelector('.seg-opt[data-seg="erecur"].active')?.dataset.val;
+  const recurEndField = document.getElementById('recurEndField');
+  if(recurEndField) recurEndField.style.display = recurVal==='yes' ? 'block' : 'none';
+}
+
+function handleConfirm(){
+  handleConfirmAsync();
+}
+
+async function handleConfirmAsync(){
+  const $ = sel => document.querySelector(sel);
+  const type = ui.modal;
+
+  if(type === 'editBalance'){
+    const newBalance = parseFloat($('#mBalance').value) || 0;
+    if(state.mode === 'limpo'){
+      state.clean.balance = newBalance;
+      state.clean.credit = parseFloat($('#mCredit').value) || 0;
+    } else {
+      state.dirty.balance = newBalance;
+    }
+    saveState(); closeModal(); showToast('Saldo atualizado.'); return;
+  }
+
+  if(type === 'addExpense'){
+    const label = $('#mLabel').value.trim() || 'Gasto sem nome';
+    const amount = parseFloat($('#mAmount').value) || 0;
+    state.clean.fixedExpenses.push({ id: uid('exp'), label, amount });
+    saveState(); closeModal(); showToast('Gasto fixo adicionado.'); return;
+  }
+
+  if(type === 'addBusiness'){
+    const name = $('#mName').value.trim() || 'Negócio sem nome';
+    const status = document.querySelector('.seg-opt[data-seg="status"].active').dataset.val;
+    const investment = parseFloat($('#mInvestment').value) || 0;
+    const days = parseFloat($('#mDays').value) || 10;
+    const income = parseFloat($('#mIncome').value) || 0;
+    const launderEl = $('#mLaunder');
+    const launderPercent = launderEl ? (parseFloat(launderEl.value) || 0) : 0;
+    state.businesses.push({
+      id: uid('biz'), name, illegal: state.mode==='sujo',
+      status, investment, daysToComplete: days, daysElapsed: 0,
+      dailyIncome: income, launderPercent, heat: 0, frozenDaysLeft: 0
+    });
+    saveState(); closeModal(); showToast('Negócio criado.'); return;
+  }
+
+  if(type === 'addProperty'){
+    const name = $('#mName').value.trim() || 'Propriedade sem nome';
+    const income = parseFloat($('#mIncome').value) || 0;
+    const maint = parseFloat($('#mMaint').value) || 0;
+    const employees = parseInt($('#mEmployees').value) || 0;
+    const launderEl = $('#mLaunder');
+    const launderPercent = launderEl ? (parseFloat(launderEl.value) || 0) : 0;
+    state.properties.push({
+      id: uid('prop'), name, illegal: state.mode==='sujo',
+      dailyIncome: income, maintenance: maint, employees,
+      launderPercent, heat: 0, frozenDaysLeft: 0, activeEvent: null
+    });
+    saveState(); closeModal(); showToast('Propriedade criada.'); return;
+  }
+
+  if(type === 'businessDetail'){
+    const b = state.businesses.find(x=>x.id===ui.modalData.id);
+    const launderEl = $('#mLaunder');
+    if(isMaster){
+      if(launderEl) b.launderPercent = parseFloat(launderEl.value) || 0;
+      const incomeEl = $('#mIncome');
+      if(incomeEl) b.dailyIncome = parseFloat(incomeEl.value) || 0;
+      saveState(); closeModal(); showToast('Negócio atualizado.'); return;
+    } else {
+      if(!launderEl){ closeModal(); return; }
+      const percent = parseFloat(launderEl.value) || 0;
+      try{
+        const { error } = await sb.rpc('player_set_launder_percent', {
+          entity_type: 'business', entity_id: b.id, percent
+        });
+        if(error) throw error;
+        closeModal(); showToast('Hiperfaturamento ajustado.');
+      } catch(e){
+        showToast('Não consegui salvar. Tenta de novo.');
+      }
+      return;
+    }
+  }
+
+  if(type === 'propertyDetail'){
+    const p = state.properties.find(x=>x.id===ui.modalData.id);
+    const launderEl = $('#mLaunder');
+    if(isMaster){
+      const incomeEl = $('#mIncome');
+      const maintEl = $('#mMaint');
+      const empEl = $('#mEmployees');
+      if(incomeEl) p.dailyIncome = parseFloat(incomeEl.value) || 0;
+      if(maintEl) p.maintenance = parseFloat(maintEl.value) || 0;
+      if(empEl) p.employees = parseInt(empEl.value) || 0;
+      if(launderEl) p.launderPercent = parseFloat(launderEl.value) || 0;
+      saveState(); closeModal(); showToast('Propriedade atualizada.'); return;
+    } else {
+      if(!launderEl){ closeModal(); return; }
+      const percent = parseFloat(launderEl.value) || 0;
+      try{
+        const { error } = await sb.rpc('player_set_launder_percent', {
+          entity_type: 'property', entity_id: p.id, percent
+        });
+        if(error) throw error;
+        closeModal(); showToast('Hiperfaturamento ajustado.');
+      } catch(e){
+        showToast('Não consegui salvar. Tenta de novo.');
+      }
+      return;
+    }
+  }
+
+  if(type === 'addEvent'){
+    const title = $('#mTitle').value.trim() || 'Evento sem título';
+    const description = $('#mDesc').value.trim();
+    const day = parseInt($('#mDay').value) || state.day;
+
+    if(!isMaster){
+      try{
+        const { error } = await sb.rpc('player_add_calendar_event', {
+          event_day: day, title, description
+        });
+        if(error) throw error;
+        closeModal(); showToast('Evento adicionado ao calendário.');
+      } catch(e){
+        showToast('Não consegui adicionar o evento. Tenta de novo.');
+      }
+      return;
+    }
+
+    const etypeEl = document.querySelector('.seg-opt[data-seg="etype"].active');
+    const etype = etypeEl ? etypeEl.dataset.val : 'visual';
+    let targetType = null, targetId = null, valueType='fixed', value=0, mode='limpo', recurring=false, recurEndDay=null;
+    if(etype === 'efeito'){
+      const tt = $('#mTargetType').value;
+      targetType = tt==='none' ? null : tt;
+      targetId = targetType ? $('#mTargetId').value : null;
+      valueType = $('#mValueType').value;
+      value = parseFloat($('#mValue').value) || 0;
+      mode = document.querySelector('.seg-opt[data-seg="emode"].active').dataset.val;
+      recurring = document.querySelector('.seg-opt[data-seg="erecur"].active').dataset.val === 'yes';
+      recurEndDay = recurring ? (parseInt($('#mRecurEnd').value) || null) : null;
+    }
+    state.events.push({
+      id: uid('evt'), day, title, description, type: etype,
+      targetType, targetId, valueType, value, recurring, recurEndDay, mode, applied:false
+    });
+    saveState(); closeModal(); showToast('Evento adicionado ao calendário.'); return;
+  }
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+/* ============================================================
+   ZOOM (Ctrl + scroll) — só ativo no app desktop
+   ============================================================ */
+if(window.electronAPI){
+  let zoomLevel = 1;
+  window.addEventListener('wheel', (e)=>{
+    if(!e.ctrlKey) return;
+    e.preventDefault();
+    zoomLevel += (e.deltaY < 0 ? 0.07 : -0.07);
+    zoomLevel = Math.min(2.2, Math.max(0.6, zoomLevel));
+    document.body.style.zoom = zoomLevel;
+  }, { passive:false });
+}
+
+if(masterToken){
+  // já tem um token salvo de uma sessão de mestre anterior — tenta usar direto
+  isMaster = true;
+  loadState();
+} else {
+  render(); // mostra a tela de escolha mestre/jogador
+}
+</script>
+</body>
+</html>
