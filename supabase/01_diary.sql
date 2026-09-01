@@ -53,7 +53,11 @@ $$;
 grant execute on function player_upsert_diary_entry(date, jsonb) to anon, authenticated;
 
 -- ---------- Mestre escreve o CAT (exige token válido) ----------
-create or replace function master_upsert_diary_entry(p_token text, p_entry_date date, p_content jsonb)
+-- token é uuid na tabela master_sessions (não text!) — usar tipo
+-- diferente aqui quebra a comparação (uuid = text não tem operador).
+drop function if exists master_upsert_diary_entry(text, date, jsonb);
+
+create or replace function master_upsert_diary_entry(p_token uuid, p_entry_date date, p_content jsonb)
 returns void
 language plpgsql
 security definer
@@ -74,7 +78,7 @@ begin
 end;
 $$;
 
-grant execute on function master_upsert_diary_entry(text, date, jsonb) to anon, authenticated;
+grant execute on function master_upsert_diary_entry(uuid, date, jsonb) to anon, authenticated;
 
 -- ============================================================
 -- STORAGE — bucket público pras imagens coladas no editor

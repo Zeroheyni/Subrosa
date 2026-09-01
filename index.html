@@ -2141,7 +2141,7 @@ function renderDiaryColumn(author){
   }
 }
 
-async function persistDiaryEntry(author, entryDate, html){
+async function persistDiaryEntry(author, entryDate, html, attempt = 1){
   try{
     if(author === 'cat'){
       const { error } = await sb.rpc('master_upsert_diary_entry', { p_token: masterToken, p_entry_date: entryDate, p_content: { html } });
@@ -2159,9 +2159,11 @@ async function persistDiaryEntry(author, entryDate, html){
     console.error('Falha ao salvar diário', e);
     if(diaryDate === entryDate && mountedEditorAuthor === author){
       const hint = document.getElementById('diarySaveHint');
-      if(hint) hint.textContent = 'Falha ao salvar — tentando de novo…';
+      if(hint) hint.textContent = attempt < 3 ? 'Falha ao salvar — tentando de novo…' : 'Não consegui salvar. O texto continua aqui — tenta digitar algo de novo pra reenviar.';
     }
-    setTimeout(()=> persistDiaryEntry(author, entryDate, html), 3000);
+    if(attempt < 3){
+      setTimeout(()=> persistDiaryEntry(author, entryDate, html, attempt+1), 3000 * attempt);
+    }
   }
 }
 
