@@ -496,11 +496,95 @@
     to{opacity:1;transform:translateY(0);filter:blur(0);}
   }
   .tabbar, .subtabs{position:relative;}
+
+  /* ---------- DIÁRIO (botão escondido + visão CAT/DOG) ---------- */
+  .diary-trigger{
+    position:fixed;bottom:14px;right:14px;z-index:60;
+    width:9px;height:9px;border-radius:50%;
+    background:var(--text-faint);opacity:0.25;border:none;padding:0;cursor:pointer;
+    transition:opacity .3s ease, transform .3s ease, background .3s ease, box-shadow .3s ease;
+    display:none;
+  }
+  .diary-trigger:hover{opacity:1;background:var(--accent-1);box-shadow:0 0 10px var(--accent-glow);transform:scale(1.6);}
+
+  .diary-overlay{
+    position:fixed;inset:0;z-index:300;
+    background:rgba(4,5,9,0.94);backdrop-filter:blur(6px);
+    display:none;flex-direction:column;
+    padding:18px 16px 30px;overflow-y:auto;
+    animation:fadeIn .25s ease;
+  }
+  .diary-head{display:flex;align-items:center;justify-content:space-between;max-width:1100px;margin:0 auto 16px;width:100%;}
+  .diary-title{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:18px;display:flex;align-items:center;gap:9px;}
+  .diary-title::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--accent-1);box-shadow:0 0 8px var(--accent-glow);}
+
+  .diary-datenav{display:flex;align-items:center;justify-content:center;gap:16px;max-width:1100px;margin:0 auto;width:100%;}
+  .diary-date-label{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--accent-1);text-transform:capitalize;letter-spacing:.3px;min-width:220px;text-align:center;}
+  .diary-today-link{text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent-1);cursor:pointer;margin:8px auto 0;}
+  .diary-history-link{text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent-1);cursor:pointer;margin:10px auto 0;max-width:1100px;}
+
+  .diary-history{max-width:1100px;margin:18px auto 0;width:100%;}
+  .diary-history-row{
+    display:flex;flex-direction:column;gap:7px;padding:13px 14px;border-bottom:1px solid var(--border-soft);cursor:pointer;
+    transition:background .15s ease;
+  }
+  .diary-history-row:hover{background:var(--bg-panel-2);}
+  .diary-history-row:last-child{border-bottom:none;}
+  .diary-history-date{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent-1);text-transform:capitalize;}
+  .diary-history-previews{display:flex;flex-direction:column;gap:5px;}
+  .diary-history-preview{font-size:12px;color:var(--text-dim);display:flex;align-items:flex-start;gap:7px;line-height:1.4;}
+  .diary-history-preview em{color:var(--text-faint);font-style:normal;}
+  .diary-history-preview .diary-col-tag{font-size:9px;padding:2px 6px;flex-shrink:0;margin-top:1px;}
+
+  .diary-cols{
+    display:grid;grid-template-columns:1fr 1fr;gap:16px;
+    max-width:1100px;margin:20px auto 0;width:100%;flex:1;
+  }
+  @media (max-width:760px){
+    .diary-cols{grid-template-columns:1fr;}
+  }
+  .diary-col{
+    background:linear-gradient(160deg, var(--bg-panel-2), var(--bg-panel));
+    border:1px solid var(--border);border-radius:16px;padding:14px;
+    display:flex;flex-direction:column;min-height:320px;position:relative;overflow:hidden;
+  }
+  .diary-col::before{
+    content:'';position:absolute;top:0;left:0;right:0;height:1px;
+    background:linear-gradient(90deg, transparent, var(--accent-1), transparent);opacity:0.5;
+  }
+  .diary-col-head{display:flex;align-items:baseline;gap:8px;margin-bottom:10px;}
+  .diary-col-tag{
+    font-family:'JetBrains Mono',monospace;font-weight:700;font-size:11px;letter-spacing:1.5px;
+    padding:4px 9px;border-radius:7px;border:1px solid var(--border);
+  }
+  .diary-col-tag.cat{color:var(--accent-1);border-color:var(--accent-1);background:color-mix(in srgb, var(--accent-1) 12%, transparent);}
+  .diary-col-tag.dog{color:var(--warn);border-color:var(--warn);background:rgba(255,176,32,0.1);}
+  .diary-col-sub{font-size:11px;color:var(--text-faint);}
+  .diary-col-body{flex:1;display:flex;flex-direction:column;}
+
+  .diary-empty{color:var(--text-faint);font-size:12.5px;text-align:center;padding:34px 10px;border:1px dashed var(--border);border-radius:12px;margin:auto;}
+  .diary-readonly img, .diary-editor img{max-width:100%;border-radius:8px;margin:6px 0;display:block;}
+  .diary-save-hint{font-size:10px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;margin-top:6px;text-align:right;}
+
+  .diary-editor{background:var(--bg-panel-3);border-radius:10px;flex:1;display:flex;flex-direction:column;}
+  .diary-editor .ql-toolbar.ql-snow{background:var(--bg-panel-3);border:1px solid var(--border);border-bottom:none;border-radius:10px 10px 0 0;}
+  .diary-editor .ql-container.ql-snow{background:var(--bg-panel-3);border:1px solid var(--border);border-radius:0 0 10px 10px;flex:1;font-family:'Inter',sans-serif;font-size:13.5px;}
+  .diary-editor .ql-editor{color:var(--text);min-height:220px;}
+  .diary-editor .ql-editor.ql-blank::before{color:var(--text-faint);font-style:normal;}
+  .diary-editor .ql-snow .ql-stroke{stroke:var(--text-dim);}
+  .diary-editor .ql-snow .ql-fill{fill:var(--text-dim);}
+  .diary-editor .ql-snow .ql-picker{color:var(--text-dim);}
+  .diary-editor .ql-toolbar.ql-snow .ql-formats button:hover .ql-stroke,
+  .diary-editor .ql-toolbar.ql-snow .ql-formats button.ql-active .ql-stroke{stroke:var(--accent-1);}
+  .diary-editor .ql-toolbar.ql-snow .ql-formats button.ql-active{color:var(--accent-1);}
+  .diary-readonly.ql-editor{color:var(--text);}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <div id="modeFlash"></div>
+<button id="diaryTrigger" class="diary-trigger"></button>
+<div id="diaryOverlay" class="diary-overlay"></div>
 
 <script>
 /* ============================================================
@@ -828,11 +912,13 @@ function closeModal(){
    ============================================================ */
 function render(){
   const root = document.getElementById('root');
+  const diaryTrigger = document.getElementById('diaryTrigger');
 
   if(state === null){
     document.body.className = '';
     root.innerHTML = renderLoginScreen();
     attachLoginHandlers();
+    if(diaryTrigger) diaryTrigger.style.display = 'none';
     return;
   }
 
@@ -845,6 +931,7 @@ function render(){
     ${ui.toast ? `<div class="toast">${ui.toast}</div>` : ''}
   `;
   attachHandlers();
+  if(diaryTrigger) diaryTrigger.style.display = diaryOpen ? 'none' : 'block';
 }
 
 let loginMode = 'choose'; // 'choose' | 'pin'
@@ -1795,6 +1882,312 @@ async function handleConfirmAsync(){
 }
 
 /* ============================================================
+   DIÁRIO (CAT = mestre, DOG = jogador)
+   Vive fora do #root (num overlay próprio) de propósito: o
+   render() principal nunca toca essa div, então updates em
+   tempo real do game_state não derrubam o editor Quill no meio
+   de uma digitação.
+   ============================================================ */
+let diaryOpen = false;
+let diaryHistoryOpen = false;
+let diaryDate = todayISODate();
+let diaryEntries = {};
+let diaryChannel = null;
+let activeQuill = null;
+let mountedEditorAuthor = null;
+let mountedEditorDate = null;
+let diarySaveTimer = null;
+let quillAssetsLoaded = false;
+
+function todayISODate(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function shiftISODate(iso, delta){
+  const d = new Date(iso+'T00:00:00');
+  d.setDate(d.getDate()+delta);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function formatRealDate(iso){
+  const d = new Date(iso+'T00:00:00');
+  const s = d.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+  return s.charAt(0).toUpperCase()+s.slice(1);
+}
+function myDiaryAuthor(){ return isMaster ? 'cat' : 'dog'; }
+
+function loadQuillAssets(){
+  return new Promise((resolve, reject)=>{
+    if(quillAssetsLoaded){ resolve(); return; }
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css';
+    document.head.appendChild(link);
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js';
+    script.onload = ()=>{ quillAssetsLoaded = true; resolve(); };
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
+async function openDiary(){
+  diaryOpen = true;
+  diaryHistoryOpen = false;
+  document.getElementById('diaryTrigger').style.display = 'none';
+  const overlay = document.getElementById('diaryOverlay');
+  overlay.style.display = 'flex';
+  overlay.innerHTML = `<div class="diary-empty" style="margin-top:60px;">Carregando diário…</div>`;
+  try{
+    await loadQuillAssets();
+    await loadDiaryEntries();
+    overlay.innerHTML = renderDiaryShell();
+    attachDiaryShellHandlers();
+    renderDiaryPanels();
+    subscribeDiaryRealtime();
+  } catch(e){
+    console.error('Falha ao abrir o diário', e);
+    overlay.innerHTML = `<div class="diary-empty" style="margin-top:60px;">Não consegui carregar o diário agora. Tenta de novo em instantes.</div>`;
+  }
+}
+
+function closeDiary(){
+  diaryOpen = false;
+  activeQuill = null;
+  mountedEditorAuthor = null;
+  mountedEditorDate = null;
+  const overlay = document.getElementById('diaryOverlay');
+  overlay.style.display = 'none';
+  overlay.innerHTML = '';
+  const trigger = document.getElementById('diaryTrigger');
+  if(trigger && state !== null) trigger.style.display = 'block';
+  if(diaryChannel){ sb.removeChannel(diaryChannel); diaryChannel = null; }
+}
+
+async function loadDiaryEntries(){
+  const { data, error } = await sb.from('diary_entries').select('entry_date, author, content, updated_at');
+  if(error) throw error;
+  diaryEntries = {};
+  (data||[]).forEach(row=>{ diaryEntries[row.entry_date+'|'+row.author] = row; });
+}
+
+function subscribeDiaryRealtime(){
+  if(diaryChannel) return;
+  diaryChannel = sb.channel('diary_entries_changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'diary_entries' }, (payload)=>{
+      const row = payload.new && payload.new.entry_date ? payload.new : payload.old;
+      if(!row) return;
+      const key = row.entry_date+'|'+row.author;
+      if(payload.eventType === 'DELETE') delete diaryEntries[key];
+      else diaryEntries[key] = payload.new;
+      if(!diaryOpen) return;
+      // não re-renderiza a coluna que EU estou editando agora (evita perder o cursor/conteúdo em digitação)
+      if(row.author === myDiaryAuthor() && row.entry_date === diaryDate) return;
+      renderDiaryPanels();
+    })
+    .subscribe();
+}
+
+function renderDiaryShell(){
+  return `
+    <div class="diary-head">
+      <div class="diary-title">Diário</div>
+      <div class="icon-btn" id="diaryClose">✕</div>
+    </div>
+    <div id="diaryDayView">
+      <div class="diary-datenav">
+        <button class="icon-btn" id="diaryPrevDay" title="Dia anterior">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"/></svg>
+        </button>
+        <div class="diary-date-label" id="diaryDateLabel"></div>
+        <button class="icon-btn" id="diaryNextDay" title="Próximo dia">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg>
+        </button>
+      </div>
+      <div class="diary-today-link" id="diaryToday" style="display:none;">↺ voltar para hoje</div>
+      <div class="diary-history-link" id="diaryHistoryToggle">📜 ver dias anteriores</div>
+      <div class="diary-cols" id="diaryCols">
+        <div class="diary-col" id="dogCol">
+          <div class="diary-col-head"><span class="diary-col-tag dog">DOG</span><span class="diary-col-sub">Jogador</span></div>
+          <div class="diary-col-body" id="dogColBody"></div>
+        </div>
+        <div class="diary-col" id="catCol">
+          <div class="diary-col-head"><span class="diary-col-tag cat">CAT</span><span class="diary-col-sub">Mestre</span></div>
+          <div class="diary-col-body" id="catColBody"></div>
+        </div>
+      </div>
+    </div>
+    <div class="diary-history" id="diaryHistory" style="display:none;"></div>
+  `;
+}
+
+function attachDiaryShellHandlers(){
+  document.getElementById('diaryClose').onclick = closeDiary;
+  document.getElementById('diaryPrevDay').onclick = ()=> goDiaryDay(-1);
+  document.getElementById('diaryNextDay').onclick = ()=> goDiaryDay(1);
+  document.getElementById('diaryToday').onclick = ()=>{ diaryDate = todayISODate(); renderDiaryPanels(); };
+  document.getElementById('diaryHistoryToggle').onclick = toggleDiaryHistory;
+}
+
+function toggleDiaryHistory(){
+  diaryHistoryOpen = !diaryHistoryOpen;
+  document.getElementById('diaryDayView').style.display = diaryHistoryOpen ? 'none' : 'block';
+  document.getElementById('diaryHistory').style.display = diaryHistoryOpen ? 'block' : 'none';
+  document.getElementById('diaryHistoryToggle').textContent = diaryHistoryOpen ? '↺ voltar pro dia' : '📜 ver dias anteriores';
+  if(diaryHistoryOpen){
+    document.getElementById('diaryHistoryToggle').style.display = 'none'; // o link some junto (fica só o de dentro do dia)
+    renderDiaryHistoryList();
+  } else {
+    document.getElementById('diaryHistoryToggle').style.display = 'block';
+  }
+}
+
+function stripHtmlPreview(html){
+  if(!html) return '';
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  const text = (tmp.textContent || '').trim().replace(/\s+/g,' ');
+  if(!text) return '';
+  return text.length > 100 ? text.slice(0,100)+'…' : text;
+}
+
+function formatRealDateShort(iso){
+  const d = new Date(iso+'T00:00:00');
+  const s = d.toLocaleDateString('pt-BR', { weekday:'short', day:'2-digit', month:'short', year:'numeric' });
+  return s.charAt(0).toUpperCase()+s.slice(1);
+}
+
+function renderDiaryHistoryList(){
+  const el = document.getElementById('diaryHistory');
+  const byDate = {};
+  Object.values(diaryEntries).forEach(row=>{
+    if(!byDate[row.entry_date]) byDate[row.entry_date] = {};
+    byDate[row.entry_date][row.author] = row;
+  });
+  const dates = Object.keys(byDate).sort((a,b)=> b.localeCompare(a));
+  if(!dates.length){
+    el.innerHTML = `<div class="diary-history-link" id="diaryHistoryBack">↺ voltar pro dia</div><div class="diary-empty" style="margin-top:14px;">Nenhum dia escrito ainda.</div>`;
+    document.getElementById('diaryHistoryBack').onclick = toggleDiaryHistory;
+    return;
+  }
+  const rows = dates.map(d=>{
+    const dogEntry = byDate[d].dog;
+    const catEntry = byDate[d].cat;
+    const dogPreview = dogEntry ? stripHtmlPreview(dogEntry.content && dogEntry.content.html) : '';
+    const catPreview = catEntry ? stripHtmlPreview(catEntry.content && catEntry.content.html) : '';
+    return `
+      <div class="diary-history-row" data-goto-diary-date="${d}">
+        <div class="diary-history-date">${formatRealDateShort(d)}</div>
+        <div class="diary-history-previews">
+          <div class="diary-history-preview"><span class="diary-col-tag dog">DOG</span>${dogPreview ? dogPreview : '<em>nada escrito</em>'}</div>
+          <div class="diary-history-preview"><span class="diary-col-tag cat">CAT</span>${catPreview ? catPreview : '<em>nada escrito</em>'}</div>
+        </div>
+      </div>`;
+  }).join('');
+  el.innerHTML = `<div class="diary-history-link" id="diaryHistoryBack">↺ voltar pro dia</div><div class="card" style="margin-top:14px;padding:4px 14px;">${rows}</div>`;
+  document.getElementById('diaryHistoryBack').onclick = toggleDiaryHistory;
+  el.querySelectorAll('[data-goto-diary-date]').forEach(row=>{
+    row.onclick = ()=>{
+      diaryDate = row.dataset.gotoDiaryDate;
+      toggleDiaryHistory();
+      renderDiaryPanels();
+    };
+  });
+}
+
+function goDiaryDay(delta){
+  diaryDate = shiftISODate(diaryDate, delta);
+  renderDiaryPanels();
+}
+
+function renderDiaryPanels(){
+  document.getElementById('diaryDateLabel').textContent = formatRealDate(diaryDate);
+  document.getElementById('diaryToday').style.display = (diaryDate === todayISODate()) ? 'none' : 'block';
+  renderDiaryColumn('dog');
+  renderDiaryColumn('cat');
+}
+
+function renderDiaryColumn(author){
+  const mine = author === myDiaryAuthor();
+  const bodyEl = document.getElementById(author+'ColBody');
+  const entry = diaryEntries[diaryDate+'|'+author];
+
+  if(mine){
+    if(mountedEditorAuthor === author && mountedEditorDate === diaryDate) return; // editor já montado pra essa data, não mexe
+    mountedEditorAuthor = author; mountedEditorDate = diaryDate;
+    bodyEl.innerHTML = `<div class="diary-editor" id="${author}Editor"></div><div class="diary-save-hint" id="diarySaveHint">Sincronizado</div>`;
+    const editorEl = document.getElementById(author+'Editor');
+    const q = new Quill(editorEl, {
+      theme: 'snow',
+      modules: { toolbar: [['bold','italic','underline'],[{list:'ordered'},{list:'bullet'}],['image'],['clean']] },
+      placeholder: 'Escreva o que aconteceu hoje…'
+    });
+    if(entry && entry.content && entry.content.html){
+      q.clipboard.dangerouslyPasteHTML(entry.content.html);
+    }
+    q.getModule('toolbar').addHandler('image', ()=> handleDiaryImageUpload(q));
+    q.on('text-change', (delta, old, source)=>{
+      if(source !== 'user') return;
+      const hint = document.getElementById('diarySaveHint');
+      if(hint) hint.textContent = 'Salvando…';
+      clearTimeout(diarySaveTimer);
+      const targetDate = diaryDate, targetAuthor = author;
+      diarySaveTimer = setTimeout(()=> persistDiaryEntry(targetAuthor, targetDate, q.root.innerHTML), 700);
+    });
+    activeQuill = q;
+  } else {
+    bodyEl.innerHTML = (entry && entry.content && entry.content.html)
+      ? `<div class="ql-editor diary-readonly">${entry.content.html}</div>`
+      : `<div class="diary-empty">Nada escrito ${author==='cat'?'pelo mestre':'pelo jogador'} neste dia.</div>`;
+  }
+}
+
+async function persistDiaryEntry(author, entryDate, html){
+  try{
+    if(author === 'cat'){
+      const { error } = await sb.rpc('master_upsert_diary_entry', { p_token: masterToken, p_entry_date: entryDate, p_content: { html } });
+      if(error) throw error;
+    } else {
+      const { error } = await sb.rpc('player_upsert_diary_entry', { p_entry_date: entryDate, p_content: { html } });
+      if(error) throw error;
+    }
+    diaryEntries[entryDate+'|'+author] = { entry_date: entryDate, author, content: { html }, updated_at: new Date().toISOString() };
+    if(diaryDate === entryDate && mountedEditorAuthor === author){
+      const hint = document.getElementById('diarySaveHint');
+      if(hint) hint.textContent = 'Sincronizado';
+    }
+  } catch(e){
+    console.error('Falha ao salvar diário', e);
+    if(diaryDate === entryDate && mountedEditorAuthor === author){
+      const hint = document.getElementById('diarySaveHint');
+      if(hint) hint.textContent = 'Falha ao salvar — tentando de novo…';
+    }
+    setTimeout(()=> persistDiaryEntry(author, entryDate, html), 3000);
+  }
+}
+
+async function handleDiaryImageUpload(quillInstance){
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/png,image/jpeg,image/gif,image/webp';
+  input.onchange = async ()=>{
+    const file = input.files[0];
+    if(!file) return;
+    const path = `${Date.now()}_${Math.random().toString(36).slice(2,8)}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+    try{
+      const { error: upErr } = await sb.storage.from('diary-images').upload(path, file);
+      if(upErr) throw upErr;
+      const { data } = sb.storage.from('diary-images').getPublicUrl(path);
+      const range = quillInstance.getSelection(true);
+      quillInstance.insertEmbed(range ? range.index : 0, 'image', data.publicUrl, 'user');
+    } catch(e){
+      console.error('Falha ao enviar imagem', e);
+      showToast('Não consegui enviar a imagem. Tenta de novo.');
+    }
+  };
+  input.click();
+}
+
+/* ============================================================
    INIT
    ============================================================ */
 /* ============================================================
@@ -1810,6 +2203,8 @@ if(window.electronAPI){
     document.body.style.zoom = zoomLevel;
   }, { passive:false });
 }
+
+document.getElementById('diaryTrigger').onclick = openDiary;
 
 if(masterToken){
   // já tem um token salvo de uma sessão de mestre anterior — tenta usar direto
