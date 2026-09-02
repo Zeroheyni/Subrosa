@@ -758,13 +758,14 @@ async function flushSave(attempt = 1){
   }
 }
 
+const CURRENCY_SYMBOL = 'Ⓢ';
 function fmt(n){
   const v = Math.round(n);
-  return (v<0?'-':'') + 'R$ ' + Math.abs(v).toLocaleString('pt-BR');
+  return (v<0?'-':'') + CURRENCY_SYMBOL + ' ' + Math.abs(v).toLocaleString('pt-BR');
 }
 function fmtSigned(n){
   const v = Math.round(n);
-  return (v>=0?'+':'-') + 'R$ ' + Math.abs(v).toLocaleString('pt-BR');
+  return (v>=0?'+':'-') + CURRENCY_SYMBOL + ' ' + Math.abs(v).toLocaleString('pt-BR');
 }
 
 /* ============================================================
@@ -1434,7 +1435,7 @@ function renderModal(){
       </div>
       <div class="field"><label>Renda diária (quando maduro)</label><input id="mIncome" type="number" placeholder="0"></div>
       ${state.mode!=='sujo' ? `<div class="field"><label>% da renda hiperfaturada (lavagem)</label><input id="mLaunder" type="number" placeholder="0" value="0"></div>` : ''}
-      <div class="hint">Investimento acelera o desenvolvimento: a cada R$ 10.000 investidos, 1 dia a menos de espera.</div>
+      <div class="hint">Investimento acelera o desenvolvimento: a cada Ⓢ 10.000 investidos, 1 dia a menos de espera.</div>
     `;
   }
 
@@ -1546,7 +1547,7 @@ function renderModal(){
         </div>
         <div class="field-row">
           <div class="field"><label>Tipo de valor</label>
-            <select id="mValueType"><option value="fixed">Fixo (R$)</option><option value="percent">Percentual (%)</option></select>
+            <select id="mValueType"><option value="fixed">Fixo (Ⓢ)</option><option value="percent">Percentual (%)</option></select>
           </div>
           <div class="field"><label>Valor (use negativo p/ gasto)</label><input id="mValue" type="number" placeholder="0"></div>
         </div>
