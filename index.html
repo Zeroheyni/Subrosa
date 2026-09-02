@@ -1933,6 +1933,7 @@ function loadQuillAssets(){
 async function openDiary(){
   diaryOpen = true;
   diaryHistoryOpen = false;
+  diaryDate = todayISODate(); // sempre abre no dia de hoje, nunca fica preso em onde a pessoa navegou da última vez
   document.getElementById('diaryTrigger').style.display = 'none';
   const overlay = document.getElementById('diaryOverlay');
   overlay.style.display = 'flex';
