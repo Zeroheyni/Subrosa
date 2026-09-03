@@ -2170,6 +2170,16 @@ async function persistDiaryEntry(author, entryDate, html, attempt = 1){
   }
 }
 
+function flushDiarySaveNow(){
+  if(!diaryOpen || !activeQuill || !mountedEditorAuthor) return;
+  clearTimeout(diarySaveTimer);
+  persistDiaryEntry(mountedEditorAuthor, mountedEditorDate, activeQuill.root.innerHTML);
+}
+// troca de aba / app em segundo plano / navegador descartando a aba (comum no celular)
+// não pode esperar o debounce normal — salva na hora que a aba perde o foco.
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) flushDiarySaveNow(); });
+window.addEventListener('pagehide', flushDiarySaveNow);
+
 async function handleDiaryImageUpload(quillInstance){
   const input = document.createElement('input');
   input.type = 'file';
