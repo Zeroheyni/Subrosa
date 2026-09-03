@@ -2160,11 +2160,16 @@ async function persistDiaryEntry(author, entryDate, html, attempt = 1){
     }
   } catch(e){
     console.error('Falha ao salvar diário', e);
+    const sessionExpired = author === 'cat' && /mestre inv.lida ou expirada/i.test(e?.message || '');
     if(diaryDate === entryDate && mountedEditorAuthor === author){
       const hint = document.getElementById('diarySaveHint');
-      if(hint) hint.textContent = attempt < 3 ? 'Falha ao salvar — tentando de novo…' : 'Não consegui salvar. O texto continua aqui — tenta digitar algo de novo pra reenviar.';
+      if(hint){
+        hint.textContent = sessionExpired
+          ? 'Sua sessão de mestre expirou — saia (etiqueta MESTRE no topo) e entre de novo com o PIN pra continuar salvando.'
+          : (attempt < 3 ? 'Falha ao salvar — tentando de novo…' : 'Não consegui salvar. O texto continua aqui — tenta digitar algo de novo pra reenviar.');
+      }
     }
-    if(attempt < 3){
+    if(!sessionExpired && attempt < 3){
       setTimeout(()=> persistDiaryEntry(author, entryDate, html, attempt+1), 3000 * attempt);
     }
   }
