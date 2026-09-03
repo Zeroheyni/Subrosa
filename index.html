@@ -624,6 +624,14 @@ function enterAsPlayer(){
   render();
 }
 
+function isMasterSessionExpiredError(msg){
+  return /mestre inv.lida ou expirada/i.test(msg || '');
+}
+function handleExpiredMasterSession(extra){
+  logoutMaster();
+  showToast('Sua sessão de mestre expirou (90 dias) — você foi desconectado. Entre de novo com o PIN.' + (extra ? ' ' + extra : ''));
+}
+
 /* ============================================================
    CALENDÁRIO FICTÍCIO
    ============================================================ */
@@ -740,6 +748,11 @@ async function flushSave(attempt = 1){
     saveErrorShown = false;
   } catch(e){
     console.error('Falha ao salvar', e);
+    if(isMasterSessionExpiredError(e?.message)){
+      isSaving = false;
+      handleExpiredMasterSession();
+      return;
+    }
     if(attempt < 3){
       setTimeout(()=> { isSaving = false; flushSave(attempt+1); }, 800 * attempt);
       return;
@@ -795,7 +808,11 @@ async function callDayFunction(fnName){
     // o estado atualizado chega pelo Realtime; não precisa fazer nada aqui
   } catch(e){
     console.error(`Falha ao chamar ${fnName}`, e);
-    showToast('Não consegui avançar/voltar o dia agora. Tenta de novo em alguns segundos.');
+    if(isMasterSessionExpiredError(e?.message)){
+      handleExpiredMasterSession();
+    } else {
+      showToast('Não consegui avançar/voltar o dia agora. Tenta de novo em alguns segundos.');
+    }
   } finally {
     dayActionInFlight = false;
     render();
@@ -2160,16 +2177,16 @@ async function persistDiaryEntry(author, entryDate, html, attempt = 1){
     }
   } catch(e){
     console.error('Falha ao salvar diário', e);
-    const sessionExpired = author === 'cat' && /mestre inv.lida ou expirada/i.test(e?.message || '');
+    if(author === 'cat' && isMasterSessionExpiredError(e?.message)){
+      closeDiary();
+      handleExpiredMasterSession('O que você tava escrevendo no diário não foi salvo.');
+      return;
+    }
     if(diaryDate === entryDate && mountedEditorAuthor === author){
       const hint = document.getElementById('diarySaveHint');
-      if(hint){
-        hint.textContent = sessionExpired
-          ? 'Sua sessão de mestre expirou — saia (etiqueta MESTRE no topo) e entre de novo com o PIN pra continuar salvando.'
-          : (attempt < 3 ? 'Falha ao salvar — tentando de novo…' : 'Não consegui salvar. O texto continua aqui — tenta digitar algo de novo pra reenviar.');
-      }
+      if(hint) hint.textContent = attempt < 3 ? 'Falha ao salvar — tentando de novo…' : 'Não consegui salvar. O texto continua aqui — tenta digitar algo de novo pra reenviar.';
     }
-    if(!sessionExpired && attempt < 3){
+    if(attempt < 3){
       setTimeout(()=> persistDiaryEntry(author, entryDate, html, attempt+1), 3000 * attempt);
     }
   }
