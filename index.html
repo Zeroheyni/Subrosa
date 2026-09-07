@@ -2063,9 +2063,18 @@ function toggleDiaryHistory(){
 
 function stripHtmlPreview(html){
   if(!html) return '';
-  const tmp = document.createElement('div');
-  tmp.innerHTML = html;
-  const text = (tmp.textContent || '').trim().replace(/\s+/g,' ');
+  // regex em vez de jogar o HTML numa <div> pra ler o textContent: fazer isso
+  // com <img> no meio cria elementos de imagem de verdade e faz o navegador
+  // tentar baixar cada imagem de novo, só pra pegar um texto de prévia — fica
+  // cada vez mais lento conforme o diário acumula dias com imagem.
+  const text = html
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\s+/g, ' ')
+    .trim();
   if(!text) return '';
   return text.length > 100 ? text.slice(0,100)+'…' : text;
 }
@@ -2132,28 +2141,47 @@ function renderDiaryColumn(author){
   const entry = diaryEntries[diaryDate+'|'+author];
 
   if(mine){
-    if(mountedEditorAuthor === author && mountedEditorDate === diaryDate) return; // editor já montado pra essa data, não mexe
-    mountedEditorAuthor = author; mountedEditorDate = diaryDate;
-    bodyEl.innerHTML = `<div class="diary-editor" id="${author}Editor"></div><div class="diary-save-hint" id="diarySaveHint">Sincronizado</div>`;
-    const editorEl = document.getElementById(author+'Editor');
-    const q = new Quill(editorEl, {
-      theme: 'snow',
-      modules: { toolbar: [['bold','italic','underline'],[{list:'ordered'},{list:'bullet'}],['image'],['clean']] },
-      placeholder: 'Escreva o que aconteceu hoje…'
-    });
-    if(entry && entry.content && entry.content.html){
-      q.clipboard.dangerouslyPasteHTML(entry.content.html);
+    if(mountedEditorDate === diaryDate) return; // editor já montado pra essa data, não mexe
+    if(!activeQuill){
+      // Quill não tem um destroy() de verdade — em vez de recriar o editor do
+      // zero a cada troca de dia (o que ia acumulando listeners internos dele
+      // e deixando a sessão cada vez mais lenta), cria uma vez só e reaproveita.
+      bodyEl.innerHTML = `<div class="diary-editor" id="${author}Editor"></div><div class="diary-save-hint" id="diarySaveHint">Sincronizado</div>`;
+      const editorEl = document.getElementById(author+'Editor');
+      activeQuill = new Quill(editorEl, {
+        theme: 'snow',
+        modules: { toolbar: [['bold','italic','underline'],[{list:'ordered'},{list:'bullet'}],['image'],['clean']] },
+        placeholder: 'Escreva o que aconteceu hoje…'
+      });
+      activeQuill.getModule('toolbar').addHandler('image', ()=> handleDiaryImageUpload(activeQuill));
+      activeQuill.on('text-change', (delta, old, source)=>{
+        if(source !== 'user') return;
+        const hint = document.getElementById('diarySaveHint');
+        const targetDate = diaryDate, targetAuthor = author;
+        // imagem colada (ctrl+v) vem como base64 embutido no HTML — se salvar
+        // assim, a entrada do dia fica gigante e o diário todo fica lento pra
+        // carregar. Sobe pro Storage igual ao botão de inserir imagem antes
+        // de salvar.
+        if(activeQuill.root.innerHTML.includes('data:image')){
+          if(hint) hint.textContent = 'Enviando imagem…';
+          clearTimeout(diarySaveTimer);
+          migratePastedImages(activeQuill).then(()=>{
+            persistDiaryEntry(targetAuthor, targetDate, activeQuill.root.innerHTML);
+          });
+          return;
+        }
+        if(hint) hint.textContent = 'Salvando…';
+        clearTimeout(diarySaveTimer);
+        diarySaveTimer = setTimeout(()=> persistDiaryEntry(targetAuthor, targetDate, activeQuill.root.innerHTML), 700);
+      });
+      mountedEditorAuthor = author;
     }
-    q.getModule('toolbar').addHandler('image', ()=> handleDiaryImageUpload(q));
-    q.on('text-change', (delta, old, source)=>{
-      if(source !== 'user') return;
-      const hint = document.getElementById('diarySaveHint');
-      if(hint) hint.textContent = 'Salvando…';
-      clearTimeout(diarySaveTimer);
-      const targetDate = diaryDate, targetAuthor = author;
-      diarySaveTimer = setTimeout(()=> persistDiaryEntry(targetAuthor, targetDate, q.root.innerHTML), 700);
-    });
-    activeQuill = q;
+    if(entry && entry.content && entry.content.html){
+      activeQuill.clipboard.dangerouslyPasteHTML(entry.content.html);
+    } else {
+      activeQuill.setText('');
+    }
+    mountedEditorDate = diaryDate;
   } else {
     bodyEl.innerHTML = (entry && entry.content && entry.content.html)
       ? `<div class="ql-editor diary-readonly">${entry.content.html}</div>`
@@ -2222,6 +2250,27 @@ async function handleDiaryImageUpload(quillInstance){
     }
   };
   input.click();
+}
+
+async function migratePastedImages(quillInstance){
+  const html = quillInstance.root.innerHTML;
+  const matches = html.match(/data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+/g);
+  if(!matches) return;
+  for(const dataUrl of matches){
+    try{
+      const blob = await (await fetch(dataUrl)).blob();
+      const ext = (dataUrl.match(/data:image\/([a-zA-Z0-9.+-]+);/) || [,'png'])[1].replace('jpeg','jpg');
+      const path = `${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
+      const { error } = await sb.storage.from('diary-images').upload(path, blob, { contentType: blob.type || ('image/'+ext) });
+      if(error) throw error;
+      const { data } = sb.storage.from('diary-images').getPublicUrl(path);
+      quillInstance.root.querySelectorAll('img[src^="data:image"]').forEach(img=>{
+        if(img.getAttribute('src') === dataUrl) img.setAttribute('src', data.publicUrl);
+      });
+    } catch(e){
+      console.error('Falha ao migrar imagem colada', e);
+    }
+  }
 }
 
 /* ============================================================
