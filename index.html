@@ -97,7 +97,7 @@
     background:linear-gradient(180deg, var(--bg) 70%, transparent);
     backdrop-filter:blur(6px);
   }
-  .brand-row{display:flex;align-items:center;justify-content:space-between;}
+  .brand-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;row-gap:8px;}
   .brand{
     font-family:'Chakra Petch',sans-serif;
     font-weight:700;
@@ -113,7 +113,7 @@
   }
   @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
 
-  .brand-actions{display:flex;align-items:center;gap:8px;}
+  .brand-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
 
   .role-badge{
     font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:1.5px;
@@ -632,6 +632,53 @@
   .modifier-row{display:flex;gap:8px;margin-bottom:8px;align-items:center;}
   .modifier-row select, .modifier-row input{margin:0;}
   .modifier-row input{max-width:80px;}
+
+  /* ---------- INVENTÁRIO ---------- */
+  .inv-wrap{max-width:1100px;margin:0 auto;width:100%;}
+  .inv-section-head{display:flex;align-items:center;justify-content:space-between;margin:16px 0 8px;}
+  .inv-container-card{margin-bottom:12px;}
+  .inv-items{display:flex;flex-direction:column;gap:2px;margin-top:4px;}
+  .inv-item-row{
+    display:flex;align-items:center;gap:10px;padding:8px 4px;border-radius:10px;cursor:pointer;
+    transition:background .15s ease;
+  }
+  .inv-item-row:hover{background:var(--bg-panel-3);}
+  .inv-item-photo{
+    width:38px;height:38px;border-radius:9px;background:var(--bg-panel-3);background-size:cover;background-position:center;
+    display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;
+  }
+  .inv-item-name{font-size:13px;font-weight:600;}
+  .inv-item-sub{font-size:10.5px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;}
+  .inv-photo-preview{
+    width:60px;height:60px;flex-shrink:0;border-radius:10px;background:var(--bg-panel-3);background-size:cover;background-position:center;
+    display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--text-faint);
+  }
+
+  /* ---------- CODEX ---------- */
+  .codex-wrap{max-width:1100px;margin:0 auto;width:100%;}
+  .codex-breadcrumb{display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent-1);cursor:pointer;margin-bottom:14px;}
+  .codex-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;}
+  .codex-folder-card{
+    background:linear-gradient(160deg, var(--bg-panel-2), var(--bg-panel));border:1px solid var(--border);border-radius:16px;
+    padding:14px;cursor:pointer;transition:border-color .2s ease;display:flex;flex-direction:column;gap:8px;
+    aspect-ratio:1;justify-content:flex-end;position:relative;overflow:hidden;
+  }
+  .codex-folder-card:hover{border-color:var(--accent-1);}
+  .codex-folder-card .icon{font-size:30px;opacity:.7;}
+  .codex-folder-card .name{font-weight:700;font-size:13px;}
+  .codex-folder-card .count{font-size:10px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;}
+  .codex-entry-card{
+    border-radius:14px;overflow:hidden;cursor:pointer;position:relative;aspect-ratio:1;
+    background:var(--bg-panel-2);border:1px solid var(--border);transition:border-color .2s ease;
+  }
+  .codex-entry-card:hover{border-color:var(--accent-1);}
+  .codex-entry-card .photo{width:100%;height:100%;background-size:cover;background-position:center;}
+  .codex-entry-card .no-photo{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--text-faint);}
+  .codex-entry-card .title{
+    position:absolute;left:0;right:0;bottom:0;padding:16px 8px 8px;font-size:11px;font-weight:600;color:#fff;
+    background:linear-gradient(0deg, rgba(0,0,0,0.75), transparent);
+  }
+  .codex-detail-photo{width:100%;border-radius:14px;margin-bottom:12px;max-height:260px;object-fit:cover;background:var(--bg-panel-3);display:block;}
 </style>
 </head>
 <body>
@@ -639,6 +686,8 @@
 <div id="modeFlash"></div>
 <button id="diaryTrigger" class="diary-trigger"></button>
 <div id="diaryOverlay" class="diary-overlay"></div>
+<div id="inventoryOverlay" class="diary-overlay"></div>
+<div id="codexOverlay" class="diary-overlay"></div>
 
 <script>
 /* ============================================================
@@ -1094,6 +1143,19 @@ function renderTopbar(){
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 2 L21 7 L21 17 L12 22 L3 17 L3 7 Z"/>
             <circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="inventoryBtn" title="Inventário">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 8 L4 20 L20 20 L20 8 Z"/>
+            <path d="M8 8 L8 5 C8 3.9 8.9 3 10 3 L14 3 C15.1 3 16 3.9 16 5 L16 8"/>
+            <path d="M4 12 L20 12"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="codexBtn" title="Codex">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 4 L19 4 L19 20 L5 20 C4.4 20 4 19.6 4 19 L4 5 C4 4.4 4.4 4 5 4 Z"/>
+            <path d="M8 4 L8 20"/>
           </svg>
         </button>
         <button class="mode-cat-btn" id="modeCatBtn" title="Alternar limpo / sujo">
@@ -1967,6 +2029,12 @@ function attachHandlers(){
   const diceRollerBtn = $('#diceRollerBtn');
   if(diceRollerBtn) diceRollerBtn.onclick = openDiceRoller;
 
+  const inventoryBtn = $('#inventoryBtn');
+  if(inventoryBtn) inventoryBtn.onclick = ()=> inventoryOpen ? closeInventory() : openInventory();
+
+  const codexBtn = $('#codexBtn');
+  if(codexBtn) codexBtn.onclick = ()=> codexOpen ? closeCodex() : openCodex();
+
   const roleBadge = $('#roleBadge');
   if(roleBadge) roleBadge.onclick = ()=>{
     if(isMaster && confirm('Sair do modo mestre? Você vai continuar vendo o jogo, só que como jogador.')){
@@ -2811,6 +2879,692 @@ function renderDiceRollerModal(){
         </div>`).join('') : '<div class="empty-state">Nenhuma rolagem ainda.</div>'}
     </div>
   `;
+}
+
+/* ============================================================
+   Helper compartilhado: aplica um evento de realtime (insert/
+   update/delete) num array local em cache, in-place.
+   ============================================================ */
+function applyRealtimeUpsert(arr, payload){
+  if(payload.eventType === 'DELETE'){
+    const idx = arr.findIndex(x=>x.id===payload.old.id);
+    if(idx>=0) arr.splice(idx,1);
+  } else {
+    const idx = arr.findIndex(x=>x.id===payload.new.id);
+    if(idx>=0) arr[idx] = payload.new; else arr.push(payload.new);
+  }
+}
+
+function fmtWeight(n){
+  const v = Math.round(n*100)/100;
+  return (v % 1 === 0 ? v.toFixed(0) : v.toFixed(2)) + 'kg';
+}
+
+/* ============================================================
+   INVENTÁRIO — mestre e jogador podem criar/remover livremente.
+   Vive fora do #root, mesmo motivo do diário: o formulário de
+   criar/editar não pode ser atropelado por um render() alheio.
+   ============================================================ */
+let inventoryOpen = false;
+let inventoryContainers = [];
+let inventoryItems = [];
+let invChannel = null;
+let invView = 'list'; // 'list' | 'containerForm' | 'itemForm'
+let invEditingId = null;
+let invFormContainerId = null;
+let invFormPhoto = undefined;
+let invFormDraft = null; // {name, description, weight, quantity, containerId} — preserva o formulário quando um upload de foto força um re-render
+
+function syncItemFormDraft(){
+  const $ = sel => document.querySelector(sel);
+  if(!$('#mItemName')) return;
+  invFormDraft = {
+    name: $('#mItemName').value,
+    description: $('#mItemDescription').value,
+    weight: $('#mItemWeight').value,
+    quantity: $('#mItemQuantity').value,
+    containerId: $('#mItemContainer').value
+  };
+}
+
+async function openInventory(){
+  inventoryOpen = true;
+  invView = 'list';
+  invEditingId = null;
+  const overlay = document.getElementById('inventoryOverlay');
+  overlay.style.display = 'flex';
+  overlay.innerHTML = `<div class="diary-empty" style="margin-top:60px;">Carregando inventário…</div>`;
+  render();
+  try{
+    await loadInventoryData();
+    renderInventoryOverlay();
+    subscribeInventoryRealtime();
+  } catch(e){
+    console.error('Falha ao abrir inventário', e);
+    overlay.innerHTML = `<div class="diary-empty" style="margin-top:60px;">Não consegui carregar o inventário agora.</div>`;
+  }
+}
+
+function closeInventory(){
+  inventoryOpen = false;
+  invView = 'list';
+  invEditingId = null;
+  const overlay = document.getElementById('inventoryOverlay');
+  overlay.style.display = 'none';
+  overlay.innerHTML = '';
+  render();
+}
+
+async function loadInventoryData(){
+  const [{ data: containers, error: e1 }, { data: items, error: e2 }] = await Promise.all([
+    sb.from('inventory_containers').select('*').order('created_at'),
+    sb.from('inventory_items').select('*').order('created_at')
+  ]);
+  if(e1) throw e1;
+  if(e2) throw e2;
+  inventoryContainers = containers || [];
+  inventoryItems = items || [];
+}
+
+function subscribeInventoryRealtime(){
+  if(invChannel) return;
+  invChannel = sb.channel('inventory_changes')
+    .on('postgres_changes', { event:'*', schema:'public', table:'inventory_containers' }, (payload)=>{
+      applyRealtimeUpsert(inventoryContainers, payload);
+      if(inventoryOpen && invView==='list') renderInventoryOverlay();
+    })
+    .on('postgres_changes', { event:'*', schema:'public', table:'inventory_items' }, (payload)=>{
+      applyRealtimeUpsert(inventoryItems, payload);
+      if(inventoryOpen && invView==='list') renderInventoryOverlay();
+    })
+    .subscribe();
+}
+
+function renderInventoryOverlay(){
+  const overlay = document.getElementById('inventoryOverlay');
+  overlay.innerHTML = `
+    <div class="diary-head">
+      <div class="diary-title">Inventário</div>
+      <div class="icon-btn" id="invClose">✕</div>
+    </div>
+    <div class="inv-wrap">${renderInventoryBody()}</div>
+  `;
+  attachInventoryHandlers();
+}
+
+function renderInventoryBody(){
+  if(invView === 'containerForm') return renderContainerForm();
+  if(invView === 'itemForm') return renderItemForm();
+  return renderInventoryList();
+}
+
+function renderInventoryList(){
+  const itemsByContainer = {};
+  const unassigned = [];
+  inventoryItems.forEach(it=>{
+    if(it.container_id){ (itemsByContainer[it.container_id] = itemsByContainer[it.container_id]||[]).push(it); }
+    else unassigned.push(it);
+  });
+  return `
+    <div class="inv-section-head">
+      <div class="section-title" style="margin:0;">Lugares</div>
+      <span class="add-link" id="invAddContainer">+ novo lugar</span>
+    </div>
+    ${inventoryContainers.length ? inventoryContainers.map(c=>renderContainerCard(c, itemsByContainer[c.id]||[])).join('') : '<div class="empty-state">Nenhum lugar criado ainda.</div>'}
+
+    <div class="inv-section-head">
+      <div class="section-title" style="margin:0;">Sem lugar definido</div>
+      <span class="add-link" data-add-item-to="">+ item</span>
+    </div>
+    ${unassigned.length ? `<div class="inv-items">${unassigned.map(it=>renderItemRowHtml(it)).join('')}</div>` : '<div class="empty-state">Nada solto por aqui.</div>'}
+  `;
+}
+
+function renderContainerCard(c, items){
+  const used = items.reduce((s,it)=>s + (it.weight*it.quantity), 0);
+  const pct = c.capacity ? Math.min(100, Math.round((used/c.capacity)*100)) : 0;
+  return `
+    <div class="card inv-container-card">
+      <div class="card-label-row">
+        <div class="entity-name" data-edit-container="${c.id}" style="cursor:pointer;">${c.name}</div>
+        <span class="add-link" data-add-item-to="${c.id}">+ item</span>
+      </div>
+      ${c.capacity ? `
+        <div class="progress-track"><div class="progress-fill" style="width:${pct}%;${pct>=100?'background:var(--danger);':''}"></div></div>
+        <div class="hint">${fmtWeight(used)} / ${fmtWeight(c.capacity)} de carga</div>
+      ` : `<div class="hint">Sem limite de carga · ${fmtWeight(used)} carregado</div>`}
+      <div class="inv-items">
+        ${items.length ? items.map(it=>renderItemRowHtml(it)).join('') : '<div class="empty-state" style="padding:14px;">Vazio.</div>'}
+      </div>
+    </div>
+  `;
+}
+
+function renderItemRowHtml(it){
+  return `
+    <div class="inv-item-row" data-open-item="${it.id}">
+      <div class="inv-item-photo" style="${it.image_url?`background-image:url('${it.image_url}')`:''}">${it.image_url?'':'📦'}</div>
+      <div style="flex:1;">
+        <div class="inv-item-name">${it.name}${it.quantity>1?` ×${it.quantity}`:''}</div>
+        ${it.weight ? `<div class="inv-item-sub">${fmtWeight(it.weight)} cada</div>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function renderContainerForm(){
+  const existing = invEditingId ? inventoryContainers.find(c=>c.id===invEditingId) : null;
+  return `
+    <div class="diary-history-link" id="invBackToList">↺ voltar</div>
+    <div class="card" style="margin-top:14px;">
+      <div class="field"><label>Nome do lugar</label><input id="mContainerName" value="${existing?existing.name:''}" placeholder="Ex: Mochila, Cofre em casa"></div>
+      <div class="field"><label>Limite de carga (opcional)</label><input id="mContainerCapacity" type="number" step="0.01" value="${existing&&existing.capacity!=null?existing.capacity:''}" placeholder="Deixe em branco pra sem limite"></div>
+      <div class="modal-actions">
+        ${existing ? `<button class="btn btn-danger btn-sm" id="deleteContainerBtn">Remover</button>` : ''}
+        <button class="btn btn-accent" id="saveContainerBtn">Salvar</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderItemForm(){
+  const existing = invEditingId ? inventoryItems.find(i=>i.id===invEditingId) : null;
+  const photo = invFormPhoto !== undefined ? invFormPhoto : (existing ? existing.image_url : null);
+  const d = invFormDraft;
+  const name = d ? d.name : (existing ? existing.name : '');
+  const description = d ? d.description : (existing ? existing.description||'' : '');
+  const weight = d ? d.weight : (existing ? existing.weight : 0);
+  const quantity = d ? d.quantity : (existing ? existing.quantity : 1);
+  const containerId = d ? d.containerId : (existing ? existing.container_id : invFormContainerId);
+  return `
+    <div class="diary-history-link" id="invBackToList">↺ voltar</div>
+    <div class="card" style="margin-top:14px;">
+      <div class="field"><label>Foto (opcional)</label>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="inv-photo-preview" style="${photo?`background-image:url('${photo}')`:''}">${photo?'':'📦'}</div>
+          <button class="btn btn-ghost btn-sm" type="button" id="itemPhotoBtn">${photo?'Trocar foto':'Enviar foto'}</button>
+        </div>
+      </div>
+      <div class="field"><label>Nome</label><input id="mItemName" value="${name}" placeholder="Ex: Kit médico"></div>
+      <div class="field"><label>Descrição (opcional)</label><textarea id="mItemDescription">${description}</textarea></div>
+      <div class="field-row">
+        <div class="field"><label>Peso (cada)</label><input id="mItemWeight" type="number" step="0.01" value="${weight}"></div>
+        <div class="field"><label>Quantidade</label><input id="mItemQuantity" type="number" value="${quantity}"></div>
+      </div>
+      <div class="field"><label>Lugar</label>
+        <select id="mItemContainer">
+          <option value="">Sem lugar definido</option>
+          ${inventoryContainers.map(c=>`<option value="${c.id}" ${c.id===containerId?'selected':''}>${c.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="modal-actions">
+        ${existing ? `<button class="btn btn-danger btn-sm" id="deleteItemBtn">Remover</button>` : ''}
+        <button class="btn btn-accent" id="saveItemBtn">Salvar</button>
+      </div>
+    </div>
+  `;
+}
+
+function attachInventoryHandlers(){
+  const $ = sel => document.querySelector(sel);
+  const $$ = sel => document.querySelectorAll(sel);
+
+  $('#invClose').onclick = closeInventory;
+
+  if(invView === 'list'){
+    $('#invAddContainer').onclick = ()=>{ invView='containerForm'; invEditingId=null; renderInventoryOverlay(); };
+    $$('[data-edit-container]').forEach(el=>{
+      el.onclick = ()=>{ invView='containerForm'; invEditingId=el.dataset.editContainer; renderInventoryOverlay(); };
+    });
+    $$('[data-add-item-to]').forEach(el=>{
+      el.onclick = ()=>{ invView='itemForm'; invEditingId=null; invFormContainerId=el.dataset.addItemTo||null; invFormPhoto=undefined; invFormDraft=null; renderInventoryOverlay(); };
+    });
+    $$('[data-open-item]').forEach(el=>{
+      el.onclick = ()=>{ invView='itemForm'; invEditingId=el.dataset.openItem; invFormPhoto=undefined; invFormDraft=null; renderInventoryOverlay(); };
+    });
+  }
+
+  if(invView === 'containerForm'){
+    $('#invBackToList').onclick = ()=>{ invView='list'; renderInventoryOverlay(); };
+    $('#saveContainerBtn').onclick = saveContainer;
+    const del = $('#deleteContainerBtn');
+    if(del) del.onclick = ()=> deleteContainer(invEditingId);
+  }
+
+  if(invView === 'itemForm'){
+    $('#invBackToList').onclick = ()=>{ invView='list'; renderInventoryOverlay(); };
+    $('#itemPhotoBtn').onclick = handleInventoryItemPhotoUpload;
+    $('#saveItemBtn').onclick = saveItem;
+    const del = $('#deleteItemBtn');
+    if(del) del.onclick = ()=> deleteItem(invEditingId);
+  }
+}
+
+async function saveContainer(){
+  const name = document.getElementById('mContainerName').value.trim();
+  if(!name){ showToast('Digita um nome pro lugar.'); return; }
+  const capacityRaw = document.getElementById('mContainerCapacity').value;
+  const capacity = capacityRaw === '' ? null : parseFloat(capacityRaw);
+  try{
+    if(invEditingId){
+      const { error } = await sb.rpc('inventory_update_container', { p_id: invEditingId, p_name: name, p_capacity: capacity });
+      if(error) throw error;
+    } else {
+      const { error } = await sb.rpc('inventory_create_container', { p_name: name, p_capacity: capacity, p_created_by: myRole() });
+      if(error) throw error;
+    }
+    await loadInventoryData();
+    invView = 'list';
+    renderInventoryOverlay();
+    showToast('Lugar salvo.');
+  } catch(e){
+    console.error('Falha ao salvar lugar', e);
+    showToast('Não consegui salvar. Tenta de novo.');
+  }
+}
+
+async function deleteContainer(id){
+  try{
+    const { error } = await sb.rpc('inventory_delete_container', { p_id: id });
+    if(error) throw error;
+    await loadInventoryData();
+    invView = 'list';
+    renderInventoryOverlay();
+    showToast('Lugar removido.');
+  } catch(e){
+    console.error('Falha ao remover lugar', e);
+    showToast('Não consegui remover. Tenta de novo.');
+  }
+}
+
+async function saveItem(){
+  const name = document.getElementById('mItemName').value.trim();
+  if(!name){ showToast('Digita um nome pro item.'); return; }
+  const description = document.getElementById('mItemDescription').value.trim();
+  const weight = parseFloat(document.getElementById('mItemWeight').value) || 0;
+  const quantity = parseInt(document.getElementById('mItemQuantity').value) || 1;
+  const containerId = document.getElementById('mItemContainer').value || null;
+  const existing = invEditingId ? inventoryItems.find(i=>i.id===invEditingId) : null;
+  const imageUrl = invFormPhoto !== undefined ? invFormPhoto : (existing ? existing.image_url : null);
+  try{
+    if(invEditingId){
+      const { error } = await sb.rpc('inventory_update_item', { p_id: invEditingId, p_name: name, p_description: description, p_image_url: imageUrl, p_weight: weight, p_quantity: quantity, p_container_id: containerId });
+      if(error) throw error;
+    } else {
+      const { error } = await sb.rpc('inventory_create_item', { p_name: name, p_description: description, p_image_url: imageUrl, p_weight: weight, p_quantity: quantity, p_container_id: containerId, p_created_by: myRole() });
+      if(error) throw error;
+    }
+    await loadInventoryData();
+    invView = 'list';
+    renderInventoryOverlay();
+    showToast('Item salvo.');
+  } catch(e){
+    console.error('Falha ao salvar item', e);
+    showToast((e.message && e.message.includes('capacidade')) ? e.message : 'Não consegui salvar. Tenta de novo.');
+  }
+}
+
+async function deleteItem(id){
+  try{
+    const { error } = await sb.rpc('inventory_delete_item', { p_id: id });
+    if(error) throw error;
+    await loadInventoryData();
+    invView = 'list';
+    renderInventoryOverlay();
+    showToast('Item removido.');
+  } catch(e){
+    console.error('Falha ao remover item', e);
+    showToast('Não consegui remover. Tenta de novo.');
+  }
+}
+
+function handleInventoryItemPhotoUpload(){
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/png,image/jpeg,image/gif,image/webp';
+  input.onchange = async ()=>{
+    const file = input.files[0];
+    if(!file) return;
+    const path = `${Date.now()}_${Math.random().toString(36).slice(2,8)}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+    try{
+      const { error } = await sb.storage.from('game-images').upload(path, file);
+      if(error) throw error;
+      const { data } = sb.storage.from('game-images').getPublicUrl(path);
+      syncItemFormDraft();
+      invFormPhoto = data.publicUrl;
+      renderInventoryOverlay();
+    } catch(e){
+      console.error('Falha ao enviar foto', e);
+      showToast('Não consegui enviar a foto. Tenta de novo.');
+    }
+  };
+  input.click();
+}
+
+/* ============================================================
+   CODEX — espaço do jogador pra organizar memórias/personagens/
+   anotações em pastas. Mestre só lê (mesmo padrão "soft" do
+   diário: a UI dele simplesmente não mostra controle de editar).
+   ============================================================ */
+let codexOpen = false;
+let codexFolders = [];
+let codexEntries = [];
+let codexChannel = null;
+let codexView = 'grid'; // 'grid' | 'folderForm' | 'entryForm'
+let codexCurrentFolder = null;
+let codexEditingId = null;
+let codexFormPhoto = undefined;
+let codexFormDraft = null; // {title, description} — preserva o formulário quando um upload de foto força um re-render
+
+function syncEntryFormDraft(){
+  const $ = sel => document.querySelector(sel);
+  if(!$('#mEntryTitle')) return;
+  codexFormDraft = { title: $('#mEntryTitle').value, description: $('#mEntryDescription').value };
+}
+
+async function openCodex(){
+  codexOpen = true;
+  codexView = 'grid';
+  codexCurrentFolder = null;
+  codexEditingId = null;
+  const overlay = document.getElementById('codexOverlay');
+  overlay.style.display = 'flex';
+  overlay.innerHTML = `<div class="diary-empty" style="margin-top:60px;">Carregando codex…</div>`;
+  render();
+  try{
+    await loadCodexData();
+    renderCodexOverlay();
+    subscribeCodexRealtime();
+  } catch(e){
+    console.error('Falha ao abrir o codex', e);
+    overlay.innerHTML = `<div class="diary-empty" style="margin-top:60px;">Não consegui carregar o codex agora.</div>`;
+  }
+}
+
+function closeCodex(){
+  codexOpen = false;
+  codexView = 'grid';
+  codexEditingId = null;
+  const overlay = document.getElementById('codexOverlay');
+  overlay.style.display = 'none';
+  overlay.innerHTML = '';
+  render();
+}
+
+async function loadCodexData(){
+  const [{ data: folders, error: e1 }, { data: entries, error: e2 }] = await Promise.all([
+    sb.from('codex_folders').select('*').order('created_at'),
+    sb.from('codex_entries').select('*').order('created_at', { ascending: false })
+  ]);
+  if(e1) throw e1;
+  if(e2) throw e2;
+  codexFolders = folders || [];
+  codexEntries = entries || [];
+}
+
+function subscribeCodexRealtime(){
+  if(codexChannel) return;
+  codexChannel = sb.channel('codex_changes')
+    .on('postgres_changes', { event:'*', schema:'public', table:'codex_folders' }, (payload)=>{
+      applyRealtimeUpsert(codexFolders, payload);
+      if(codexOpen && codexView==='grid') renderCodexOverlay();
+    })
+    .on('postgres_changes', { event:'*', schema:'public', table:'codex_entries' }, (payload)=>{
+      applyRealtimeUpsert(codexEntries, payload);
+      if(codexOpen && codexView==='grid') renderCodexOverlay();
+    })
+    .subscribe();
+}
+
+function renderCodexOverlay(){
+  const overlay = document.getElementById('codexOverlay');
+  overlay.innerHTML = `
+    <div class="diary-head">
+      <div class="diary-title">Codex</div>
+      <div class="icon-btn" id="codexClose">✕</div>
+    </div>
+    <div class="codex-wrap">${renderCodexBody()}</div>
+  `;
+  attachCodexHandlers();
+}
+
+function renderCodexBody(){
+  if(codexView === 'folderForm') return renderFolderForm();
+  if(codexView === 'entryForm') return renderEntryForm();
+  return renderCodexGrid();
+}
+
+function renderCodexGrid(){
+  const folder = codexCurrentFolder ? codexFolders.find(f=>f.id===codexCurrentFolder) : null;
+  const subfolders = codexFolders.filter(f=> (f.parent_folder_id||null) === (codexCurrentFolder||null));
+  const entriesHere = codexEntries.filter(e=> (e.folder_id||null) === (codexCurrentFolder||null));
+  const canEdit = !isMaster;
+  return `
+    ${codexCurrentFolder ? `<div class="codex-breadcrumb" id="codexBack">← voltar</div>` : ''}
+    <div class="inv-section-head">
+      <div class="section-title" style="margin:0;">${folder ? folder.name : 'Codex'} ${folder && canEdit ? `<span class="edit-link" id="codexEditFolder" style="margin-left:8px;">✎ editar</span>` : ''}</div>
+      ${canEdit ? `
+        <div style="display:flex;gap:12px;">
+          <span class="add-link" id="codexAddFolder">+ pasta</span>
+          <span class="add-link" id="codexAddEntry">+ lembrança</span>
+        </div>
+      ` : ''}
+    </div>
+    <div class="codex-grid">
+      ${subfolders.map(f=>renderFolderTile(f)).join('')}
+      ${entriesHere.map(e=>renderEntryTile(e)).join('')}
+    </div>
+    ${(!subfolders.length && !entriesHere.length) ? '<div class="empty-state">Nada por aqui ainda.</div>' : ''}
+  `;
+}
+
+function renderFolderTile(f){
+  const count = codexFolders.filter(x=>x.parent_folder_id===f.id).length + codexEntries.filter(e=>e.folder_id===f.id).length;
+  return `
+    <div class="codex-folder-card" data-open-folder="${f.id}">
+      <div class="icon">📁</div>
+      <div class="name">${f.name}</div>
+      <div class="count">${count} ${count===1?'item':'itens'}</div>
+    </div>
+  `;
+}
+
+function renderEntryTile(e){
+  return `
+    <div class="codex-entry-card" data-open-entry="${e.id}">
+      ${e.image_url ? `<div class="photo" style="background-image:url('${e.image_url}')"></div>` : `<div class="no-photo">🗂️</div>`}
+      <div class="title">${e.title}</div>
+    </div>
+  `;
+}
+
+function renderFolderForm(){
+  const existing = codexEditingId ? codexFolders.find(f=>f.id===codexEditingId) : null;
+  return `
+    <div class="diary-history-link" id="codexBackToGrid">↺ voltar</div>
+    <div class="card" style="margin-top:14px;">
+      <div class="field"><label>Nome da pasta</label><input id="mFolderName" value="${existing?existing.name:''}" placeholder="Ex: Aliados"></div>
+      <div class="modal-actions">
+        ${existing ? `<button class="btn btn-danger btn-sm" id="deleteFolderBtn">Remover</button>` : ''}
+        <button class="btn btn-accent" id="saveFolderBtn">Salvar</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderEntryForm(){
+  const existing = codexEditingId ? codexEntries.find(e=>e.id===codexEditingId) : null;
+  if(isMaster){
+    return `
+      <div class="diary-history-link" id="codexBackToGrid">↺ voltar</div>
+      ${existing.image_url ? `<img class="codex-detail-photo" src="${existing.image_url}">` : ''}
+      <div class="modal-title">${existing.title}</div>
+      ${existing.description ? `<div class="hint" style="margin-top:8px;">${existing.description}</div>` : ''}
+    `;
+  }
+  const photo = codexFormPhoto !== undefined ? codexFormPhoto : (existing ? existing.image_url : null);
+  const d = codexFormDraft;
+  const title = d ? d.title : (existing ? existing.title : '');
+  const description = d ? d.description : (existing ? existing.description||'' : '');
+  return `
+    <div class="diary-history-link" id="codexBackToGrid">↺ voltar</div>
+    <div class="card" style="margin-top:14px;">
+      <div class="field"><label>Foto (opcional)</label>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="inv-photo-preview" style="${photo?`background-image:url('${photo}')`:''}">${photo?'':'🗂️'}</div>
+          <button class="btn btn-ghost btn-sm" type="button" id="entryPhotoBtn">${photo?'Trocar foto':'Enviar foto'}</button>
+        </div>
+      </div>
+      <div class="field"><label>Título</label><input id="mEntryTitle" value="${title}" placeholder="Ex: Zeroh, o contato do porto"></div>
+      <div class="field"><label>Descrição</label><textarea id="mEntryDescription">${description}</textarea></div>
+      <div class="modal-actions">
+        ${existing ? `<button class="btn btn-danger btn-sm" id="deleteEntryBtn">Remover</button>` : ''}
+        <button class="btn btn-accent" id="saveEntryBtn">Salvar</button>
+      </div>
+    </div>
+  `;
+}
+
+function attachCodexHandlers(){
+  const $ = sel => document.querySelector(sel);
+  const $$ = sel => document.querySelectorAll(sel);
+
+  $('#codexClose').onclick = closeCodex;
+
+  if(codexView === 'grid'){
+    const back = $('#codexBack');
+    if(back) back.onclick = ()=>{
+      const folder = codexFolders.find(f=>f.id===codexCurrentFolder);
+      codexCurrentFolder = folder ? (folder.parent_folder_id || null) : null;
+      renderCodexOverlay();
+    };
+    const addFolder = $('#codexAddFolder');
+    if(addFolder) addFolder.onclick = ()=>{ codexView='folderForm'; codexEditingId=null; renderCodexOverlay(); };
+    const addEntry = $('#codexAddEntry');
+    if(addEntry) addEntry.onclick = ()=>{ codexView='entryForm'; codexEditingId=null; codexFormPhoto=undefined; codexFormDraft=null; renderCodexOverlay(); };
+    const editFolder = $('#codexEditFolder');
+    if(editFolder) editFolder.onclick = ()=>{ codexView='folderForm'; codexEditingId=codexCurrentFolder; renderCodexOverlay(); };
+    $$('[data-open-folder]').forEach(el=>{
+      el.onclick = ()=>{ codexCurrentFolder = el.dataset.openFolder; renderCodexOverlay(); };
+    });
+    $$('[data-open-entry]').forEach(el=>{
+      el.onclick = ()=>{ codexView='entryForm'; codexEditingId=el.dataset.openEntry; codexFormPhoto=undefined; codexFormDraft=null; renderCodexOverlay(); };
+    });
+  }
+
+  if(codexView === 'folderForm'){
+    $('#codexBackToGrid').onclick = ()=>{ codexView='grid'; renderCodexOverlay(); };
+    $('#saveFolderBtn').onclick = saveFolder;
+    const del = $('#deleteFolderBtn');
+    if(del) del.onclick = ()=> deleteFolder(codexEditingId);
+  }
+
+  if(codexView === 'entryForm'){
+    $('#codexBackToGrid').onclick = ()=>{ codexView='grid'; renderCodexOverlay(); };
+    if(!isMaster){
+      $('#entryPhotoBtn').onclick = handleCodexPhotoUpload;
+      $('#saveEntryBtn').onclick = saveEntry;
+      const del = $('#deleteEntryBtn');
+      if(del) del.onclick = ()=> deleteEntry(codexEditingId);
+    }
+  }
+}
+
+async function saveFolder(){
+  const name = document.getElementById('mFolderName').value.trim();
+  if(!name){ showToast('Digita um nome pra pasta.'); return; }
+  try{
+    if(codexEditingId){
+      const { error } = await sb.rpc('codex_rename_folder', { p_id: codexEditingId, p_name: name });
+      if(error) throw error;
+    } else {
+      const { error } = await sb.rpc('codex_create_folder', { p_name: name, p_parent_folder_id: codexCurrentFolder });
+      if(error) throw error;
+    }
+    await loadCodexData();
+    codexView = 'grid';
+    renderCodexOverlay();
+    showToast('Pasta salva.');
+  } catch(e){
+    console.error('Falha ao salvar pasta', e);
+    showToast('Não consegui salvar. Tenta de novo.');
+  }
+}
+
+async function deleteFolder(id){
+  try{
+    const { error } = await sb.rpc('codex_delete_folder', { p_id: id });
+    if(error) throw error;
+    await loadCodexData();
+    codexView = 'grid';
+    codexCurrentFolder = null;
+    renderCodexOverlay();
+    showToast('Pasta removida.');
+  } catch(e){
+    console.error('Falha ao remover pasta', e);
+    showToast('Não consegui remover. Tenta de novo.');
+  }
+}
+
+async function saveEntry(){
+  const title = document.getElementById('mEntryTitle').value.trim();
+  if(!title){ showToast('Digita um título.'); return; }
+  const description = document.getElementById('mEntryDescription').value.trim();
+  const existing = codexEditingId ? codexEntries.find(e=>e.id===codexEditingId) : null;
+  const imageUrl = codexFormPhoto !== undefined ? codexFormPhoto : (existing ? existing.image_url : null);
+  try{
+    if(codexEditingId){
+      const { error } = await sb.rpc('codex_update_entry', { p_id: codexEditingId, p_folder_id: codexCurrentFolder, p_title: title, p_description: description, p_image_url: imageUrl });
+      if(error) throw error;
+    } else {
+      const { error } = await sb.rpc('codex_create_entry', { p_folder_id: codexCurrentFolder, p_title: title, p_description: description, p_image_url: imageUrl });
+      if(error) throw error;
+    }
+    await loadCodexData();
+    codexView = 'grid';
+    renderCodexOverlay();
+    showToast('Salvo no codex.');
+  } catch(e){
+    console.error('Falha ao salvar no codex', e);
+    showToast('Não consegui salvar. Tenta de novo.');
+  }
+}
+
+async function deleteEntry(id){
+  try{
+    const { error } = await sb.rpc('codex_delete_entry', { p_id: id });
+    if(error) throw error;
+    await loadCodexData();
+    codexView = 'grid';
+    renderCodexOverlay();
+    showToast('Removido do codex.');
+  } catch(e){
+    console.error('Falha ao remover', e);
+    showToast('Não consegui remover. Tenta de novo.');
+  }
+}
+
+function handleCodexPhotoUpload(){
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/png,image/jpeg,image/gif,image/webp';
+  input.onchange = async ()=>{
+    const file = input.files[0];
+    if(!file) return;
+    const path = `${Date.now()}_${Math.random().toString(36).slice(2,8)}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+    try{
+      const { error } = await sb.storage.from('game-images').upload(path, file);
+      if(error) throw error;
+      const { data } = sb.storage.from('game-images').getPublicUrl(path);
+      syncEntryFormDraft();
+      codexFormPhoto = data.publicUrl;
+      renderCodexOverlay();
+    } catch(e){
+      console.error('Falha ao enviar foto', e);
+      showToast('Não consegui enviar a foto. Tenta de novo.');
+    }
+  };
+  input.click();
 }
 
 /* ============================================================
