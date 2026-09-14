@@ -245,7 +245,8 @@
   .chart-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;position:relative;}
   .chart-bar{width:100%;border-radius:3px;min-height:2px;}
   .chart-zero{position:absolute;left:0;right:0;top:50%;border-top:1px dashed var(--border);}
-  .chart-legend{display:flex;justify-content:space-between;margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-faint);}
+  .chart-legend{display:flex;justify-content:space-between;margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-faint);flex-wrap:wrap;gap:6px 14px;}
+  .networth-svg{width:100%;height:90px;display:block;}
   .chart-legend .item{display:flex;align-items:center;gap:5px;}
   .chart-legend .sw{width:8px;height:8px;border-radius:2px;}
   .balance-hero{font-family:'Chakra Petch',sans-serif;font-size:38px;font-weight:700;letter-spacing:0.5px;}
@@ -579,6 +580,35 @@
   .diary-editor .ql-toolbar.ql-snow .ql-formats button.ql-active .ql-stroke{stroke:var(--accent-1);}
   .diary-editor .ql-toolbar.ql-snow .ql-formats button.ql-active{color:var(--accent-1);}
   .diary-readonly.ql-editor{color:var(--text);}
+
+  /* ---------- ROLADOR DE DADOS ---------- */
+  .dice-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+  .dice-btn{
+    padding:12px 4px;border-radius:12px;border:1px solid var(--border);background:var(--bg-panel-3);
+    color:var(--text);font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;
+    cursor:pointer;transition:all .15s ease;text-align:center;
+  }
+  .dice-btn:hover{border-color:var(--accent-1);color:var(--accent-1);background:color-mix(in srgb, var(--accent-1) 10%, var(--bg-panel-3));}
+  .dice-custom-row{display:flex;gap:8px;margin-top:10px;}
+  .dice-custom-row input{flex:1;}
+  .dice-custom-row button{flex-shrink:0;}
+  .dice-result{
+    text-align:center;padding:18px 10px;margin-top:14px;border-radius:14px;
+    background:linear-gradient(160deg, var(--bg-panel-2), var(--bg-panel));border:1px solid var(--border);
+  }
+  .dice-result .n{font-family:'Chakra Petch',sans-serif;font-size:40px;font-weight:700;line-height:1;color:var(--accent-1);text-shadow:0 0 16px var(--accent-glow);}
+  .dice-result .d{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-faint);margin-top:4px;text-transform:uppercase;letter-spacing:1px;}
+  .dice-log{margin-top:14px;max-height:220px;overflow-y:auto;}
+  .dice-log-row{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--border-soft);font-size:12.5px;}
+  .dice-log-row:last-child{border-bottom:none;}
+  .dice-log-tag{
+    font-family:'JetBrains Mono',monospace;font-weight:700;font-size:9.5px;letter-spacing:1px;
+    padding:3px 7px;border-radius:6px;border:1px solid var(--border);flex-shrink:0;
+  }
+  .dice-log-tag.cat{color:var(--accent-1);border-color:var(--accent-1);background:color-mix(in srgb, var(--accent-1) 12%, transparent);}
+  .dice-log-tag.dog{color:var(--warn);border-color:var(--warn);background:rgba(255,176,32,0.1);}
+  .dice-log-die{color:var(--text-faint);font-family:'JetBrains Mono',monospace;font-size:11px;flex-shrink:0;}
+  .dice-log-result{margin-left:auto;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;}
 </style>
 </head>
 <body>
@@ -1028,6 +1058,12 @@ function renderTopbar(){
         <div class="role-badge ${isMaster?'is-master':''}" id="roleBadge" title="${isMaster?'Clique pra sair do modo mestre':'Você está vendo como jogador'}">
           ${isMaster?'MESTRE':'JOGADOR'}
         </div>
+        <button class="icon-btn" id="diceRollerBtn" title="Rolador de dados">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2 L21 7 L21 17 L12 22 L3 17 L3 7 Z"/>
+            <circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/>
+          </svg>
+        </button>
         <button class="mode-cat-btn" id="modeCatBtn" title="Alternar limpo / sujo">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M4 9 L7 3 L9.3 8.2"/>
@@ -1095,6 +1131,9 @@ function renderSaldo(){
       </div>
     </div>
 
+    <div class="section-title">Patrimônio total ao longo do tempo</div>
+    <div class="card">${renderNetWorthChart()}</div>
+
     <div class="section-title">Visão geral</div>
     <div class="card">${renderOverviewChart(acct.transactions)}</div>
 
@@ -1133,6 +1172,9 @@ function renderSaldo(){
       </div>
     </div>
 
+    <div class="section-title">Patrimônio total ao longo do tempo</div>
+    <div class="card">${renderNetWorthChart()}</div>
+
     <div class="section-title">Visão geral</div>
     <div class="card">${renderOverviewChart(acct.transactions)}</div>
 
@@ -1158,6 +1200,52 @@ function renderSaldo(){
     </div>
     `;
   }
+}
+
+function renderNetWorthChart(){
+  const past = (state.history || []).map(h => ({
+    day: h.day,
+    total: (h.clean ? h.clean.balance : 0) + (h.dirty ? h.dirty.balance : 0)
+  }));
+  const points = [...past, { day: state.day, total: state.clean.balance + state.dirty.balance }];
+  const last = points.slice(-60);
+  if(last.length < 2){
+    return '<div class="empty-state">Avance mais alguns dias pra ver a curva de patrimônio.</div>';
+  }
+  const values = last.map(p=>p.total);
+  const minV = Math.min(...values, 0);
+  const maxV = Math.max(...values, 1);
+  const range = Math.max(1, maxV - minV);
+  const W = 100, H = 100;
+  const stepX = W / (last.length - 1);
+  const coords = last.map((p,i)=>{
+    const x = i * stepX;
+    const y = H - ((p.total - minV) / range) * H;
+    return [x, y];
+  });
+  const pathD = coords.map(([x,y],i)=> (i===0?'M':'L') + x.toFixed(2) + ',' + y.toFixed(2)).join(' ');
+  const areaD = `${pathD} L${W},${H} L0,${H} Z`;
+  const first = last[0].total, current = last[last.length-1].total;
+  const growth = current - first;
+  return `
+    <div class="chart-wrap">
+      <svg class="networth-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="nwGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--accent-1)" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="var(--accent-1)" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d="${areaD}" fill="url(#nwGrad)" stroke="none"></path>
+        <path d="${pathD}" fill="none" stroke="var(--accent-1)" stroke-width="1.6" vector-effect="non-scaling-stroke"></path>
+      </svg>
+      <div class="chart-legend">
+        <div class="item">Início do período: <strong style="margin-left:4px;">${fmt(first)}</strong></div>
+        <div class="item">Agora: <strong style="margin-left:4px;">${fmt(current)}</strong></div>
+        <div class="item">Variação: <strong style="color:${growth>=0?'var(--clean-1)':'var(--danger)'};margin-left:4px;">${fmtSigned(growth)}</strong></div>
+      </div>
+    </div>
+  `;
 }
 
 function renderOverviewChart(txns){
@@ -1410,6 +1498,11 @@ function renderModal(){
   let body = '';
   let title = '';
 
+  if(type === 'diceRoller'){
+    title = 'Rolador de dados';
+    body = renderDiceRollerModal();
+  }
+
   if(type === 'editBalance'){
     if(state.mode === 'limpo'){
       title = 'Editar saldo — legítimo';
@@ -1594,10 +1687,12 @@ function renderModal(){
         <div class="icon-btn" id="closeModal">✕</div>
       </div>
       ${body}
+      ${type === 'diceRoller' ? '' : `
       <div class="modal-actions">
         <button class="btn btn-ghost" id="cancelModal">Cancelar</button>
         <button class="btn btn-accent" id="confirmModal">Salvar</button>
       </div>
+      `}
     </div>
   </div>`;
 }
@@ -1611,6 +1706,9 @@ function attachHandlers(){
 
   const modeCatBtn = $('#modeCatBtn');
   if(modeCatBtn) modeCatBtn.onclick = ()=> toggleMode(modeCatBtn);
+
+  const diceRollerBtn = $('#diceRollerBtn');
+  if(diceRollerBtn) diceRollerBtn.onclick = openDiceRoller;
 
   const roleBadge = $('#roleBadge');
   if(roleBadge) roleBadge.onclick = ()=>{
@@ -1687,6 +1785,19 @@ function attachHandlers(){
     overlay.addEventListener('click', (e)=>{ if(e.target.id==='overlay') closeModal(); });
     $('#closeModal') && ($('#closeModal').onclick = closeModal);
     $('#cancelModal') && ($('#cancelModal').onclick = closeModal);
+
+    if(ui.modal === 'diceRoller'){
+      $$('[data-dice]').forEach(el=>{
+        el.onclick = ()=> rollDice(el.dataset.dice, null);
+      });
+      const diceRollCustom = $('#diceRollCustom');
+      const diceCustomSides = $('#diceCustomSides');
+      if(diceRollCustom) diceRollCustom.onclick = ()=>{
+        const sides = parseInt(diceCustomSides.value);
+        if(!sides || sides < 2){ showToast('Digita um número de lados válido (2 ou mais).'); return; }
+        rollDice('custom', sides);
+      };
+    }
 
     $$('.seg-opt').forEach(el=>{
       el.onclick = ()=>{
@@ -2271,6 +2382,99 @@ async function migratePastedImages(quillInstance){
       console.error('Falha ao migrar imagem colada', e);
     }
   }
+}
+
+/* ============================================================
+   ROLADOR DE DADOS — registro compartilhado, ao vivo pros dois lados
+   ============================================================ */
+let diceRolls = [];
+let diceChannel = null;
+let diceLoaded = false;
+const DICE_TYPES = ['d2','d4','d6','d8','d10','d20','d100'];
+
+function myRole(){ return isMaster ? 'cat' : 'dog'; }
+
+async function loadDiceRolls(){
+  try{
+    const { data, error } = await sb.from('dice_rolls').select('id, roller, dice_type, custom_sides, result, created_at').order('created_at', { ascending: false }).limit(30);
+    if(error) throw error;
+    diceRolls = data || [];
+  } catch(e){
+    console.error('Falha ao carregar rolagens', e);
+  }
+}
+
+function subscribeDiceRealtime(){
+  if(diceChannel) return;
+  diceChannel = sb.channel('dice_rolls_changes')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'dice_rolls' }, (payload)=>{
+      diceRolls.unshift(payload.new);
+      if(diceRolls.length > 30) diceRolls.pop();
+      if(ui.modal === 'diceRoller') render();
+    })
+    .subscribe();
+}
+
+async function openDiceRoller(){
+  openModal('diceRoller');
+  if(!diceLoaded){
+    diceLoaded = true;
+    await loadDiceRolls();
+    subscribeDiceRealtime();
+    if(ui.modal === 'diceRoller') render();
+  }
+}
+
+async function rollDice(diceType, customSides){
+  try{
+    const { error } = await sb.rpc('roll_dice', { p_roller: myRole(), p_dice_type: diceType, p_custom_sides: customSides || null });
+    if(error) throw error;
+    // o resultado chega pelo Realtime; não precisa fazer nada aqui
+  } catch(e){
+    console.error('Falha ao rolar dado', e);
+    showToast('Não consegui rolar o dado agora. Tenta de novo.');
+  }
+}
+
+function diceLabel(roll){
+  return roll.dice_type === 'custom' ? `d${roll.custom_sides}` : roll.dice_type;
+}
+
+function timeAgo(iso){
+  const diff = Math.max(0, Date.now() - new Date(iso).getTime());
+  const mins = Math.floor(diff/60000);
+  if(mins < 1) return 'agora';
+  if(mins < 60) return `${mins}min`;
+  const hours = Math.floor(mins/60);
+  if(hours < 24) return `${hours}h`;
+  return `${Math.floor(hours/24)}d`;
+}
+
+function renderDiceRollerModal(){
+  const last = diceRolls[0];
+  return `
+    <div class="dice-grid">
+      ${DICE_TYPES.map(d=>`<button class="dice-btn" data-dice="${d}">${d}</button>`).join('')}
+    </div>
+    <div class="dice-custom-row">
+      <input id="diceCustomSides" type="number" min="2" max="100000" placeholder="Dx — quantos lados?">
+      <button class="btn btn-accent btn-sm" id="diceRollCustom">Rolar</button>
+    </div>
+    ${last ? `
+    <div class="dice-result">
+      <div class="n">${last.result}</div>
+      <div class="d">${diceLabel(last)} · ${last.roller === 'cat' ? 'mestre' : 'jogador'}</div>
+    </div>` : ''}
+    <div class="dice-log">
+      ${diceRolls.length ? diceRolls.map(r=>`
+        <div class="dice-log-row">
+          <span class="dice-log-tag ${r.roller}">${r.roller === 'cat' ? 'CAT' : 'DOG'}</span>
+          <span class="dice-log-die">${diceLabel(r)}</span>
+          <span class="dice-log-result">${r.result}</span>
+          <span class="hint" style="margin:0;">${timeAgo(r.created_at)}</span>
+        </div>`).join('') : '<div class="empty-state">Nenhuma rolagem ainda.</div>'}
+    </div>
+  `;
 }
 
 /* ============================================================
