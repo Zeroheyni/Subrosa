@@ -91,6 +91,21 @@ function applyCalendarEvent(data: any, ev: any, dayApplying: number) {
   ev.applied = true;
 }
 
+// Personagens atribuídos a um negócio/propriedade/pesquisa modificam certas
+// estatísticas dele. Retorna o multiplicador combinado (1 = sem efeito).
+function getModifierMultiplier(data: any, entityType: string, entityId: string, stat: string): number {
+  const characters = data.characters || [];
+  let totalPercent = 0;
+  characters.forEach((c: any) => {
+    if (c.assignedTo && c.assignedTo.type === entityType && c.assignedTo.id === entityId) {
+      (c.modifiers || []).forEach((m: any) => {
+        if (m.stat === stat) totalPercent += (m.percent || 0);
+      });
+    }
+  });
+  return 1 + (totalPercent / 100);
+}
+
 // Faz uma cópia do estado atual (sem o histórico, pra não duplicar o passado dentro dele mesmo)
 function snapshotWithoutHistory(data: any) {
   const h = data.history;
@@ -121,12 +136,17 @@ export function advanceDay(data: any) {
         biz.frozenDaysLeft -= 1;
         pushNotification(data, '🧊', `"${biz.name}" segue congelado. Sem renda hoje.`);
       } else {
+        const incomeMult = getModifierMultiplier(data, 'business', biz.id, 'income');
+        const heatGainMult = getModifierMultiplier(data, 'business', biz.id, 'heatGain');
+        const eventRiskMult = getModifierMultiplier(data, 'business', biz.id, 'eventRiskChance');
+        const income = biz.dailyIncome * incomeMult;
+
         const acct = biz.illegal ? data.dirty : data.clean;
-        acct.balance += biz.dailyIncome;
-        acct.transactions.push({ day: dayApplying, label: `Renda — ${biz.name}`, amount: biz.dailyIncome });
+        acct.balance += income;
+        acct.transactions.push({ day: dayApplying, label: `Renda — ${biz.name}`, amount: income });
 
         if (!biz.illegal && biz.launderPercent > 0) {
-          const laundered = biz.dailyIncome * (biz.launderPercent / 100);
+          const laundered = income * (biz.launderPercent / 100);
           const actuallyLaundered = Math.min(laundered, data.dirty.balance);
           if (actuallyLaundered > 0) {
             data.dirty.balance -= actuallyLaundered;
@@ -134,7 +154,7 @@ export function advanceDay(data: any) {
             data.dirty.transactions.push({ day: dayApplying, label: `Lavagem via ${biz.name}`, amount: -actuallyLaundered });
             data.clean.transactions.push({ day: dayApplying, label: `Entrada legitimada — ${biz.name}`, amount: actuallyLaundered });
           }
-          const heatGain = biz.launderPercent / 30;
+          const heatGain = (biz.launderPercent / 30) * heatGainMult;
           biz.heat = Math.min(100, biz.heat + heatGain);
         } else if (!biz.illegal) {
           biz.heat = Math.max(0, biz.heat - 1.5);
@@ -145,7 +165,7 @@ export function advanceDay(data: any) {
           let tier = 'investigacao';
           if (biz.heat > 80) { chance = 0.10; tier = 'invasao'; }
           else if (biz.heat > 50) { chance = 0.07; tier = 'congelamento'; }
-          if (Math.random() < chance) {
+          if (Math.random() < chance * eventRiskMult) {
             triggerHeatEvent(data, biz, tier);
           }
         }
@@ -160,10 +180,14 @@ export function advanceDay(data: any) {
       pushNotification(data, '🧊', `"${prop.name}" segue congelada. Sem renda hoje.`);
       return;
     }
-    let income = prop.dailyIncome - prop.maintenance;
+    const incomeMult = getModifierMultiplier(data, 'property', prop.id, 'income');
+    const heatGainMult = getModifierMultiplier(data, 'property', prop.id, 'heatGain');
+    const eventRiskMult = getModifierMultiplier(data, 'property', prop.id, 'eventRiskChance');
+    const baseIncome = prop.dailyIncome * incomeMult;
+    let income = baseIncome - prop.maintenance;
     if (prop.activeEvent) {
       const mult = 1 + (prop.activeEvent.percent / 100);
-      income = (prop.dailyIncome * mult) - prop.maintenance;
+      income = (baseIncome * mult) - prop.maintenance;
       prop.activeEvent.daysLeft -= 1;
       if (prop.activeEvent.daysLeft <= 0) {
         pushNotification(data, prop.activeEvent.percent >= 0 ? '📈' : '📉', `O evento "${prop.activeEvent.label}" em "${prop.name}" chegou ao fim.`);
@@ -173,7 +197,7 @@ export function advanceDay(data: any) {
       if (Math.random() < 0.12) {
         triggerPropertyEvent(data, prop, null);
         const mult = 1 + (prop.activeEvent.percent / 100);
-        income = (prop.dailyIncome * mult) - prop.maintenance;
+        income = (baseIncome * mult) - prop.maintenance;
       }
     }
     const acct = prop.illegal ? data.dirty : data.clean;
@@ -183,7 +207,7 @@ export function advanceDay(data: any) {
     if (!prop.illegal) {
       const launderPercent = prop.launderPercent || 0;
       if (launderPercent > 0) {
-        const laundered = prop.dailyIncome * (launderPercent / 100);
+        const laundered = baseIncome * (launderPercent / 100);
         const actuallyLaundered = Math.min(laundered, data.dirty.balance);
         if (actuallyLaundered > 0) {
           data.dirty.balance -= actuallyLaundered;
@@ -191,7 +215,7 @@ export function advanceDay(data: any) {
           data.dirty.transactions.push({ day: dayApplying, label: `Lavagem via ${prop.name}`, amount: -actuallyLaundered });
           data.clean.transactions.push({ day: dayApplying, label: `Entrada legitimada — ${prop.name}`, amount: actuallyLaundered });
         }
-        prop.heat = Math.min(100, (prop.heat || 0) + launderPercent / 30);
+        prop.heat = Math.min(100, (prop.heat || 0) + (launderPercent / 30) * heatGainMult);
       } else {
         prop.heat = Math.max(0, (prop.heat || 0) - 1.5);
       }
@@ -201,14 +225,26 @@ export function advanceDay(data: any) {
         let tier = 'investigacao';
         if (prop.heat > 80) { chance = 0.10; tier = 'invasao'; }
         else if (prop.heat > 50) { chance = 0.07; tier = 'congelamento'; }
-        if (Math.random() < chance) {
+        if (Math.random() < chance * eventRiskMult) {
           triggerPropertyHeatEvent(data, prop, tier);
         }
       }
     }
   });
 
-  // 3. Gastos fixos (a cada 30 dias)
+  // 3. Pesquisas em andamento
+  (data.researches || []).forEach((res: any) => {
+    if (res.completed) return;
+    const speedMult = getModifierMultiplier(data, 'research', res.id, 'researchSpeed');
+    res.daysElapsed += 1 * speedMult;
+    if (res.daysElapsed >= res.durationDays) {
+      res.daysElapsed = res.durationDays;
+      res.completed = true;
+      pushNotification(data, res.legal ? '🔬' : '🧪', `Pesquisa "${res.name}" concluída — decida o que fazer com o resultado.`);
+    }
+  });
+
+  // 4. Gastos fixos (a cada 30 dias)
   if (dayApplying % 30 === 0) {
     data.clean.fixedExpenses.forEach((exp: any) => {
       data.clean.balance -= exp.amount;
@@ -216,7 +252,7 @@ export function advanceDay(data: any) {
     });
   }
 
-  // 4. Eventos do calendário com efeito
+  // 5. Eventos do calendário com efeito
   data.events.forEach((ev: any) => {
     const isToday = ev.day === dayApplying;
     const isRecurringToday = ev.recurring && dayApplying >= ev.day && (!ev.recurEndDay || dayApplying <= ev.recurEndDay);

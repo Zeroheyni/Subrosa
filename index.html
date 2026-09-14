@@ -312,9 +312,10 @@
   .btn-sm{padding:6px 10px;font-size:11px;border-radius:8px;}
 
   /* ---------- SUBTABS ---------- */
-  .subtabs{display:flex;gap:6px;margin-bottom:2px;}
+  .subtabs{display:flex;gap:6px;margin-bottom:2px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .subtabs::-webkit-scrollbar{display:none;}
   .subtab{
-    padding:7px 14px;border-radius:999px;font-size:11.5px;font-weight:600;
+    padding:7px 14px;border-radius:999px;font-size:11.5px;font-weight:600;flex-shrink:0;white-space:nowrap;
     border:1px solid var(--border);color:var(--text-dim);cursor:pointer;font-family:'JetBrains Mono',monospace;
   }
   .subtab.active{border-color:var(--accent-1);color:var(--accent-1);background:color-mix(in srgb, var(--accent-1) 12%, transparent);}
@@ -609,6 +610,28 @@
   .dice-log-tag.dog{color:var(--warn);border-color:var(--warn);background:rgba(255,176,32,0.1);}
   .dice-log-die{color:var(--text-faint);font-family:'JetBrains Mono',monospace;font-size:11px;flex-shrink:0;}
   .dice-log-result{margin-left:auto;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;}
+
+  /* ---------- ELENCO (personagens) ---------- */
+  .char-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(136px,1fr));gap:12px;}
+  .char-card{
+    background:var(--bg-panel-2);border:1px solid var(--border);border-radius:14px;padding:12px;cursor:pointer;
+    display:flex;flex-direction:column;gap:6px;transition:border-color .2s ease;
+  }
+  .char-card:hover{border-color:var(--accent-1);}
+  .char-photo{
+    width:100%;aspect-ratio:1;border-radius:10px;background:var(--bg-panel-3);background-size:cover;background-position:center;
+    display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--text-faint);flex-shrink:0;
+  }
+  .char-name{font-weight:700;font-size:13px;}
+  .char-role{font-size:11px;color:var(--text-faint);margin-top:-4px;}
+  .char-assign{font-size:10px;color:var(--accent-1);font-family:'JetBrains Mono',monospace;}
+  .char-mods{display:flex;flex-wrap:wrap;gap:4px;margin-top:2px;}
+  .char-mod-badge{font-size:9px;font-family:'JetBrains Mono',monospace;padding:2px 6px;border-radius:6px;border:1px solid var(--border);max-width:100%;overflow-wrap:break-word;}
+  .char-mod-badge.pos{color:var(--clean-1);border-color:var(--clean-1);}
+  .char-mod-badge.neg{color:var(--danger);border-color:var(--danger);}
+  .modifier-row{display:flex;gap:8px;margin-bottom:8px;align-items:center;}
+  .modifier-row select, .modifier-row input{margin:0;}
+  .modifier-row input{max-width:80px;}
 </style>
 </head>
 <body>
@@ -716,6 +739,8 @@ function defaultState(){
     },
     businesses: [],
     properties: [],
+    researches: [],
+    characters: [],
     events: [],
     notifications: [],
     history: []
@@ -725,11 +750,18 @@ function defaultState(){
 let state = null;
 let realtimeChannel = null;
 
+// campanhas antigas foram salvas antes dessas listas existirem
+function ensureStateDefaults(s){
+  if(!s.researches) s.researches = [];
+  if(!s.characters) s.characters = [];
+  return s;
+}
+
 async function loadState(){
   try{
     const { data, error } = await sb.from('game_state').select('data').eq('id', 1).single();
     if(error) throw error;
-    state = data.data || defaultState();
+    state = ensureStateDefaults(data.data || defaultState());
   } catch(e){
     console.error('Falha ao carregar estado do Supabase', e);
     state = defaultState();
@@ -745,7 +777,7 @@ function subscribeRealtime(){
     .on('postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'game_state', filter: 'id=eq.1' },
       (payload)=>{
-        state = payload.new.data;
+        state = ensureStateDefaults(payload.new.data);
         render();
       }
     )
@@ -1305,8 +1337,10 @@ function renderInvestimentos(){
     <div class="subtabs">
       <div class="subtab ${sub==='negocios'?'active':''}" data-subtab="negocios">Negócios</div>
       <div class="subtab ${sub==='propriedades'?'active':''}" data-subtab="propriedades">Propriedades</div>
+      <div class="subtab ${sub==='pesquisas'?'active':''}" data-subtab="pesquisas">Pesquisas</div>
+      <div class="subtab ${sub==='elenco'?'active':''}" data-subtab="elenco">Elenco</div>
     </div>
-    ${sub==='negocios' ? renderNegocios() : renderPropriedades()}
+    ${sub==='negocios' ? renderNegocios() : sub==='propriedades' ? renderPropriedades() : sub==='pesquisas' ? renderPesquisas() : renderElenco()}
   `;
 }
 
@@ -1391,6 +1425,149 @@ function renderPropertyCard(p){
       ${p.frozenDaysLeft>0?`<div class="badge-event debuff">🧊 congelada por mais ${p.frozenDaysLeft} dia(s)</div>`:''}
       ${p.activeEvent ? `<div class="badge-event ${p.activeEvent.percent>=0?'buff':'debuff'}">${p.activeEvent.percent>=0?'📈':'📉'} ${p.activeEvent.label} (${p.activeEvent.percent>0?'+':''}${p.activeEvent.percent}%) · ${p.activeEvent.daysLeft}d restantes</div>` : ''}
     </div>`;
+}
+
+/* ---------------- PESQUISAS ---------------- */
+function renderPesquisas(){
+  const list = state.researches || [];
+  return `
+    <div class="section-title">Pesquisas ${isMaster ? `<span class="add-link" data-action="addResearch">+ nova</span>` : ''}</div>
+    ${list.length ? list.map(r=>renderResearchCard(r)).join('') : '<div class="empty-state">Nenhuma pesquisa em andamento.</div>'}
+  `;
+}
+
+function renderResearchCard(r){
+  const pct = Math.min(100, Math.round((r.daysElapsed / r.durationDays) * 100));
+  const remaining = Math.max(0, Math.ceil(r.durationDays - r.daysElapsed));
+  const biz = r.businessId ? state.businesses.find(b=>b.id===r.businessId) : null;
+  return `
+    <div class="entity-card" data-open-research="${r.id}">
+      <div class="entity-head">
+        <div class="entity-name">${r.name}</div>
+        <div class="entity-tag ${r.completed?'mature':'developing'}">${r.completed ? '✓ Concluída' : (r.legal ? 'Legal' : 'Ilegal')}</div>
+      </div>
+      ${biz ? `<div class="hint">Ligada a: ${biz.name}</div>` : ''}
+      <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+      <div class="entity-meta">
+        <div class="m">${pct}% concluída</div>
+        ${r.completed ? '' : `<div class="m">~${remaining} dia(s) restante(s)</div>`}
+      </div>
+    </div>`;
+}
+
+/* ---------------- ELENCO (personagens) ---------------- */
+const STAT_LABELS = { income: 'Renda', heatGain: 'Ganho de calor', researchSpeed: 'Velocidade de pesquisa', eventRiskChance: 'Chance de evento de risco' };
+
+function assignedToLabel(c){
+  if(!c.assignedTo) return 'Livre';
+  const { type, id } = c.assignedTo;
+  const list = type==='business' ? state.businesses : type==='property' ? state.properties : (state.researches||[]);
+  const entity = list.find(e=>e.id===id);
+  if(!entity) return 'Livre';
+  const typeLabel = type==='business' ? 'Negócio' : type==='property' ? 'Propriedade' : 'Pesquisa';
+  return `${typeLabel}: ${entity.name}`;
+}
+
+function renderElenco(){
+  const list = state.characters || [];
+  return `
+    <div class="section-title">Elenco ${isMaster ? `<span class="add-link" data-action="addCharacter">+ novo</span>` : ''}</div>
+    ${list.length ? `<div class="char-grid">${list.map(c=>renderCharacterCard(c)).join('')}</div>` : '<div class="empty-state">Nenhum personagem cadastrado.</div>'}
+  `;
+}
+
+function renderCharacterCard(c){
+  return `
+    <div class="char-card" data-open-character="${c.id}">
+      <div class="char-photo" style="${c.photo?`background-image:url('${c.photo}')`:''}">${c.photo?'':'👤'}</div>
+      <div class="char-name">${c.name}</div>
+      ${c.role ? `<div class="char-role">${c.role}</div>` : ''}
+      <div class="char-assign">${assignedToLabel(c)}</div>
+      ${(c.modifiers||[]).length ? `<div class="char-mods">${c.modifiers.map(m=>`<span class="char-mod-badge ${m.percent>=0?'pos':'neg'}">${(STAT_LABELS[m.stat]||m.stat)} ${m.percent>0?'+':''}${m.percent}%</span>`).join('')}</div>` : ''}
+    </div>`;
+}
+
+function renderCharacterForm(existing){
+  const md = ui.modalData;
+  const name = md.name !== undefined ? md.name : (existing ? existing.name : '');
+  const role = md.role !== undefined ? md.role : (existing ? existing.role||'' : '');
+  const description = md.description !== undefined ? md.description : (existing ? existing.description||'' : '');
+  const photo = md.photo !== undefined ? md.photo : (existing ? existing.photo : null);
+  const modifiers = md.modifiers || (existing ? (existing.modifiers||[]).map(m=>({...m})) : []);
+  const currentAssign = md.assignedTo !== undefined ? md.assignedTo : (existing && existing.assignedTo ? `${existing.assignedTo.type}:${existing.assignedTo.id}` : '');
+  const assignOptions = [
+    { value:'', label:'Nenhuma (livre)' },
+    ...state.businesses.map(b=>({ value:`business:${b.id}`, label:`Negócio — ${b.name}` })),
+    ...state.properties.map(p=>({ value:`property:${p.id}`, label:`Propriedade — ${p.name}` })),
+    ...(state.researches||[]).map(r=>({ value:`research:${r.id}`, label:`Pesquisa — ${r.name}` }))
+  ];
+  return `
+    <div class="field"><label>Foto</label>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="char-photo" style="width:60px;height:60px;flex-shrink:0;${photo?`background-image:url('${photo}')`:''}">${photo?'':'👤'}</div>
+        <button class="btn btn-ghost btn-sm" type="button" id="charPhotoBtn">${photo?'Trocar foto':'Enviar foto'}</button>
+      </div>
+    </div>
+    <div class="field"><label>Nome</label><input id="mName" value="${name}" placeholder="Ex: Dra. Marlene"></div>
+    <div class="field"><label>Papel</label><input id="mRole" value="${role}" placeholder="Ex: Pesquisadora, Segurança, Gestor..."></div>
+    <div class="field"><label>Descrição</label><textarea id="mDescription">${description}</textarea></div>
+    <div class="field"><label>Atribuir a</label>
+      <select id="mAssignedTo">
+        ${assignOptions.map(o=>`<option value="${o.value}" ${o.value===currentAssign?'selected':''}>${o.label}</option>`).join('')}
+      </select>
+    </div>
+    <div class="field">
+      <label>Modificadores</label>
+      <div id="modifiersList">
+        ${modifiers.map((m,i)=>`
+          <div class="modifier-row">
+            <select data-mod-stat>${Object.keys(STAT_LABELS).map(k=>`<option value="${k}" ${m.stat===k?'selected':''}>${STAT_LABELS[k]}</option>`).join('')}</select>
+            <input type="number" data-mod-percent value="${m.percent}" placeholder="%">
+            <div class="icon-btn btn-sm" data-remove-mod="${i}" style="width:32px;height:32px;">✕</div>
+          </div>
+        `).join('')}
+      </div>
+      <span class="add-link" id="addModifierRow">+ adicionar modificador</span>
+      <div class="hint">Ex: uma pesquisadora desorganizada pode ter Velocidade de pesquisa +10% e Ganho de calor +10%.</div>
+    </div>
+  `;
+}
+
+function syncCharacterFormFromDom(){
+  const $ = sel => document.querySelector(sel);
+  const $$ = sel => document.querySelectorAll(sel);
+  if($('#mName')) ui.modalData.name = $('#mName').value;
+  if($('#mRole')) ui.modalData.role = $('#mRole').value;
+  if($('#mDescription')) ui.modalData.description = $('#mDescription').value;
+  if($('#mAssignedTo')) ui.modalData.assignedTo = $('#mAssignedTo').value;
+  const stats = $$('[data-mod-stat]');
+  const percents = $$('[data-mod-percent]');
+  const modifiers = [];
+  stats.forEach((el,i)=>{ modifiers.push({ stat: el.value, percent: parseFloat(percents[i].value) || 0 }); });
+  ui.modalData.modifiers = modifiers;
+}
+
+function handleCharacterPhotoUpload(){
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/png,image/jpeg,image/gif,image/webp';
+  input.onchange = async ()=>{
+    const file = input.files[0];
+    if(!file) return;
+    const path = `${Date.now()}_${Math.random().toString(36).slice(2,8)}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+    try{
+      const { error } = await sb.storage.from('game-images').upload(path, file);
+      if(error) throw error;
+      const { data } = sb.storage.from('game-images').getPublicUrl(path);
+      syncCharacterFormFromDom();
+      ui.modalData.photo = data.publicUrl;
+      render();
+    } catch(e){
+      console.error('Falha ao enviar foto', e);
+      showToast('Não consegui enviar a foto. Tenta de novo.');
+    }
+  };
+  input.click();
 }
 
 /* ---------------- CALENDÁRIO ---------------- */
@@ -1679,6 +1856,86 @@ function renderModal(){
     `;
   }
 
+  if(type === 'addResearch'){
+    title = 'Nova pesquisa';
+    body = `
+      <div class="field"><label>Nome</label><input id="mName" placeholder="Ex: Soro da regeneração"></div>
+      <div class="field"><label>Tipo</label>
+        <div class="seg-group">
+          <div class="seg-opt active" data-seg="rlegal" data-val="legal">Legal</div>
+          <div class="seg-opt" data-seg="rlegal" data-val="ilegal">Ilegal</div>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Duração</label><input id="mDurationValue" type="number" value="20" placeholder="20"></div>
+        <div class="field"><label>Unidade</label>
+          <select id="mDurationUnit">
+            <option value="dias">Dias</option>
+            <option value="semanas">Semanas</option>
+            <option value="meses">Meses</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Negócio associado (opcional)</label>
+        <select id="mResearchBusiness">
+          <option value="">Nenhum</option>
+          ${state.businesses.map(b=>`<option value="${b.id}">${b.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field"><label>Notas (opcional)</label><textarea id="mNotes"></textarea></div>
+      <div class="hint">Quando concluída, só dispara um aviso — você decide manualmente o que fazer a seguir.</div>
+    `;
+  }
+
+  if(type === 'researchDetail'){
+    const r = state.researches.find(x=>x.id===ui.modalData.id);
+    title = r.name;
+    const biz = r.businessId ? state.businesses.find(b=>b.id===r.businessId) : null;
+    if(!isMaster){
+      body = `
+        <div class="hint">${r.legal?'Pesquisa legal':'Pesquisa ilegal'} · ${r.completed?'concluída':`${Math.round(r.daysElapsed)}/${r.durationDays} dias`}</div>
+        ${biz?`<div class="hint">Ligada ao negócio: ${biz.name}</div>`:''}
+        ${r.notes?`<div class="hint" style="margin-top:8px;">${r.notes}</div>`:''}
+      `;
+    } else {
+      body = `
+        <div class="field-row">
+          <div class="field"><label>Dias decorridos</label><input id="mDaysElapsed" type="number" value="${Math.round(r.daysElapsed)}"></div>
+          <div class="field"><label>Duração total (dias)</label><input id="mDurationDays" type="number" value="${r.durationDays}"></div>
+        </div>
+        <div class="field"><label>Notas</label><textarea id="mNotes">${r.notes||''}</textarea></div>
+        <div class="modal-actions">
+          <button class="btn btn-danger btn-sm" id="deleteResearch">Remover</button>
+        </div>
+      `;
+    }
+  }
+
+  if(type === 'addCharacter'){
+    title = 'Novo personagem';
+    body = renderCharacterForm(null);
+  }
+
+  if(type === 'characterDetail'){
+    const c = state.characters.find(x=>x.id===ui.modalData.id);
+    title = c.name;
+    if(!isMaster){
+      body = `
+        <div class="char-photo" style="width:100%;height:140px;margin-bottom:12px;${c.photo?`background-image:url('${c.photo}')`:''}">${c.photo?'':'👤'}</div>
+        ${c.role ? `<div class="hint"><strong>${c.role}</strong></div>` : ''}
+        ${c.description ? `<div class="hint" style="margin-top:6px;">${c.description}</div>` : ''}
+        <div class="hint" style="margin-top:8px;">${assignedToLabel(c)}</div>
+        ${(c.modifiers||[]).length ? `<div class="char-mods" style="margin-top:8px;">${c.modifiers.map(m=>`<span class="char-mod-badge ${m.percent>=0?'pos':'neg'}">${(STAT_LABELS[m.stat]||m.stat)} ${m.percent>0?'+':''}${m.percent}%</span>`).join('')}</div>` : ''}
+      `;
+    } else {
+      body = renderCharacterForm(c) + `
+        <div class="modal-actions">
+          <button class="btn btn-danger btn-sm" id="deleteCharacter">Remover</button>
+        </div>
+      `;
+    }
+  }
+
   return `
   <div class="overlay" id="overlay">
     <div class="modal">
@@ -1687,7 +1944,7 @@ function renderModal(){
         <div class="icon-btn" id="closeModal">✕</div>
       </div>
       ${body}
-      ${type === 'diceRoller' ? '' : `
+      ${(type === 'diceRoller' || (type === 'characterDetail' && !isMaster)) ? '' : `
       <div class="modal-actions">
         <button class="btn btn-ghost" id="cancelModal">Cancelar</button>
         <button class="btn btn-accent" id="confirmModal">Salvar</button>
@@ -1738,6 +1995,8 @@ function attachHandlers(){
       if(a==='addBusiness') openModal('addBusiness');
       if(a==='addProperty') openModal('addProperty');
       if(a==='addEvent') openModal('addEvent');
+      if(a==='addResearch') openModal('addResearch');
+      if(a==='addCharacter') openModal('addCharacter', { modifiers: [] });
     };
   });
 
@@ -1778,6 +2037,12 @@ function attachHandlers(){
   $$('[data-open-property]').forEach(el=>{
     el.onclick = ()=> openModal('propertyDetail', { id: el.dataset.openProperty });
   });
+  $$('[data-open-research]').forEach(el=>{
+    el.onclick = ()=> openModal('researchDetail', { id: el.dataset.openResearch });
+  });
+  $$('[data-open-character]').forEach(el=>{
+    el.onclick = ()=> openModal('characterDetail', { id: el.dataset.openCharacter, modifiers: null });
+  });
 
   // modal generic
   const overlay = $('#overlay');
@@ -1797,6 +2062,24 @@ function attachHandlers(){
         if(!sides || sides < 2){ showToast('Digita um número de lados válido (2 ou mais).'); return; }
         rollDice('custom', sides);
       };
+    }
+
+    if((ui.modal === 'addCharacter' || ui.modal === 'characterDetail') && isMaster){
+      const charPhotoBtn = $('#charPhotoBtn');
+      if(charPhotoBtn) charPhotoBtn.onclick = handleCharacterPhotoUpload;
+      const addModifierRow = $('#addModifierRow');
+      if(addModifierRow) addModifierRow.onclick = ()=>{
+        syncCharacterFormFromDom();
+        ui.modalData.modifiers.push({ stat: 'income', percent: 0 });
+        render();
+      };
+      $$('[data-remove-mod]').forEach(el=>{
+        el.onclick = ()=>{
+          syncCharacterFormFromDom();
+          ui.modalData.modifiers.splice(parseInt(el.dataset.removeMod), 1);
+          render();
+        };
+      });
     }
 
     $$('.seg-opt').forEach(el=>{
@@ -1844,6 +2127,14 @@ function attachHandlers(){
     });
     $('#deleteProperty') && ($('#deleteProperty').onclick = ()=>{
       state.properties = state.properties.filter(x=>x.id!==ui.modalData.id);
+      saveState(); closeModal();
+    });
+    $('#deleteResearch') && ($('#deleteResearch').onclick = ()=>{
+      state.researches = state.researches.filter(x=>x.id!==ui.modalData.id);
+      saveState(); closeModal();
+    });
+    $('#deleteCharacter') && ($('#deleteCharacter').onclick = ()=>{
+      state.characters = state.characters.filter(x=>x.id!==ui.modalData.id);
       saveState(); closeModal();
     });
   }
@@ -2008,6 +2299,51 @@ async function handleConfirmAsync(){
       targetType, targetId, valueType, value, recurring, recurEndDay, mode, applied:false
     });
     saveState(); closeModal(); showToast('Evento adicionado ao calendário.'); return;
+  }
+
+  if(type === 'addResearch'){
+    const name = $('#mName').value.trim() || 'Pesquisa sem nome';
+    const legal = document.querySelector('.seg-opt[data-seg="rlegal"].active').dataset.val === 'legal';
+    const durationValue = parseFloat($('#mDurationValue').value) || 1;
+    const unit = $('#mDurationUnit').value;
+    const unitDays = unit === 'semanas' ? 7 : unit === 'meses' ? 30 : 1;
+    const durationDays = Math.max(1, Math.round(durationValue * unitDays));
+    const businessId = $('#mResearchBusiness').value || null;
+    const notes = $('#mNotes').value.trim();
+    state.researches.push({ id: uid('res'), name, legal, durationDays, daysElapsed: 0, businessId, notes, completed: false });
+    saveState(); closeModal(); showToast('Pesquisa criada.'); return;
+  }
+
+  if(type === 'researchDetail'){
+    if(!isMaster){ closeModal(); return; }
+    const r = state.researches.find(x=>x.id===ui.modalData.id);
+    r.daysElapsed = parseFloat($('#mDaysElapsed').value) || 0;
+    r.durationDays = Math.max(1, parseFloat($('#mDurationDays').value) || 1);
+    r.notes = $('#mNotes').value.trim();
+    r.completed = r.daysElapsed >= r.durationDays;
+    saveState(); closeModal(); showToast('Pesquisa atualizada.'); return;
+  }
+
+  if(type === 'addCharacter' || type === 'characterDetail'){
+    if(!isMaster){ closeModal(); return; }
+    syncCharacterFormFromDom();
+    const name = ui.modalData.name.trim() || 'Sem nome';
+    const role = ui.modalData.role.trim();
+    const description = ui.modalData.description.trim();
+    const photo = ui.modalData.photo !== undefined ? ui.modalData.photo : null;
+    const modifiers = (ui.modalData.modifiers||[]).filter(m=>m.percent);
+    const assignRaw = ui.modalData.assignedTo;
+    const assignedTo = assignRaw ? { type: assignRaw.split(':')[0], id: assignRaw.split(':')[1] } : null;
+
+    if(type === 'addCharacter'){
+      state.characters.push({ id: uid('char'), name, role, description, photo, modifiers, assignedTo });
+      saveState(); closeModal(); showToast('Personagem criado.'); return;
+    } else {
+      const c = state.characters.find(x=>x.id===ui.modalData.id);
+      c.name = name; c.role = role; c.description = description; c.modifiers = modifiers; c.assignedTo = assignedTo;
+      if(ui.modalData.photo !== undefined) c.photo = ui.modalData.photo;
+      saveState(); closeModal(); showToast('Personagem atualizado.'); return;
+    }
   }
 }
 
