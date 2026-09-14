@@ -679,6 +679,54 @@
     background:linear-gradient(0deg, rgba(0,0,0,0.75), transparent);
   }
   .codex-detail-photo{width:100%;border-radius:14px;margin-bottom:12px;max-height:260px;object-fit:cover;background:var(--bg-panel-3);display:block;}
+
+  /* ---------- TELA DE APPS (launcher) ---------- */
+  .apps-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:22px;max-width:420px;margin:24px auto 0;}
+  .app-icon-tile{display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;background:none;border:none;padding:0;}
+  .app-icon-glyph{
+    width:64px;height:64px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:28px;
+    box-shadow:0 8px 20px rgba(0,0,0,0.45);transition:transform .15s ease;
+  }
+  .app-icon-tile:hover .app-icon-glyph{transform:scale(1.07);}
+  .app-icon-inventory{background:linear-gradient(160deg, #ffc266, #ff8a00);}
+  .app-icon-codex{background:linear-gradient(160deg, #ff8fc7, #c21f95);}
+  .app-icon-label{font-size:11px;color:var(--text-dim);font-family:'Inter',sans-serif;font-weight:600;}
+
+  /* ---------- "CHROME" DE APP DE CELULAR (inventário/codex) ---------- */
+  .app-shell{
+    max-width:420px;margin:0 auto;width:100%;
+    background:linear-gradient(180deg, var(--app-bg-2), var(--app-bg));
+    border-radius:34px;border:1px solid rgba(255,255,255,0.07);
+    box-shadow:0 24px 70px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.02);
+    display:flex;flex-direction:column;min-height:calc(100vh - 48px);overflow:hidden;
+  }
+  .app-statusbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 24px 2px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--app-fg);
+    flex-shrink:0;
+  }
+  .app-statusbar .icons{display:flex;gap:6px;align-items:center;color:var(--app-fg);}
+  .app-chrome-head{display:flex;align-items:center;justify-content:space-between;padding:8px 20px 16px;flex-shrink:0;}
+  .app-chrome-title{font-family:'Chakra Petch',sans-serif;font-weight:800;font-size:20px;letter-spacing:0.3px;color:var(--app-fg);}
+  .app-chrome-close{
+    width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,0.08);color:var(--app-fg);cursor:pointer;font-size:13px;flex-shrink:0;
+  }
+  .app-body{flex:1;padding:0 18px 20px;overflow-y:auto;}
+  .app-home-indicator{width:120px;height:4px;border-radius:99px;background:rgba(255,255,255,0.25);margin:6px auto 12px;flex-shrink:0;}
+
+  .app-theme-inventory{
+    --app-accent:#ff9500; --app-bg:#170f06; --app-bg-2:#241a0c; --app-bg-3:#2e2210; --app-border:#4a3016; --app-fg:#ffe6c2;
+    --accent-1:var(--app-accent); --accent-2:#ffb347; --accent-glow:rgba(255,149,0,0.35);
+    --bg-panel:var(--app-bg-2); --bg-panel-2:var(--app-bg-2); --bg-panel-3:var(--app-bg-3);
+    --border:var(--app-border); --border-soft:var(--app-border); --text:var(--app-fg); --text-dim:#c9a878; --text-faint:#8a6d47;
+  }
+  .app-theme-codex{
+    --app-accent:#ff4fa6; --app-bg:#150713; --app-bg-2:#210a1c; --app-bg-3:#2b0e25; --app-border:#4a1a3c; --app-fg:#ffd9ee;
+    --accent-1:var(--app-accent); --accent-2:#ff8fc7; --accent-glow:rgba(255,79,166,0.35);
+    --bg-panel:var(--app-bg-2); --bg-panel-2:var(--app-bg-2); --bg-panel-3:var(--app-bg-3);
+    --border:var(--app-border); --border-soft:var(--app-border); --text:var(--app-fg); --text-dim:#d99cc0; --text-faint:#8a5877;
+  }
 </style>
 </head>
 <body>
@@ -688,6 +736,7 @@
 <div id="diaryOverlay" class="diary-overlay"></div>
 <div id="inventoryOverlay" class="diary-overlay"></div>
 <div id="codexOverlay" class="diary-overlay"></div>
+<div id="appsOverlay" class="diary-overlay"></div>
 
 <script>
 /* ============================================================
@@ -1145,17 +1194,17 @@ function renderTopbar(){
             <circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/>
           </svg>
         </button>
-        <button class="icon-btn" id="inventoryBtn" title="Inventário">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M4 8 L4 20 L20 20 L20 8 Z"/>
-            <path d="M8 8 L8 5 C8 3.9 8.9 3 10 3 L14 3 C15.1 3 16 3.9 16 5 L16 8"/>
-            <path d="M4 12 L20 12"/>
-          </svg>
-        </button>
-        <button class="icon-btn" id="codexBtn" title="Codex">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M5 4 L19 4 L19 20 L5 20 C4.4 20 4 19.6 4 19 L4 5 C4 4.4 4.4 4 5 4 Z"/>
-            <path d="M8 4 L8 20"/>
+        <button class="icon-btn" id="appsBtn" title="Apps">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="6" cy="6" r="2.2"/>
+            <circle cx="12" cy="6" r="2.2"/>
+            <circle cx="18" cy="6" r="2.2"/>
+            <circle cx="6" cy="12" r="2.2"/>
+            <circle cx="12" cy="12" r="2.2"/>
+            <circle cx="18" cy="12" r="2.2"/>
+            <circle cx="6" cy="18" r="2.2"/>
+            <circle cx="12" cy="18" r="2.2"/>
+            <circle cx="18" cy="18" r="2.2"/>
           </svg>
         </button>
         <button class="mode-cat-btn" id="modeCatBtn" title="Alternar limpo / sujo">
@@ -2029,11 +2078,8 @@ function attachHandlers(){
   const diceRollerBtn = $('#diceRollerBtn');
   if(diceRollerBtn) diceRollerBtn.onclick = openDiceRoller;
 
-  const inventoryBtn = $('#inventoryBtn');
-  if(inventoryBtn) inventoryBtn.onclick = ()=> inventoryOpen ? closeInventory() : openInventory();
-
-  const codexBtn = $('#codexBtn');
-  if(codexBtn) codexBtn.onclick = ()=> codexOpen ? closeCodex() : openCodex();
+  const appsBtn = $('#appsBtn');
+  if(appsBtn) appsBtn.onclick = openAppsLauncher;
 
   const roleBadge = $('#roleBadge');
   if(roleBadge) roleBadge.onclick = ()=>{
@@ -2900,6 +2946,57 @@ function fmtWeight(n){
   return (v % 1 === 0 ? v.toFixed(0) : v.toFixed(2)) + 'kg';
 }
 
+// barra de status falsa, só pra dar a cara de app de celular de verdade
+function renderAppStatusBar(){
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mm = String(now.getMinutes()).padStart(2,'0');
+  return `
+    <div class="app-statusbar">
+      <div>${hh}:${mm}</div>
+      <div class="icons">
+        <svg width="14" height="10" viewBox="0 0 16 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="0.5"/><rect x="4.5" y="5" width="3" height="7" rx="0.5"/><rect x="9" y="2" width="3" height="10" rx="0.5"/><rect x="13" y="0" width="3" height="12" rx="0.5"/></svg>
+        <svg width="14" height="10" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M1 4.5 C5 0.5 11 0.5 15 4.5"/><path d="M3.5 7 C6.2 4.3 9.8 4.3 12.5 7"/><circle cx="8" cy="10" r="1" fill="currentColor" stroke="none"/></svg>
+        <svg width="20" height="10" viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="0.5" y="0.5" width="20" height="11" rx="2.5"/><rect x="2" y="2" width="15" height="8" rx="1.3" fill="currentColor" stroke="none"/><rect x="21.5" y="4" width="2" height="4" rx="1" fill="currentColor" stroke="none"/></svg>
+      </div>
+    </div>
+  `;
+}
+
+/* ============================================================
+   TELA DE APPS — "launcher" pra abrir Inventário/Codex como se
+   fossem outros aplicativos (visual/tema próprio de cada um).
+   ============================================================ */
+function openAppsLauncher(){
+  const overlay = document.getElementById('appsOverlay');
+  overlay.style.display = 'flex';
+  overlay.innerHTML = `
+    <div class="diary-head">
+      <div class="diary-title">Apps</div>
+      <div class="icon-btn" id="appsClose">✕</div>
+    </div>
+    <div class="apps-grid">
+      <button class="app-icon-tile" id="launchInventory">
+        <div class="app-icon-glyph app-icon-inventory">🎒</div>
+        <div class="app-icon-label">Depósito</div>
+      </button>
+      <button class="app-icon-tile" id="launchCodex">
+        <div class="app-icon-glyph app-icon-codex">📔</div>
+        <div class="app-icon-label">Memórias</div>
+      </button>
+    </div>
+  `;
+  document.getElementById('appsClose').onclick = closeAppsLauncher;
+  document.getElementById('launchInventory').onclick = ()=>{ closeAppsLauncher(); openInventory(); };
+  document.getElementById('launchCodex').onclick = ()=>{ closeAppsLauncher(); openCodex(); };
+}
+
+function closeAppsLauncher(){
+  const overlay = document.getElementById('appsOverlay');
+  overlay.style.display = 'none';
+  overlay.innerHTML = '';
+}
+
 /* ============================================================
    INVENTÁRIO — mestre e jogador podem criar/remover livremente.
    Vive fora do #root, mesmo motivo do diário: o formulário de
@@ -2983,11 +3080,15 @@ function subscribeInventoryRealtime(){
 function renderInventoryOverlay(){
   const overlay = document.getElementById('inventoryOverlay');
   overlay.innerHTML = `
-    <div class="diary-head">
-      <div class="diary-title">Inventário</div>
-      <div class="icon-btn" id="invClose">✕</div>
+    <div class="app-shell app-theme-inventory">
+      ${renderAppStatusBar()}
+      <div class="app-chrome-head">
+        <div class="app-chrome-title">Depósito</div>
+        <div class="app-chrome-close" id="invClose">✕</div>
+      </div>
+      <div class="app-body"><div class="inv-wrap">${renderInventoryBody()}</div></div>
+      <div class="app-home-indicator"></div>
     </div>
-    <div class="inv-wrap">${renderInventoryBody()}</div>
   `;
   attachInventoryHandlers();
 }
@@ -3319,11 +3420,15 @@ function subscribeCodexRealtime(){
 function renderCodexOverlay(){
   const overlay = document.getElementById('codexOverlay');
   overlay.innerHTML = `
-    <div class="diary-head">
-      <div class="diary-title">Codex</div>
-      <div class="icon-btn" id="codexClose">✕</div>
+    <div class="app-shell app-theme-codex">
+      ${renderAppStatusBar()}
+      <div class="app-chrome-head">
+        <div class="app-chrome-title">Memórias</div>
+        <div class="app-chrome-close" id="codexClose">✕</div>
+      </div>
+      <div class="app-body"><div class="codex-wrap">${renderCodexBody()}</div></div>
+      <div class="app-home-indicator"></div>
     </div>
-    <div class="codex-wrap">${renderCodexBody()}</div>
   `;
   attachCodexHandlers();
 }
@@ -3342,7 +3447,7 @@ function renderCodexGrid(){
   return `
     ${codexCurrentFolder ? `<div class="codex-breadcrumb" id="codexBack">← voltar</div>` : ''}
     <div class="inv-section-head">
-      <div class="section-title" style="margin:0;">${folder ? folder.name : 'Codex'} ${folder && canEdit ? `<span class="edit-link" id="codexEditFolder" style="margin-left:8px;">✎ editar</span>` : ''}</div>
+      <div class="section-title" style="margin:0;">${folder ? folder.name : 'Início'} ${folder && canEdit ? `<span class="edit-link" id="codexEditFolder" style="margin-left:8px;">✎ editar</span>` : ''}</div>
       ${canEdit ? `
         <div style="display:flex;gap:12px;">
           <span class="add-link" id="codexAddFolder">+ pasta</span>
