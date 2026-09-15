@@ -653,6 +653,47 @@
     width:60px;height:60px;flex-shrink:0;border-radius:10px;background:var(--bg-panel-3);background-size:cover;background-position:center;
     display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--text-faint);
   }
+  .inv-capacity-card{margin-top:2px;}
+  .inv-capacity-value{font-family:'Chakra Petch',sans-serif;font-size:27px;font-weight:700;margin-top:6px;}
+  .inv-capacity-value .inv-capacity-max{font-size:14px;color:var(--text-dim);font-weight:500;}
+  .inv-capacity-track{margin-top:12px;height:8px;}
+  .inv-add-wrap{margin:14px 0 6px;}
+  .inv-add-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13.5px;}
+  .inv-section-head .inv-section-title{display:flex;align-items:center;gap:7px;}
+  .inv-mini-add{
+    width:26px;height:26px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--bg-panel-3);border:1px solid var(--border);color:var(--accent-1);
+    font-weight:700;font-size:14px;line-height:1;cursor:pointer;transition:all .15s ease;
+  }
+  .inv-mini-add:hover{border-color:var(--accent-1);background:color-mix(in srgb, var(--accent-1) 15%, var(--bg-panel-3));}
+  .inv-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .inv-card-title{display:flex;align-items:center;gap:8px;min-width:0;}
+  .inv-card-title .entity-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .inv-card-icon{
+    width:32px;height:32px;border-radius:9px;flex-shrink:0;background:var(--bg-panel-3);
+    display:flex;align-items:center;justify-content:center;font-size:15px;
+  }
+  .inv-item-row{display:flex;align-items:center;gap:10px;padding:9px 6px;border-radius:10px;cursor:pointer;transition:background .15s ease;}
+  .inv-item-row:hover{background:var(--bg-panel-3);}
+  .inv-item-info{flex:1;min-width:0;}
+  .inv-item-name{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .inv-item-right{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+  .inv-item-qty{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text-faint);background:var(--bg-panel-3);border-radius:6px;padding:2px 6px;}
+  .inv-item-weight{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text-dim);white-space:nowrap;}
+  .inv-chooser{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
+  .inv-chooser-option{
+    display:flex;align-items:center;gap:14px;padding:16px;border-radius:16px;cursor:pointer;
+    background:linear-gradient(160deg, var(--bg-panel-2), var(--bg-panel));border:1px solid var(--border);
+    transition:border-color .2s ease, transform .15s ease;
+  }
+  .inv-chooser-option:hover{border-color:var(--accent-1);transform:translateY(-1px);}
+  .inv-chooser-icon{
+    width:46px;height:46px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+    font-size:21px;background:var(--bg-panel-3);
+  }
+  .inv-chooser-title{font-weight:700;font-size:14px;}
+  .inv-chooser-sub{font-size:11.5px;color:var(--text-faint);margin-top:2px;line-height:1.4;}
 
   /* ---------- CODEX ---------- */
   .codex-wrap{max-width:1100px;margin:0 auto;width:100%;}
@@ -3136,6 +3177,7 @@ function renderInventoryBody(){
   if(invView === 'itemForm') return renderItemForm();
   if(invView === 'receptacleForm') return renderReceptacleForm();
   if(invView === 'capacityForm') return renderPlayerCapacityForm();
+  if(invView === 'addChooser') return renderAddChooser();
   return renderInventoryList();
 }
 
@@ -3152,32 +3194,61 @@ function renderInventoryList(){
   const max = (state && state.playerCarryCapacity) || 50;
   const pct = max ? Math.min(100, Math.round((used/max)*100)) : 0;
   return `
-    <div class="card inv-container-card">
+    <div class="card inv-capacity-card">
       <div class="card-label-row">
-        <div class="entity-name">Sua carga</div>
+        <div class="card-label">Sua carga</div>
         ${isMaster ? `<span class="edit-link" id="invEditCapacity">✎ editar</span>` : ''}
       </div>
-      <div class="progress-track"><div class="progress-fill" style="width:${pct}%;${pct>=100?'background:var(--danger);':''}"></div></div>
-      <div class="hint">${fmtWeight(used)} / ${fmtWeight(max)} de carga</div>
+      <div class="inv-capacity-value">${fmtWeight(used)} <span class="inv-capacity-max">/ ${fmtWeight(max)}</span></div>
+      <div class="progress-track inv-capacity-track"><div class="progress-fill" style="width:${pct}%;${pct>=100?'background:var(--danger);':''}"></div></div>
     </div>
 
+    <div class="inv-add-wrap"><button class="btn btn-accent inv-add-btn" id="invOpenAdd">+ Adicionar</button></div>
+
     <div class="inv-section-head">
-      <div class="section-title" style="margin:0;">Lugares</div>
-      <span class="add-link" id="invAddContainer">+ novo lugar</span>
+      <div class="inv-section-title section-title" style="margin:0;">📍 Lugares</div>
     </div>
     ${inventoryContainers.length ? inventoryContainers.map(c=>renderContainerCard(c, itemsByContainer[c.id]||[])).join('') : '<div class="empty-state">Nenhum lugar criado ainda.</div>'}
 
     <div class="inv-section-head">
-      <div class="section-title" style="margin:0;">Recipientes</div>
-      <span class="add-link" id="invAddReceptacle">+ novo recipiente</span>
+      <div class="inv-section-title section-title" style="margin:0;">🎒 Recipientes</div>
     </div>
     ${inventoryReceptacles.length ? inventoryReceptacles.map(r=>renderReceptacleCard(r, itemsByReceptacle[r.id]||[])).join('') : '<div class="empty-state">Nenhum recipiente criado ainda.</div>'}
 
     <div class="inv-section-head">
-      <div class="section-title" style="margin:0;">Direto com você</div>
-      <span class="add-link" data-add-item-to="">+ item</span>
+      <div class="inv-section-title section-title" style="margin:0;">🧍 Direto com você</div>
+      <span class="inv-mini-add" data-add-item-to="" title="Adicionar item">+</span>
     </div>
     ${loose.length ? `<div class="inv-items">${loose.map(it=>renderItemRowHtml(it)).join('')}</div>` : '<div class="empty-state">Nada solto por aqui.</div>'}
+  `;
+}
+
+function renderAddChooser(){
+  return `
+    <div class="diary-history-link" id="invBackToList">↺ voltar</div>
+    <div class="inv-chooser">
+      <div class="inv-chooser-option" id="chooseItem">
+        <div class="inv-chooser-icon">🧳</div>
+        <div>
+          <div class="inv-chooser-title">Item</div>
+          <div class="inv-chooser-sub">Guarda algo com você, num lugar ou num recipiente</div>
+        </div>
+      </div>
+      <div class="inv-chooser-option" id="chooseContainer">
+        <div class="inv-chooser-icon">📍</div>
+        <div>
+          <div class="inv-chooser-title">Lugar</div>
+          <div class="inv-chooser-sub">Espaço fixo com carga própria — não pesa em você</div>
+        </div>
+      </div>
+      <div class="inv-chooser-option" id="chooseReceptacle">
+        <div class="inv-chooser-icon">🎒</div>
+        <div>
+          <div class="inv-chooser-title">Recipiente</div>
+          <div class="inv-chooser-sub">Carregado por você — tem peso e capacidade próprios</div>
+        </div>
+      </div>
+    </div>
   `;
 }
 
@@ -3186,9 +3257,12 @@ function renderContainerCard(c, items){
   const pct = c.capacity ? Math.min(100, Math.round((used/c.capacity)*100)) : 0;
   return `
     <div class="card inv-container-card">
-      <div class="card-label-row">
-        <div class="entity-name" data-edit-container="${c.id}" style="cursor:pointer;">${c.name}</div>
-        <span class="add-link" data-add-item-to="${c.id}">+ item</span>
+      <div class="inv-card-head">
+        <div class="inv-card-title" data-edit-container="${c.id}" style="cursor:pointer;">
+          <div class="inv-card-icon">📍</div>
+          <div class="entity-name">${c.name}</div>
+        </div>
+        <span class="inv-mini-add" data-add-item-to="${c.id}" title="Adicionar item">+</span>
       </div>
       ${c.capacity ? `
         <div class="progress-track"><div class="progress-fill" style="width:${pct}%;${pct>=100?'background:var(--danger);':''}"></div></div>
@@ -3207,9 +3281,12 @@ function renderReceptacleCard(r, items){
   const effective = r.base_weight + used;
   return `
     <div class="card inv-container-card">
-      <div class="card-label-row">
-        <div class="entity-name" data-edit-receptacle="${r.id}" style="cursor:pointer;">${r.name}</div>
-        <span class="add-link" data-add-item-to-receptacle="${r.id}">+ item</span>
+      <div class="inv-card-head">
+        <div class="inv-card-title" data-edit-receptacle="${r.id}" style="cursor:pointer;">
+          <div class="inv-card-icon">🎒</div>
+          <div class="entity-name">${r.name}</div>
+        </div>
+        <span class="inv-mini-add" data-add-item-to-receptacle="${r.id}" title="Adicionar item">+</span>
       </div>
       <div class="progress-track"><div class="progress-fill" style="width:${pct}%;${pct>=100?'background:var(--danger);':''}"></div></div>
       <div class="hint">${fmtWeight(used)} / ${fmtWeight(r.capacity)} de carga interna · carrega ${fmtWeight(effective)} de você (${fmtWeight(r.base_weight)} vazio)</div>
@@ -3224,9 +3301,12 @@ function renderItemRowHtml(it){
   return `
     <div class="inv-item-row" data-open-item="${it.id}">
       <div class="inv-item-photo" style="${it.image_url?`background-image:url('${it.image_url}')`:''}">${it.image_url?'':'📦'}</div>
-      <div style="flex:1;">
-        <div class="inv-item-name">${it.name}${it.quantity>1?` ×${it.quantity}`:''}</div>
-        ${it.weight ? `<div class="inv-item-sub">${fmtWeight(it.weight)} cada</div>` : ''}
+      <div class="inv-item-info">
+        <div class="inv-item-name">${it.name}</div>
+      </div>
+      <div class="inv-item-right">
+        ${it.quantity>1 ? `<span class="inv-item-qty">×${it.quantity}</span>` : ''}
+        ${it.weight ? `<span class="inv-item-weight">${fmtWeight(it.weight)}</span>` : ''}
       </div>
     </div>
   `;
@@ -3348,8 +3428,7 @@ function attachInventoryHandlers(){
   if(invView === 'list'){
     const editCap = $('#invEditCapacity');
     if(editCap) editCap.onclick = ()=>{ invView='capacityForm'; renderInventoryOverlay(); };
-    $('#invAddContainer').onclick = ()=>{ invView='containerForm'; invEditingId=null; renderInventoryOverlay(); };
-    $('#invAddReceptacle').onclick = ()=>{ invView='receptacleForm'; invEditingId=null; invRecFormPhoto=undefined; invRecFormDraft=null; renderInventoryOverlay(); };
+    $('#invOpenAdd').onclick = ()=>{ invView='addChooser'; renderInventoryOverlay(); };
     $$('[data-edit-container]').forEach(el=>{
       el.onclick = ()=>{ invView='containerForm'; invEditingId=el.dataset.editContainer; renderInventoryOverlay(); };
     });
@@ -3393,6 +3472,13 @@ function attachInventoryHandlers(){
   if(invView === 'capacityForm'){
     $('#invBackToList').onclick = ()=>{ invView='list'; renderInventoryOverlay(); };
     $('#saveCapacityBtn').onclick = savePlayerCapacity;
+  }
+
+  if(invView === 'addChooser'){
+    $('#invBackToList').onclick = ()=>{ invView='list'; renderInventoryOverlay(); };
+    $('#chooseItem').onclick = ()=>{ invView='itemForm'; invEditingId=null; invFormPlace=''; invFormPhoto=undefined; invFormDraft=null; renderInventoryOverlay(); };
+    $('#chooseContainer').onclick = ()=>{ invView='containerForm'; invEditingId=null; renderInventoryOverlay(); };
+    $('#chooseReceptacle').onclick = ()=>{ invView='receptacleForm'; invEditingId=null; invRecFormPhoto=undefined; invRecFormDraft=null; renderInventoryOverlay(); };
   }
 }
 
