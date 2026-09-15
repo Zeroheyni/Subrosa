@@ -3816,7 +3816,7 @@ function closeCodex(){
 async function loadCodexData(){
   const [{ data: folders, error: e1 }, { data: entries, error: e2 }] = await Promise.all([
     sb.from('codex_folders').select('*').order('created_at'),
-    sb.from('codex_entries').select('*').order('created_at', { ascending: false })
+    sb.from('codex_entries').select('*').order('sort_order')
   ]);
   if(e1) throw e1;
   if(e2) throw e2;
@@ -3863,10 +3863,13 @@ function renderCodexBody(){
 function renderCodexGrid(){
   const folder = codexCurrentFolder ? codexFolders.find(f=>f.id===codexCurrentFolder) : null;
   const subfolders = codexFolders.filter(f=> (f.parent_folder_id||null) === (codexCurrentFolder||null));
-  const entriesHere = codexEntries.filter(e=> (e.folder_id||null) === (codexCurrentFolder||null));
+  const entriesHere = codexEntries
+    .filter(e=> (e.folder_id||null) === (codexCurrentFolder||null))
+    .sort((a,b)=> (a.sort_order||0) - (b.sort_order||0));
   const canEdit = true;
+  const hereDrop = 'folder:' + (codexCurrentFolder || '__root__');
   return `
-    ${codexCurrentFolder ? `<div class="codex-breadcrumb" id="codexBack">← voltar</div>` : ''}
+    ${codexCurrentFolder ? `<div class="codex-breadcrumb" id="codexBack" data-drop="folder:${folder && folder.parent_folder_id ? folder.parent_folder_id : '__root__'}">← voltar</div>` : ''}
     <div class="inv-section-head">
       <div class="section-title" style="margin:0;">${folder ? folder.name : 'Início'} ${folder && canEdit ? `<span class="edit-link" id="codexEditFolder" style="margin-left:8px;">✎ editar</span>` : ''}</div>
       ${canEdit ? `
@@ -3876,7 +3879,7 @@ function renderCodexGrid(){
         </div>
       ` : ''}
     </div>
-    <div class="codex-grid">
+    <div class="codex-grid" data-drop="${hereDrop}">
       ${subfolders.map(f=>renderFolderTile(f)).join('')}
       ${entriesHere.map(e=>renderEntryTile(e)).join('')}
     </div>
@@ -3887,7 +3890,7 @@ function renderCodexGrid(){
 function renderFolderTile(f){
   const count = codexFolders.filter(x=>x.parent_folder_id===f.id).length + codexEntries.filter(e=>e.folder_id===f.id).length;
   return `
-    <div class="codex-folder-card" data-open-folder="${f.id}">
+    <div class="codex-folder-card" data-open-folder="${f.id}" data-drop="folder:${f.id}">
       <div class="icon">📁</div>
       <div class="name">${f.name}</div>
       <div class="count">${count} ${count===1?'item':'itens'}</div>
@@ -3897,7 +3900,7 @@ function renderFolderTile(f){
 
 function renderEntryTile(e){
   return `
-    <div class="codex-entry-card" data-open-entry="${e.id}">
+    <div class="codex-entry-card" data-open-entry="${e.id}" data-drop="entry:${e.id}">
       ${e.image_url ? `<div class="photo" style="background-image:url('${e.image_url}')"></div>` : `<div class="no-photo">🗂️</div>`}
       <div class="title">${e.title}</div>
     </div>
@@ -3965,9 +3968,7 @@ function attachCodexHandlers(){
     $$('[data-open-folder]').forEach(el=>{
       el.onclick = ()=>{ codexCurrentFolder = el.dataset.openFolder; renderCodexOverlay(); };
     });
-    $$('[data-open-entry]').forEach(el=>{
-      el.onclick = ()=>{ codexView='entryForm'; codexEditingId=el.dataset.openEntry; codexFormPhoto=undefined; codexFormDraft=null; renderCodexOverlay(); };
-    });
+    setupCodexDrag();
   }
 
   if(codexView === 'folderForm'){
@@ -3984,6 +3985,70 @@ function attachCodexHandlers(){
     const del = $('#deleteEntryBtn');
     if(del) del.onclick = ()=> deleteEntry(codexEditingId);
   }
+}
+
+function setupCodexDrag(){
+  const root = document.querySelector('.codex-wrap');
+  if(!root) return;
+  enableDragDrop(root, {
+    dragSelector: '[data-open-entry]',
+    dropSelector: '[data-drop]',
+    onTap: (el)=>{
+      codexView='entryForm'; codexEditingId=el.dataset.openEntry; codexFormPhoto=undefined; codexFormDraft=null; renderCodexOverlay();
+    },
+    onDrop: (dragEl, targetEl, ev)=>{
+      const entry = codexEntries.find(e=>e.id===dragEl.dataset.openEntry);
+      if(!entry) return;
+      const dropVal = targetEl.dataset.drop;
+      if(dropVal.startsWith('folder:')){
+        const raw = dropVal.slice('folder:'.length);
+        const folderId = raw === '__root__' ? null : raw;
+        moveCodexEntry(entry, folderId, null);
+      } else if(dropVal.startsWith('entry:')){
+        const targetId = dropVal.slice('entry:'.length);
+        const targetEntry = codexEntries.find(e=>e.id===targetId);
+        if(!targetEntry || targetEntry.id === entry.id) return;
+        const rect = targetEl.getBoundingClientRect();
+        const before = ev.clientX < (rect.left + rect.width/2);
+        moveCodexEntryRelative(entry, targetEntry, before);
+      }
+    }
+  });
+}
+
+async function moveCodexEntry(entry, folderId, sortOrder){
+  if(sortOrder == null){
+    const siblings = codexEntries.filter(e => (e.folder_id||null) === (folderId||null) && e.id !== entry.id);
+    const maxOrder = siblings.reduce((m,e)=> Math.max(m, e.sort_order||0), -1);
+    sortOrder = maxOrder + 1;
+  }
+  if((entry.folder_id||null) === (folderId||null) && entry.sort_order === sortOrder) return;
+  try{
+    const { error } = await sb.rpc('codex_set_entry_order', { p_id: entry.id, p_folder_id: folderId, p_sort_order: sortOrder });
+    if(error) throw error;
+    await loadCodexData();
+    renderCodexOverlay();
+  } catch(e){
+    console.error('Falha ao mover lembrança', e);
+    showToast('Não consegui mover. Tenta de novo.');
+  }
+}
+
+function moveCodexEntryRelative(entry, targetEntry, before){
+  const folderId = targetEntry.folder_id || null;
+  const siblings = codexEntries
+    .filter(e => (e.folder_id||null) === folderId && e.id !== entry.id)
+    .sort((a,b)=> (a.sort_order||0) - (b.sort_order||0));
+  const idx = siblings.findIndex(e=>e.id===targetEntry.id);
+  let prevOrder, nextOrder;
+  if(before){
+    prevOrder = idx > 0 ? (siblings[idx-1].sort_order||0) : (targetEntry.sort_order||0) - 1;
+    nextOrder = targetEntry.sort_order||0;
+  } else {
+    prevOrder = targetEntry.sort_order||0;
+    nextOrder = idx < siblings.length-1 ? (siblings[idx+1].sort_order||0) : (targetEntry.sort_order||0) + 1;
+  }
+  moveCodexEntry(entry, folderId, (prevOrder + nextOrder) / 2);
 }
 
 async function saveFolder(){
