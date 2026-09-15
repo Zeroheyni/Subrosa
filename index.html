@@ -638,17 +638,11 @@
   .inv-section-head{display:flex;align-items:center;justify-content:space-between;margin:16px 0 8px;}
   .inv-container-card{margin-bottom:12px;}
   .inv-items{display:flex;flex-direction:column;gap:2px;margin-top:4px;}
-  .inv-item-row{
-    display:flex;align-items:center;gap:10px;padding:8px 4px;border-radius:10px;cursor:pointer;
-    transition:background .15s ease;
-  }
-  .inv-item-row:hover{background:var(--bg-panel-3);}
   .inv-item-photo{
     width:38px;height:38px;border-radius:9px;background:var(--bg-panel-3);background-size:cover;background-position:center;
     display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;
   }
-  .inv-item-name{font-size:13px;font-weight:600;}
-  .inv-item-sub{font-size:10.5px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;}
+  .inv-loose-zone{border-radius:16px;transition:background .15s ease;}
   .inv-photo-preview{
     width:60px;height:60px;flex-shrink:0;border-radius:10px;background:var(--bg-panel-3);background-size:cover;background-position:center;
     display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--text-faint);
@@ -694,6 +688,16 @@
   }
   .inv-chooser-title{font-weight:700;font-size:14px;}
   .inv-chooser-sub{font-size:11.5px;color:var(--text-faint);margin-top:2px;line-height:1.4;}
+
+  /* ---------- ARRASTAR-E-SOLTAR (inventário + codex) ---------- */
+  .dnd-dragging{opacity:0.35;}
+  .dnd-ghost{
+    position:fixed;z-index:400;pointer-events:none;opacity:0.94;
+    background:var(--bg-panel-3);border:1px solid var(--accent-1);border-radius:12px;
+    box-shadow:0 14px 30px rgba(0,0,0,0.5);
+  }
+  .dnd-drop-hover{outline:2px dashed var(--accent-1);outline-offset:2px;background:color-mix(in srgb, var(--accent-1) 10%, transparent);}
+  [data-open-item], [data-open-entry]{touch-action:none;user-select:none;}
 
   /* ---------- CODEX ---------- */
   .codex-wrap{max-width:1100px;margin:0 auto;width:100%;}
@@ -2983,9 +2987,75 @@ function applyRealtimeUpsert(arr, payload){
   }
 }
 
-function fmtWeight(n){
-  const v = Math.round(n*100)/100;
-  return (v % 1 === 0 ? v.toFixed(0) : v.toFixed(2)) + 'kg';
+function fmtCarga(n){
+  const v = Math.round((n||0)*100)/100;
+  return v % 1 === 0 ? v.toFixed(0) : v.toFixed(2);
+}
+
+/* ============================================================
+   Helper compartilhado: arrastar-e-soltar por ponteiro (mouse e
+   touch) — usado no inventário (mover item entre lugar/recipiente/
+   solto) e no codex (mover/reordenar lembranças). Distingue toque
+   simples (onTap) de arraste (onDrop) por um limiar de movimento.
+   ============================================================ */
+function enableDragDrop(root, { dragSelector, dropSelector, onTap, onDrop }){
+  let dragEl = null, ghost = null, startX = 0, startY = 0, moved = false, currentTarget = null;
+  const THRESHOLD = 6;
+
+  function cleanup(){
+    if(ghost){ ghost.remove(); ghost = null; }
+    if(dragEl) dragEl.classList.remove('dnd-dragging');
+    if(currentTarget){ currentTarget.classList.remove('dnd-drop-hover'); currentTarget = null; }
+    dragEl = null; moved = false;
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onUp);
+  }
+
+  function onMove(e){
+    const dx = e.clientX - startX, dy = e.clientY - startY;
+    if(!moved && Math.hypot(dx,dy) > THRESHOLD){
+      moved = true;
+      dragEl.classList.add('dnd-dragging');
+      const r = dragEl.getBoundingClientRect();
+      ghost = dragEl.cloneNode(true);
+      ghost.classList.add('dnd-ghost');
+      ghost.style.width = r.width + 'px';
+      document.body.appendChild(ghost);
+    }
+    if(moved){
+      e.preventDefault();
+      ghost.style.left = (e.clientX - ghost.offsetWidth/2) + 'px';
+      ghost.style.top = (e.clientY - 18) + 'px';
+      const hit = document.elementFromPoint(e.clientX, e.clientY);
+      const target = hit ? hit.closest(dropSelector) : null;
+      const valid = (target && target !== dragEl && root.contains(target)) ? target : null;
+      if(valid !== currentTarget){
+        if(currentTarget) currentTarget.classList.remove('dnd-drop-hover');
+        currentTarget = valid;
+        if(currentTarget) currentTarget.classList.add('dnd-drop-hover');
+      }
+    }
+  }
+
+  function onUp(e){
+    if(moved && currentTarget){
+      onDrop(dragEl, currentTarget, e);
+    } else if(!moved){
+      onTap && onTap(dragEl);
+    }
+    cleanup();
+  }
+
+  root.querySelectorAll(dragSelector).forEach(el=>{
+    el.addEventListener('pointerdown', (e)=>{
+      if(e.button !== undefined && e.button !== 0) return;
+      dragEl = el;
+      startX = e.clientX; startY = e.clientY;
+      moved = false;
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp, { once: true });
+    });
+  });
 }
 
 // barra de status falsa, só pra dar a cara de app de celular de verdade
@@ -3199,27 +3269,25 @@ function renderInventoryList(){
         <div class="card-label">Sua carga</div>
         ${isMaster ? `<span class="edit-link" id="invEditCapacity">✎ editar</span>` : ''}
       </div>
-      <div class="inv-capacity-value">${fmtWeight(used)} <span class="inv-capacity-max">/ ${fmtWeight(max)}</span></div>
+      <div class="inv-capacity-value">${fmtCarga(used)} <span class="inv-capacity-max">/ ${fmtCarga(max)} de carga</span></div>
       <div class="progress-track inv-capacity-track"><div class="progress-fill" style="width:${pct}%;${pct>=100?'background:var(--danger);':''}"></div></div>
     </div>
 
     <div class="inv-add-wrap"><button class="btn btn-accent inv-add-btn" id="invOpenAdd">+ Adicionar</button></div>
 
     <div class="inv-section-head">
-      <div class="inv-section-title section-title" style="margin:0;">📍 Lugares</div>
+      <div class="inv-section-title section-title" style="margin:0;">🎒 Com você</div>
     </div>
-    ${inventoryContainers.length ? inventoryContainers.map(c=>renderContainerCard(c, itemsByContainer[c.id]||[])).join('') : '<div class="empty-state">Nenhum lugar criado ainda.</div>'}
+    <div class="inv-loose-zone" data-drop="loose">
+      ${inventoryReceptacles.map(r=>renderReceptacleCard(r, itemsByReceptacle[r.id]||[])).join('')}
+      ${loose.length ? `<div class="inv-items">${loose.map(it=>renderItemRowHtml(it)).join('')}</div>` : ''}
+      ${(!inventoryReceptacles.length && !loose.length) ? '<div class="empty-state">Nada com você ainda.</div>' : ''}
+    </div>
 
     <div class="inv-section-head">
-      <div class="inv-section-title section-title" style="margin:0;">🎒 Recipientes</div>
+      <div class="inv-section-title section-title" style="margin:0;">📦 Depósitos</div>
     </div>
-    ${inventoryReceptacles.length ? inventoryReceptacles.map(r=>renderReceptacleCard(r, itemsByReceptacle[r.id]||[])).join('') : '<div class="empty-state">Nenhum recipiente criado ainda.</div>'}
-
-    <div class="inv-section-head">
-      <div class="inv-section-title section-title" style="margin:0;">🧍 Direto com você</div>
-      <span class="inv-mini-add" data-add-item-to="" title="Adicionar item">+</span>
-    </div>
-    ${loose.length ? `<div class="inv-items">${loose.map(it=>renderItemRowHtml(it)).join('')}</div>` : '<div class="empty-state">Nada solto por aqui.</div>'}
+    ${inventoryContainers.length ? inventoryContainers.map(c=>renderContainerCard(c, itemsByContainer[c.id]||[])).join('') : '<div class="empty-state">Nenhum depósito criado ainda.</div>'}
   `;
 }
 
@@ -3231,21 +3299,21 @@ function renderAddChooser(){
         <div class="inv-chooser-icon">🧳</div>
         <div>
           <div class="inv-chooser-title">Item</div>
-          <div class="inv-chooser-sub">Guarda algo com você, num lugar ou num recipiente</div>
-        </div>
-      </div>
-      <div class="inv-chooser-option" id="chooseContainer">
-        <div class="inv-chooser-icon">📍</div>
-        <div>
-          <div class="inv-chooser-title">Lugar</div>
-          <div class="inv-chooser-sub">Espaço fixo com carga própria — não pesa em você</div>
+          <div class="inv-chooser-sub">Guarda algo com você, num depósito ou num recipiente</div>
         </div>
       </div>
       <div class="inv-chooser-option" id="chooseReceptacle">
         <div class="inv-chooser-icon">🎒</div>
         <div>
           <div class="inv-chooser-title">Recipiente</div>
-          <div class="inv-chooser-sub">Carregado por você — tem peso e capacidade próprios</div>
+          <div class="inv-chooser-sub">Carregado por você — tem carga própria e capacidade própria</div>
+        </div>
+      </div>
+      <div class="inv-chooser-option" id="chooseContainer">
+        <div class="inv-chooser-icon">📦</div>
+        <div>
+          <div class="inv-chooser-title">Depósito</div>
+          <div class="inv-chooser-sub">Espaço fixo com carga própria — não pesa em você</div>
         </div>
       </div>
     </div>
@@ -3256,18 +3324,18 @@ function renderContainerCard(c, items){
   const used = items.reduce((s,it)=>s + (it.weight*it.quantity), 0);
   const pct = c.capacity ? Math.min(100, Math.round((used/c.capacity)*100)) : 0;
   return `
-    <div class="card inv-container-card">
+    <div class="card inv-container-card" data-drop="container:${c.id}">
       <div class="inv-card-head">
         <div class="inv-card-title" data-edit-container="${c.id}" style="cursor:pointer;">
-          <div class="inv-card-icon">📍</div>
+          <div class="inv-card-icon">📦</div>
           <div class="entity-name">${c.name}</div>
         </div>
         <span class="inv-mini-add" data-add-item-to="${c.id}" title="Adicionar item">+</span>
       </div>
       ${c.capacity ? `
         <div class="progress-track"><div class="progress-fill" style="width:${pct}%;${pct>=100?'background:var(--danger);':''}"></div></div>
-        <div class="hint">${fmtWeight(used)} / ${fmtWeight(c.capacity)} de carga</div>
-      ` : `<div class="hint">Sem limite de carga · ${fmtWeight(used)} carregado</div>`}
+        <div class="hint">${fmtCarga(used)} / ${fmtCarga(c.capacity)} de carga</div>
+      ` : `<div class="hint">Sem limite de carga · ${fmtCarga(used)} em uso</div>`}
       <div class="inv-items">
         ${items.length ? items.map(it=>renderItemRowHtml(it)).join('') : '<div class="empty-state" style="padding:14px;">Vazio.</div>'}
       </div>
@@ -3280,7 +3348,7 @@ function renderReceptacleCard(r, items){
   const pct = r.capacity ? Math.min(100, Math.round((used/r.capacity)*100)) : 0;
   const effective = r.base_weight + used;
   return `
-    <div class="card inv-container-card">
+    <div class="card inv-container-card" data-drop="receptacle:${r.id}">
       <div class="inv-card-head">
         <div class="inv-card-title" data-edit-receptacle="${r.id}" style="cursor:pointer;">
           <div class="inv-card-icon">🎒</div>
@@ -3289,7 +3357,7 @@ function renderReceptacleCard(r, items){
         <span class="inv-mini-add" data-add-item-to-receptacle="${r.id}" title="Adicionar item">+</span>
       </div>
       <div class="progress-track"><div class="progress-fill" style="width:${pct}%;${pct>=100?'background:var(--danger);':''}"></div></div>
-      <div class="hint">${fmtWeight(used)} / ${fmtWeight(r.capacity)} de carga interna · carrega ${fmtWeight(effective)} de você (${fmtWeight(r.base_weight)} vazio)</div>
+      <div class="hint">${fmtCarga(used)} / ${fmtCarga(r.capacity)} de carga interna · carrega ${fmtCarga(effective)} de você (${fmtCarga(r.base_weight)} vazia)</div>
       <div class="inv-items">
         ${items.length ? items.map(it=>renderItemRowHtml(it)).join('') : '<div class="empty-state" style="padding:14px;">Vazio.</div>'}
       </div>
@@ -3306,7 +3374,7 @@ function renderItemRowHtml(it){
       </div>
       <div class="inv-item-right">
         ${it.quantity>1 ? `<span class="inv-item-qty">×${it.quantity}</span>` : ''}
-        ${it.weight ? `<span class="inv-item-weight">${fmtWeight(it.weight)}</span>` : ''}
+        ${it.weight ? `<span class="inv-item-weight">${fmtCarga(it.weight)}</span>` : ''}
       </div>
     </div>
   `;
@@ -3317,7 +3385,7 @@ function renderContainerForm(){
   return `
     <div class="diary-history-link" id="invBackToList">↺ voltar</div>
     <div class="card" style="margin-top:14px;">
-      <div class="field"><label>Nome do lugar</label><input id="mContainerName" value="${existing?existing.name:''}" placeholder="Ex: Mochila, Cofre em casa"></div>
+      <div class="field"><label>Nome do depósito</label><input id="mContainerName" value="${existing?existing.name:''}" placeholder="Ex: Porta-malas do carro, Cofre em casa"></div>
       <div class="field"><label>Limite de carga (opcional)</label><input id="mContainerCapacity" type="number" step="0.01" value="${existing&&existing.capacity!=null?existing.capacity:''}" placeholder="Deixe em branco pra sem limite"></div>
       <div class="modal-actions">
         ${existing ? `<button class="btn btn-danger btn-sm" id="deleteContainerBtn">Remover</button>` : ''}
@@ -3352,17 +3420,17 @@ function renderItemForm(){
       <div class="field"><label>Nome</label><input id="mItemName" value="${name}" placeholder="Ex: Kit médico"></div>
       <div class="field"><label>Descrição (opcional)</label><textarea id="mItemDescription">${description}</textarea></div>
       <div class="field-row">
-        <div class="field"><label>Peso (cada)</label><input id="mItemWeight" type="number" step="0.01" value="${weight}"></div>
+        <div class="field"><label>Carga (cada)</label><input id="mItemWeight" type="number" step="0.01" value="${weight}"></div>
         <div class="field"><label>Quantidade</label><input id="mItemQuantity" type="number" value="${quantity}"></div>
       </div>
-      <div class="field"><label>Lugar</label>
+      <div class="field"><label>Onde fica</label>
         <select id="mItemContainer">
           <option value="" ${place===''?'selected':''}>Com você</option>
-          ${inventoryContainers.length ? `<optgroup label="Lugares">
-            ${inventoryContainers.map(c=>`<option value="container:${c.id}" ${place===('container:'+c.id)?'selected':''}>${c.name}</option>`).join('')}
-          </optgroup>` : ''}
           ${inventoryReceptacles.length ? `<optgroup label="Recipientes">
             ${inventoryReceptacles.map(r=>`<option value="receptacle:${r.id}" ${place===('receptacle:'+r.id)?'selected':''}>${r.name}</option>`).join('')}
+          </optgroup>` : ''}
+          ${inventoryContainers.length ? `<optgroup label="Depósitos">
+            ${inventoryContainers.map(c=>`<option value="container:${c.id}" ${place===('container:'+c.id)?'selected':''}>${c.name}</option>`).join('')}
           </optgroup>` : ''}
         </select>
       </div>
@@ -3394,10 +3462,10 @@ function renderReceptacleForm(){
       <div class="field"><label>Nome</label><input id="mRecName" value="${name}" placeholder="Ex: Bolsa de viagem"></div>
       <div class="field"><label>Descrição (opcional)</label><textarea id="mRecDescription">${description}</textarea></div>
       <div class="field-row">
-        <div class="field"><label>Peso vazio</label><input id="mRecBaseWeight" type="number" step="0.01" value="${baseWeight}"></div>
+        <div class="field"><label>Carga vazia</label><input id="mRecBaseWeight" type="number" step="0.01" value="${baseWeight}"></div>
         <div class="field"><label>Capacidade interna</label><input id="mRecCapacity" type="number" step="0.01" value="${capacity}"></div>
       </div>
-      <div class="hint">Itens dentro valem metade do peso pra capacidade interna. O peso vazio + metade dos itens conta contra a sua carga.</div>
+      <div class="hint">Itens dentro valem metade da carga pra capacidade interna. A carga vazia + metade dos itens conta contra a sua carga.</div>
       <div class="modal-actions">
         ${existing ? `<button class="btn btn-danger btn-sm" id="deleteReceptacleBtn">Remover</button>` : ''}
         <button class="btn btn-accent" id="saveReceptacleBtn">Salvar</button>
@@ -3441,9 +3509,7 @@ function attachInventoryHandlers(){
     $$('[data-add-item-to-receptacle]').forEach(el=>{
       el.onclick = ()=>{ invView='itemForm'; invEditingId=null; invFormPlace='receptacle:'+el.dataset.addItemToReceptacle; invFormPhoto=undefined; invFormDraft=null; renderInventoryOverlay(); };
     });
-    $$('[data-open-item]').forEach(el=>{
-      el.onclick = ()=>{ invView='itemForm'; invEditingId=el.dataset.openItem; invFormPhoto=undefined; invFormDraft=null; renderInventoryOverlay(); };
-    });
+    setupInventoryDrag();
   }
 
   if(invView === 'containerForm'){
@@ -3479,6 +3545,43 @@ function attachInventoryHandlers(){
     $('#chooseItem').onclick = ()=>{ invView='itemForm'; invEditingId=null; invFormPlace=''; invFormPhoto=undefined; invFormDraft=null; renderInventoryOverlay(); };
     $('#chooseContainer').onclick = ()=>{ invView='containerForm'; invEditingId=null; renderInventoryOverlay(); };
     $('#chooseReceptacle').onclick = ()=>{ invView='receptacleForm'; invEditingId=null; invRecFormPhoto=undefined; invRecFormDraft=null; renderInventoryOverlay(); };
+  }
+}
+
+function setupInventoryDrag(){
+  const root = document.querySelector('.inv-wrap');
+  if(!root) return;
+  enableDragDrop(root, {
+    dragSelector: '[data-open-item]',
+    dropSelector: '[data-drop]',
+    onTap: (el)=>{
+      invView='itemForm'; invEditingId=el.dataset.openItem; invFormPhoto=undefined; invFormDraft=null; renderInventoryOverlay();
+    },
+    onDrop: (dragEl, targetEl)=>{
+      const item = inventoryItems.find(i=>i.id===dragEl.dataset.openItem);
+      if(!item) return;
+      const dropVal = targetEl.dataset.drop;
+      let containerId = null, receptacleId = null;
+      if(dropVal.startsWith('receptacle:')) receptacleId = dropVal.slice('receptacle:'.length);
+      else if(dropVal.startsWith('container:')) containerId = dropVal.slice('container:'.length);
+      moveInventoryItem(item, containerId, receptacleId);
+    }
+  });
+}
+
+async function moveInventoryItem(item, containerId, receptacleId){
+  if((item.container_id||null) === (containerId||null) && (item.receptacle_id||null) === (receptacleId||null)) return;
+  try{
+    const { error } = await sb.rpc('inventory_update_item', {
+      p_id: item.id, p_name: item.name, p_description: item.description, p_image_url: item.image_url,
+      p_weight: item.weight, p_quantity: item.quantity, p_container_id: containerId, p_receptacle_id: receptacleId
+    });
+    if(error) throw error;
+    await loadInventoryData();
+    renderInventoryOverlay();
+  } catch(e){
+    console.error('Falha ao mover item', e);
+    showToast((e.message && e.message.includes('capacidade')) ? e.message : 'Não consegui mover. Tenta de novo.');
   }
 }
 
