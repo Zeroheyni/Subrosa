@@ -852,6 +852,7 @@ let realtimeChannel = null;
 function ensureStateDefaults(s){
   if(!s.researches) s.researches = [];
   if(!s.characters) s.characters = [];
+  if(s.playerCarryCapacity == null) s.playerCarryCapacity = 50;
   return s;
 }
 
@@ -3005,12 +3006,15 @@ function closeAppsLauncher(){
 let inventoryOpen = false;
 let inventoryContainers = [];
 let inventoryItems = [];
+let inventoryReceptacles = [];
 let invChannel = null;
-let invView = 'list'; // 'list' | 'containerForm' | 'itemForm'
+let invView = 'list'; // 'list' | 'containerForm' | 'itemForm' | 'receptacleForm' | 'capacityForm'
 let invEditingId = null;
-let invFormContainerId = null;
+let invFormPlace = null; // pre-seleciona o "Lugar" do item: '' (com você), 'container:ID' ou 'receptacle:ID'
 let invFormPhoto = undefined;
-let invFormDraft = null; // {name, description, weight, quantity, containerId} — preserva o formulário quando um upload de foto força um re-render
+let invFormDraft = null; // {name, description, weight, quantity, place} — preserva o formulário quando um upload de foto força um re-render
+let invRecFormPhoto = undefined;
+let invRecFormDraft = null; // {name, description, baseWeight, capacity}
 
 function syncItemFormDraft(){
   const $ = sel => document.querySelector(sel);
@@ -3020,14 +3024,41 @@ function syncItemFormDraft(){
     description: $('#mItemDescription').value,
     weight: $('#mItemWeight').value,
     quantity: $('#mItemQuantity').value,
-    containerId: $('#mItemContainer').value
+    place: $('#mItemContainer').value
   };
+}
+
+function syncReceptacleFormDraft(){
+  const $ = sel => document.querySelector(sel);
+  if(!$('#mRecName')) return;
+  invRecFormDraft = {
+    name: $('#mRecName').value,
+    description: $('#mRecDescription').value,
+    baseWeight: $('#mRecBaseWeight').value,
+    capacity: $('#mRecCapacity').value
+  };
+}
+
+function computePlayerCapacityUsage(){
+  const loose = inventoryItems.filter(it=>!it.container_id && !it.receptacle_id)
+    .reduce((s,it)=>s + it.weight*it.quantity, 0);
+  const receptaclesUsed = inventoryReceptacles.reduce((s,r)=>{
+    const itemsHalf = inventoryItems.filter(it=>it.receptacle_id===r.id)
+      .reduce((s2,it)=>s2 + (it.weight*it.quantity)/2, 0);
+    return s + r.base_weight + itemsHalf;
+  }, 0);
+  return loose + receptaclesUsed;
 }
 
 async function openInventory(){
   inventoryOpen = true;
   invView = 'list';
   invEditingId = null;
+  invFormPlace = null;
+  invFormPhoto = undefined;
+  invFormDraft = null;
+  invRecFormPhoto = undefined;
+  invRecFormDraft = null;
   const overlay = document.getElementById('inventoryOverlay');
   overlay.style.display = 'flex';
   overlay.innerHTML = `<div class="diary-empty" style="margin-top:60px;">Carregando inventário…</div>`;
@@ -3053,14 +3084,17 @@ function closeInventory(){
 }
 
 async function loadInventoryData(){
-  const [{ data: containers, error: e1 }, { data: items, error: e2 }] = await Promise.all([
+  const [{ data: containers, error: e1 }, { data: items, error: e2 }, { data: receptacles, error: e3 }] = await Promise.all([
     sb.from('inventory_containers').select('*').order('created_at'),
-    sb.from('inventory_items').select('*').order('created_at')
+    sb.from('inventory_items').select('*').order('created_at'),
+    sb.from('inventory_receptacles').select('*').order('created_at')
   ]);
   if(e1) throw e1;
   if(e2) throw e2;
+  if(e3) throw e3;
   inventoryContainers = containers || [];
   inventoryItems = items || [];
+  inventoryReceptacles = receptacles || [];
 }
 
 function subscribeInventoryRealtime(){
@@ -3072,6 +3106,10 @@ function subscribeInventoryRealtime(){
     })
     .on('postgres_changes', { event:'*', schema:'public', table:'inventory_items' }, (payload)=>{
       applyRealtimeUpsert(inventoryItems, payload);
+      if(inventoryOpen && invView==='list') renderInventoryOverlay();
+    })
+    .on('postgres_changes', { event:'*', schema:'public', table:'inventory_receptacles' }, (payload)=>{
+      applyRealtimeUpsert(inventoryReceptacles, payload);
       if(inventoryOpen && invView==='list') renderInventoryOverlay();
     })
     .subscribe();
@@ -3096,17 +3134,33 @@ function renderInventoryOverlay(){
 function renderInventoryBody(){
   if(invView === 'containerForm') return renderContainerForm();
   if(invView === 'itemForm') return renderItemForm();
+  if(invView === 'receptacleForm') return renderReceptacleForm();
+  if(invView === 'capacityForm') return renderPlayerCapacityForm();
   return renderInventoryList();
 }
 
 function renderInventoryList(){
   const itemsByContainer = {};
-  const unassigned = [];
+  const itemsByReceptacle = {};
+  const loose = [];
   inventoryItems.forEach(it=>{
     if(it.container_id){ (itemsByContainer[it.container_id] = itemsByContainer[it.container_id]||[]).push(it); }
-    else unassigned.push(it);
+    else if(it.receptacle_id){ (itemsByReceptacle[it.receptacle_id] = itemsByReceptacle[it.receptacle_id]||[]).push(it); }
+    else loose.push(it);
   });
+  const used = computePlayerCapacityUsage();
+  const max = (state && state.playerCarryCapacity) || 50;
+  const pct = max ? Math.min(100, Math.round((used/max)*100)) : 0;
   return `
+    <div class="card inv-container-card">
+      <div class="card-label-row">
+        <div class="entity-name">Sua carga</div>
+        ${isMaster ? `<span class="edit-link" id="invEditCapacity">✎ editar</span>` : ''}
+      </div>
+      <div class="progress-track"><div class="progress-fill" style="width:${pct}%;${pct>=100?'background:var(--danger);':''}"></div></div>
+      <div class="hint">${fmtWeight(used)} / ${fmtWeight(max)} de carga</div>
+    </div>
+
     <div class="inv-section-head">
       <div class="section-title" style="margin:0;">Lugares</div>
       <span class="add-link" id="invAddContainer">+ novo lugar</span>
@@ -3114,10 +3168,16 @@ function renderInventoryList(){
     ${inventoryContainers.length ? inventoryContainers.map(c=>renderContainerCard(c, itemsByContainer[c.id]||[])).join('') : '<div class="empty-state">Nenhum lugar criado ainda.</div>'}
 
     <div class="inv-section-head">
-      <div class="section-title" style="margin:0;">Sem lugar definido</div>
+      <div class="section-title" style="margin:0;">Recipientes</div>
+      <span class="add-link" id="invAddReceptacle">+ novo recipiente</span>
+    </div>
+    ${inventoryReceptacles.length ? inventoryReceptacles.map(r=>renderReceptacleCard(r, itemsByReceptacle[r.id]||[])).join('') : '<div class="empty-state">Nenhum recipiente criado ainda.</div>'}
+
+    <div class="inv-section-head">
+      <div class="section-title" style="margin:0;">Direto com você</div>
       <span class="add-link" data-add-item-to="">+ item</span>
     </div>
-    ${unassigned.length ? `<div class="inv-items">${unassigned.map(it=>renderItemRowHtml(it)).join('')}</div>` : '<div class="empty-state">Nada solto por aqui.</div>'}
+    ${loose.length ? `<div class="inv-items">${loose.map(it=>renderItemRowHtml(it)).join('')}</div>` : '<div class="empty-state">Nada solto por aqui.</div>'}
   `;
 }
 
@@ -3134,6 +3194,25 @@ function renderContainerCard(c, items){
         <div class="progress-track"><div class="progress-fill" style="width:${pct}%;${pct>=100?'background:var(--danger);':''}"></div></div>
         <div class="hint">${fmtWeight(used)} / ${fmtWeight(c.capacity)} de carga</div>
       ` : `<div class="hint">Sem limite de carga · ${fmtWeight(used)} carregado</div>`}
+      <div class="inv-items">
+        ${items.length ? items.map(it=>renderItemRowHtml(it)).join('') : '<div class="empty-state" style="padding:14px;">Vazio.</div>'}
+      </div>
+    </div>
+  `;
+}
+
+function renderReceptacleCard(r, items){
+  const used = items.reduce((s,it)=>s + (it.weight*it.quantity)/2, 0);
+  const pct = r.capacity ? Math.min(100, Math.round((used/r.capacity)*100)) : 0;
+  const effective = r.base_weight + used;
+  return `
+    <div class="card inv-container-card">
+      <div class="card-label-row">
+        <div class="entity-name" data-edit-receptacle="${r.id}" style="cursor:pointer;">${r.name}</div>
+        <span class="add-link" data-add-item-to-receptacle="${r.id}">+ item</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" style="width:${pct}%;${pct>=100?'background:var(--danger);':''}"></div></div>
+      <div class="hint">${fmtWeight(used)} / ${fmtWeight(r.capacity)} de carga interna · carrega ${fmtWeight(effective)} de você (${fmtWeight(r.base_weight)} vazio)</div>
       <div class="inv-items">
         ${items.length ? items.map(it=>renderItemRowHtml(it)).join('') : '<div class="empty-state" style="padding:14px;">Vazio.</div>'}
       </div>
@@ -3176,7 +3255,11 @@ function renderItemForm(){
   const description = d ? d.description : (existing ? existing.description||'' : '');
   const weight = d ? d.weight : (existing ? existing.weight : 0);
   const quantity = d ? d.quantity : (existing ? existing.quantity : 1);
-  const containerId = d ? d.containerId : (existing ? existing.container_id : invFormContainerId);
+  let place = d ? d.place : null;
+  if(place == null){
+    if(existing) place = existing.container_id ? ('container:'+existing.container_id) : existing.receptacle_id ? ('receptacle:'+existing.receptacle_id) : '';
+    else place = invFormPlace || '';
+  }
   return `
     <div class="diary-history-link" id="invBackToList">↺ voltar</div>
     <div class="card" style="margin-top:14px;">
@@ -3194,13 +3277,63 @@ function renderItemForm(){
       </div>
       <div class="field"><label>Lugar</label>
         <select id="mItemContainer">
-          <option value="">Sem lugar definido</option>
-          ${inventoryContainers.map(c=>`<option value="${c.id}" ${c.id===containerId?'selected':''}>${c.name}</option>`).join('')}
+          <option value="" ${place===''?'selected':''}>Com você</option>
+          ${inventoryContainers.length ? `<optgroup label="Lugares">
+            ${inventoryContainers.map(c=>`<option value="container:${c.id}" ${place===('container:'+c.id)?'selected':''}>${c.name}</option>`).join('')}
+          </optgroup>` : ''}
+          ${inventoryReceptacles.length ? `<optgroup label="Recipientes">
+            ${inventoryReceptacles.map(r=>`<option value="receptacle:${r.id}" ${place===('receptacle:'+r.id)?'selected':''}>${r.name}</option>`).join('')}
+          </optgroup>` : ''}
         </select>
       </div>
       <div class="modal-actions">
         ${existing ? `<button class="btn btn-danger btn-sm" id="deleteItemBtn">Remover</button>` : ''}
         <button class="btn btn-accent" id="saveItemBtn">Salvar</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderReceptacleForm(){
+  const existing = invEditingId ? inventoryReceptacles.find(r=>r.id===invEditingId) : null;
+  const photo = invRecFormPhoto !== undefined ? invRecFormPhoto : (existing ? existing.image_url : null);
+  const d = invRecFormDraft;
+  const name = d ? d.name : (existing ? existing.name : '');
+  const description = d ? d.description : (existing ? existing.description||'' : '');
+  const baseWeight = d ? d.baseWeight : (existing ? existing.base_weight : 0);
+  const capacity = d ? d.capacity : (existing && existing.capacity!=null ? existing.capacity : '');
+  return `
+    <div class="diary-history-link" id="invBackToList">↺ voltar</div>
+    <div class="card" style="margin-top:14px;">
+      <div class="field"><label>Foto (opcional)</label>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="inv-photo-preview" style="${photo?`background-image:url('${photo}')`:''}">${photo?'':'🎒'}</div>
+          <button class="btn btn-ghost btn-sm" type="button" id="receptaclePhotoBtn">${photo?'Trocar foto':'Enviar foto'}</button>
+        </div>
+      </div>
+      <div class="field"><label>Nome</label><input id="mRecName" value="${name}" placeholder="Ex: Bolsa de viagem"></div>
+      <div class="field"><label>Descrição (opcional)</label><textarea id="mRecDescription">${description}</textarea></div>
+      <div class="field-row">
+        <div class="field"><label>Peso vazio</label><input id="mRecBaseWeight" type="number" step="0.01" value="${baseWeight}"></div>
+        <div class="field"><label>Capacidade interna</label><input id="mRecCapacity" type="number" step="0.01" value="${capacity}"></div>
+      </div>
+      <div class="hint">Itens dentro valem metade do peso pra capacidade interna. O peso vazio + metade dos itens conta contra a sua carga.</div>
+      <div class="modal-actions">
+        ${existing ? `<button class="btn btn-danger btn-sm" id="deleteReceptacleBtn">Remover</button>` : ''}
+        <button class="btn btn-accent" id="saveReceptacleBtn">Salvar</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderPlayerCapacityForm(){
+  const current = (state && state.playerCarryCapacity != null) ? state.playerCarryCapacity : 50;
+  return `
+    <div class="diary-history-link" id="invBackToList">↺ voltar</div>
+    <div class="card" style="margin-top:14px;">
+      <div class="field"><label>Carga máxima do jogador</label><input id="mPlayerCapacity" type="number" step="0.01" value="${current}"></div>
+      <div class="modal-actions">
+        <button class="btn btn-accent" id="saveCapacityBtn">Salvar</button>
       </div>
     </div>
   `;
@@ -3213,12 +3346,21 @@ function attachInventoryHandlers(){
   $('#invClose').onclick = closeInventory;
 
   if(invView === 'list'){
+    const editCap = $('#invEditCapacity');
+    if(editCap) editCap.onclick = ()=>{ invView='capacityForm'; renderInventoryOverlay(); };
     $('#invAddContainer').onclick = ()=>{ invView='containerForm'; invEditingId=null; renderInventoryOverlay(); };
+    $('#invAddReceptacle').onclick = ()=>{ invView='receptacleForm'; invEditingId=null; invRecFormPhoto=undefined; invRecFormDraft=null; renderInventoryOverlay(); };
     $$('[data-edit-container]').forEach(el=>{
       el.onclick = ()=>{ invView='containerForm'; invEditingId=el.dataset.editContainer; renderInventoryOverlay(); };
     });
+    $$('[data-edit-receptacle]').forEach(el=>{
+      el.onclick = ()=>{ invView='receptacleForm'; invEditingId=el.dataset.editReceptacle; invRecFormPhoto=undefined; invRecFormDraft=null; renderInventoryOverlay(); };
+    });
     $$('[data-add-item-to]').forEach(el=>{
-      el.onclick = ()=>{ invView='itemForm'; invEditingId=null; invFormContainerId=el.dataset.addItemTo||null; invFormPhoto=undefined; invFormDraft=null; renderInventoryOverlay(); };
+      el.onclick = ()=>{ invView='itemForm'; invEditingId=null; invFormPlace=el.dataset.addItemTo ? ('container:'+el.dataset.addItemTo) : ''; invFormPhoto=undefined; invFormDraft=null; renderInventoryOverlay(); };
+    });
+    $$('[data-add-item-to-receptacle]').forEach(el=>{
+      el.onclick = ()=>{ invView='itemForm'; invEditingId=null; invFormPlace='receptacle:'+el.dataset.addItemToReceptacle; invFormPhoto=undefined; invFormDraft=null; renderInventoryOverlay(); };
     });
     $$('[data-open-item]').forEach(el=>{
       el.onclick = ()=>{ invView='itemForm'; invEditingId=el.dataset.openItem; invFormPhoto=undefined; invFormDraft=null; renderInventoryOverlay(); };
@@ -3232,6 +3374,14 @@ function attachInventoryHandlers(){
     if(del) del.onclick = ()=> deleteContainer(invEditingId);
   }
 
+  if(invView === 'receptacleForm'){
+    $('#invBackToList').onclick = ()=>{ invView='list'; renderInventoryOverlay(); };
+    $('#receptaclePhotoBtn').onclick = handleReceptaclePhotoUpload;
+    $('#saveReceptacleBtn').onclick = saveReceptacle;
+    const del = $('#deleteReceptacleBtn');
+    if(del) del.onclick = ()=> deleteReceptacle(invEditingId);
+  }
+
   if(invView === 'itemForm'){
     $('#invBackToList').onclick = ()=>{ invView='list'; renderInventoryOverlay(); };
     $('#itemPhotoBtn').onclick = handleInventoryItemPhotoUpload;
@@ -3239,6 +3389,21 @@ function attachInventoryHandlers(){
     const del = $('#deleteItemBtn');
     if(del) del.onclick = ()=> deleteItem(invEditingId);
   }
+
+  if(invView === 'capacityForm'){
+    $('#invBackToList').onclick = ()=>{ invView='list'; renderInventoryOverlay(); };
+    $('#saveCapacityBtn').onclick = savePlayerCapacity;
+  }
+}
+
+function savePlayerCapacity(){
+  const value = parseFloat(document.getElementById('mPlayerCapacity').value);
+  if(isNaN(value) || value <= 0){ showToast('Digita um valor válido.'); return; }
+  state.playerCarryCapacity = value;
+  saveState();
+  invView = 'list';
+  renderInventoryOverlay();
+  showToast('Carga máxima atualizada.');
 }
 
 async function saveContainer(){
@@ -3284,15 +3449,17 @@ async function saveItem(){
   const description = document.getElementById('mItemDescription').value.trim();
   const weight = parseFloat(document.getElementById('mItemWeight').value) || 0;
   const quantity = parseInt(document.getElementById('mItemQuantity').value) || 1;
-  const containerId = document.getElementById('mItemContainer').value || null;
+  const placeRaw = document.getElementById('mItemContainer').value;
+  const containerId = placeRaw.startsWith('container:') ? placeRaw.slice('container:'.length) : null;
+  const receptacleId = placeRaw.startsWith('receptacle:') ? placeRaw.slice('receptacle:'.length) : null;
   const existing = invEditingId ? inventoryItems.find(i=>i.id===invEditingId) : null;
   const imageUrl = invFormPhoto !== undefined ? invFormPhoto : (existing ? existing.image_url : null);
   try{
     if(invEditingId){
-      const { error } = await sb.rpc('inventory_update_item', { p_id: invEditingId, p_name: name, p_description: description, p_image_url: imageUrl, p_weight: weight, p_quantity: quantity, p_container_id: containerId });
+      const { error } = await sb.rpc('inventory_update_item', { p_id: invEditingId, p_name: name, p_description: description, p_image_url: imageUrl, p_weight: weight, p_quantity: quantity, p_container_id: containerId, p_receptacle_id: receptacleId });
       if(error) throw error;
     } else {
-      const { error } = await sb.rpc('inventory_create_item', { p_name: name, p_description: description, p_image_url: imageUrl, p_weight: weight, p_quantity: quantity, p_container_id: containerId, p_created_by: myRole() });
+      const { error } = await sb.rpc('inventory_create_item', { p_name: name, p_description: description, p_image_url: imageUrl, p_weight: weight, p_quantity: quantity, p_container_id: containerId, p_receptacle_id: receptacleId, p_created_by: myRole() });
       if(error) throw error;
     }
     await loadInventoryData();
@@ -3303,6 +3470,71 @@ async function saveItem(){
     console.error('Falha ao salvar item', e);
     showToast((e.message && e.message.includes('capacidade')) ? e.message : 'Não consegui salvar. Tenta de novo.');
   }
+}
+
+async function saveReceptacle(){
+  const name = document.getElementById('mRecName').value.trim();
+  if(!name){ showToast('Digita um nome pro recipiente.'); return; }
+  const description = document.getElementById('mRecDescription').value.trim();
+  const baseWeight = parseFloat(document.getElementById('mRecBaseWeight').value) || 0;
+  const capacityRaw = document.getElementById('mRecCapacity').value;
+  const capacity = parseFloat(capacityRaw);
+  if(!capacityRaw || isNaN(capacity) || capacity <= 0){ showToast('Digita uma capacidade válida pro recipiente.'); return; }
+  const existing = invEditingId ? inventoryReceptacles.find(r=>r.id===invEditingId) : null;
+  const imageUrl = invRecFormPhoto !== undefined ? invRecFormPhoto : (existing ? existing.image_url : null);
+  try{
+    if(invEditingId){
+      const { error } = await sb.rpc('inventory_update_receptacle', { p_id: invEditingId, p_name: name, p_description: description, p_image_url: imageUrl, p_base_weight: baseWeight, p_capacity: capacity });
+      if(error) throw error;
+    } else {
+      const { error } = await sb.rpc('inventory_create_receptacle', { p_name: name, p_description: description, p_image_url: imageUrl, p_base_weight: baseWeight, p_capacity: capacity, p_created_by: myRole() });
+      if(error) throw error;
+    }
+    await loadInventoryData();
+    invView = 'list';
+    renderInventoryOverlay();
+    showToast('Recipiente salvo.');
+  } catch(e){
+    console.error('Falha ao salvar recipiente', e);
+    showToast((e.message && e.message.includes('capacidade')) ? e.message : 'Não consegui salvar. Tenta de novo.');
+  }
+}
+
+async function deleteReceptacle(id){
+  try{
+    const { error } = await sb.rpc('inventory_delete_receptacle', { p_id: id });
+    if(error) throw error;
+    await loadInventoryData();
+    invView = 'list';
+    renderInventoryOverlay();
+    showToast('Recipiente removido.');
+  } catch(e){
+    console.error('Falha ao remover recipiente', e);
+    showToast('Não consegui remover. Tenta de novo.');
+  }
+}
+
+function handleReceptaclePhotoUpload(){
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/png,image/jpeg,image/gif,image/webp';
+  input.onchange = async ()=>{
+    const file = input.files[0];
+    if(!file) return;
+    const path = `${Date.now()}_${Math.random().toString(36).slice(2,8)}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+    try{
+      const { error } = await sb.storage.from('game-images').upload(path, file);
+      if(error) throw error;
+      const { data } = sb.storage.from('game-images').getPublicUrl(path);
+      syncReceptacleFormDraft();
+      invRecFormPhoto = data.publicUrl;
+      renderInventoryOverlay();
+    } catch(e){
+      console.error('Falha ao enviar foto', e);
+      showToast('Não consegui enviar a foto. Tenta de novo.');
+    }
+  };
+  input.click();
 }
 
 async function deleteItem(id){
