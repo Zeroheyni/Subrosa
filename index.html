@@ -1333,7 +1333,7 @@ function renderSaldo(){
     <div class="section-title">Ganhos fixos ${isMaster ? `<span class="add-link" data-action="addIncome">+ adicionar</span>` : ''}</div>
     <div class="card">
       ${acct.fixedIncomes.length ? acct.fixedIncomes.map(e=>`
-        <div class="list-row">
+        <div class="list-row" ${isMaster?`data-edit-income="${e.id}" style="cursor:pointer;"`:''}>
           <div><div class="l-name">${e.label}</div></div>
           <div class="l-amount pos">${fmt(e.amount)}</div>
         </div>`).join('') : '<div class="empty-state">Nenhum ganho fixo cadastrado.</div>'}
@@ -1342,7 +1342,7 @@ function renderSaldo(){
     <div class="section-title">Gastos fixos ${isMaster ? `<span class="add-link" data-action="addExpense">+ adicionar</span>` : ''}</div>
     <div class="card">
       ${acct.fixedExpenses.length ? acct.fixedExpenses.map(e=>`
-        <div class="list-row">
+        <div class="list-row" ${isMaster?`data-edit-expense="${e.id}" style="cursor:pointer;"`:''}>
           <div><div class="l-name">${e.label}</div></div>
           <div class="l-amount neg">${fmt(e.amount)}</div>
         </div>`).join('') : '<div class="empty-state">Nenhum gasto fixo cadastrado.</div>'}
@@ -1885,6 +1885,32 @@ function renderModal(){
     `;
   }
 
+  if(type === 'fixedIncomeDetail'){
+    const inc = state.clean.fixedIncomes.find(x=>x.id===ui.modalData.id);
+    title = 'Editar ganho fixo';
+    body = `
+      <div class="field"><label>Descrição</label><input id="mLabel" value="${inc.label}"></div>
+      <div class="field"><label>Valor mensal</label><input id="mAmount" type="number" value="${inc.amount}"></div>
+      <div class="hint">Ganhos fixos são creditados automaticamente a cada 30 dias avançados.</div>
+      <div class="modal-actions">
+        <button class="btn btn-danger btn-sm" id="deleteIncome">Remover</button>
+      </div>
+    `;
+  }
+
+  if(type === 'fixedExpenseDetail'){
+    const exp = state.clean.fixedExpenses.find(x=>x.id===ui.modalData.id);
+    title = 'Editar gasto fixo';
+    body = `
+      <div class="field"><label>Descrição</label><input id="mLabel" value="${exp.label}"></div>
+      <div class="field"><label>Valor mensal</label><input id="mAmount" type="number" value="${exp.amount}"></div>
+      <div class="hint">Gastos fixos são descontados automaticamente a cada 30 dias avançados.</div>
+      <div class="modal-actions">
+        <button class="btn btn-danger btn-sm" id="deleteExpense">Remover</button>
+      </div>
+    `;
+  }
+
   if(type === 'addBusiness'){
     title = state.mode==='sujo' ? 'Novo negócio ilegal / fachada' : 'Novo negócio legal';
     body = `
@@ -2183,6 +2209,13 @@ function attachHandlers(){
     };
   });
 
+  $$('[data-edit-income]').forEach(el=>{
+    el.onclick = ()=> openModal('fixedIncomeDetail', { id: el.dataset.editIncome });
+  });
+  $$('[data-edit-expense]').forEach(el=>{
+    el.onclick = ()=> openModal('fixedExpenseDetail', { id: el.dataset.editExpense });
+  });
+
   const calPrevMonth = $('#calPrevMonth');
   if(calPrevMonth) calPrevMonth.onclick = ()=>{
     ensureCalView();
@@ -2316,6 +2349,14 @@ function attachHandlers(){
       state.researches = state.researches.filter(x=>x.id!==ui.modalData.id);
       saveState(); closeModal();
     });
+    $('#deleteIncome') && ($('#deleteIncome').onclick = ()=>{
+      state.clean.fixedIncomes = state.clean.fixedIncomes.filter(x=>x.id!==ui.modalData.id);
+      saveState(); closeModal();
+    });
+    $('#deleteExpense') && ($('#deleteExpense').onclick = ()=>{
+      state.clean.fixedExpenses = state.clean.fixedExpenses.filter(x=>x.id!==ui.modalData.id);
+      saveState(); closeModal();
+    });
     $('#deleteCharacter') && ($('#deleteCharacter').onclick = ()=>{
       state.characters = state.characters.filter(x=>x.id!==ui.modalData.id);
       saveState(); closeModal();
@@ -2368,6 +2409,22 @@ async function handleConfirmAsync(){
     const amount = parseFloat($('#mAmount').value) || 0;
     state.clean.fixedIncomes.push({ id: uid('inc'), label, amount });
     saveState(); closeModal(); showToast('Ganho fixo adicionado.'); return;
+  }
+
+  if(type === 'fixedIncomeDetail'){
+    if(!isMaster){ closeModal(); return; }
+    const inc = state.clean.fixedIncomes.find(x=>x.id===ui.modalData.id);
+    inc.label = $('#mLabel').value.trim() || 'Ganho sem nome';
+    inc.amount = parseFloat($('#mAmount').value) || 0;
+    saveState(); closeModal(); showToast('Ganho fixo atualizado.'); return;
+  }
+
+  if(type === 'fixedExpenseDetail'){
+    if(!isMaster){ closeModal(); return; }
+    const exp = state.clean.fixedExpenses.find(x=>x.id===ui.modalData.id);
+    exp.label = $('#mLabel').value.trim() || 'Gasto sem nome';
+    exp.amount = parseFloat($('#mAmount').value) || 0;
+    saveState(); closeModal(); showToast('Gasto fixo atualizado.'); return;
   }
 
   if(type === 'addBusiness'){
