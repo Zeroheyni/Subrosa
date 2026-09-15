@@ -3443,7 +3443,7 @@ function renderCodexGrid(){
   const folder = codexCurrentFolder ? codexFolders.find(f=>f.id===codexCurrentFolder) : null;
   const subfolders = codexFolders.filter(f=> (f.parent_folder_id||null) === (codexCurrentFolder||null));
   const entriesHere = codexEntries.filter(e=> (e.folder_id||null) === (codexCurrentFolder||null));
-  const canEdit = !isMaster;
+  const canEdit = true;
   return `
     ${codexCurrentFolder ? `<div class="codex-breadcrumb" id="codexBack">← voltar</div>` : ''}
     <div class="inv-section-head">
@@ -3499,14 +3499,6 @@ function renderFolderForm(){
 
 function renderEntryForm(){
   const existing = codexEditingId ? codexEntries.find(e=>e.id===codexEditingId) : null;
-  if(isMaster){
-    return `
-      <div class="diary-history-link" id="codexBackToGrid">↺ voltar</div>
-      ${existing.image_url ? `<img class="codex-detail-photo" src="${existing.image_url}">` : ''}
-      <div class="modal-title">${existing.title}</div>
-      ${existing.description ? `<div class="hint" style="margin-top:8px;">${existing.description}</div>` : ''}
-    `;
-  }
   const photo = codexFormPhoto !== undefined ? codexFormPhoto : (existing ? existing.image_url : null);
   const d = codexFormDraft;
   const title = d ? d.title : (existing ? existing.title : '');
@@ -3566,12 +3558,10 @@ function attachCodexHandlers(){
 
   if(codexView === 'entryForm'){
     $('#codexBackToGrid').onclick = ()=>{ codexView='grid'; renderCodexOverlay(); };
-    if(!isMaster){
-      $('#entryPhotoBtn').onclick = handleCodexPhotoUpload;
-      $('#saveEntryBtn').onclick = saveEntry;
-      const del = $('#deleteEntryBtn');
-      if(del) del.onclick = ()=> deleteEntry(codexEditingId);
-    }
+    $('#entryPhotoBtn').onclick = handleCodexPhotoUpload;
+    $('#saveEntryBtn').onclick = saveEntry;
+    const del = $('#deleteEntryBtn');
+    if(del) del.onclick = ()=> deleteEntry(codexEditingId);
   }
 }
 
