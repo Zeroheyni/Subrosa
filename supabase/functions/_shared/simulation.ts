@@ -244,8 +244,12 @@ export function advanceDay(data: any) {
     }
   });
 
-  // 4. Gastos fixos (a cada 30 dias)
+  // 4. Ganhos e gastos fixos (a cada 30 dias)
   if (dayApplying % 30 === 0) {
+    (data.clean.fixedIncomes || []).forEach((inc: any) => {
+      data.clean.balance += inc.amount;
+      data.clean.transactions.push({ day: dayApplying, label: `Ganho fixo — ${inc.label}`, amount: inc.amount });
+    });
     data.clean.fixedExpenses.forEach((exp: any) => {
       data.clean.balance -= exp.amount;
       data.clean.transactions.push({ day: dayApplying, label: `Gasto fixo — ${exp.label}`, amount: -exp.amount });

@@ -874,6 +874,7 @@ function defaultState(){
       balance: 0,
       credit: 0,
       fixedExpenses: [],
+      fixedIncomes: [],
       transactions: []
     },
     dirty: {
@@ -898,6 +899,7 @@ function ensureStateDefaults(s){
   if(!s.researches) s.researches = [];
   if(!s.characters) s.characters = [];
   if(s.playerCarryCapacity == null) s.playerCarryCapacity = 50;
+  if(!s.clean.fixedIncomes) s.clean.fixedIncomes = [];
   return s;
 }
 
@@ -1307,6 +1309,7 @@ function renderSaldo(){
   if(state.mode === 'limpo'){
     const acct = state.clean;
     const totalExp = acct.fixedExpenses.reduce((s,e)=>s+e.amount,0);
+    const totalInc = acct.fixedIncomes.reduce((s,e)=>s+e.amount,0);
     return `
     <div class="card">
       <div class="card-label-row">
@@ -1316,6 +1319,7 @@ function renderSaldo(){
       <div class="balance-hero">${fmt(acct.balance)}</div>
       <div class="balance-sub">
         <div class="stat"><div class="stat-label">Crédito disponível</div><div class="stat-value">${fmt(acct.credit)}</div></div>
+        <div class="stat"><div class="stat-label">Ganhos fixos / mês</div><div class="stat-value pos">${fmt(totalInc)}</div></div>
         <div class="stat"><div class="stat-label">Gastos fixos / mês</div><div class="stat-value neg">${fmt(totalExp)}</div></div>
       </div>
     </div>
@@ -1325,6 +1329,15 @@ function renderSaldo(){
 
     <div class="section-title">Visão geral</div>
     <div class="card">${renderOverviewChart(acct.transactions)}</div>
+
+    <div class="section-title">Ganhos fixos ${isMaster ? `<span class="add-link" data-action="addIncome">+ adicionar</span>` : ''}</div>
+    <div class="card">
+      ${acct.fixedIncomes.length ? acct.fixedIncomes.map(e=>`
+        <div class="list-row">
+          <div><div class="l-name">${e.label}</div></div>
+          <div class="l-amount pos">${fmt(e.amount)}</div>
+        </div>`).join('') : '<div class="empty-state">Nenhum ganho fixo cadastrado.</div>'}
+    </div>
 
     <div class="section-title">Gastos fixos ${isMaster ? `<span class="add-link" data-action="addExpense">+ adicionar</span>` : ''}</div>
     <div class="card">
@@ -1863,6 +1876,15 @@ function renderModal(){
     `;
   }
 
+  if(type === 'addIncome'){
+    title = 'Novo ganho fixo';
+    body = `
+      <div class="field"><label>Descrição</label><input id="mLabel" placeholder="Ex: Mesada, Salário"></div>
+      <div class="field"><label>Valor mensal</label><input id="mAmount" type="number" placeholder="0"></div>
+      <div class="hint">Ganhos fixos são creditados automaticamente a cada 30 dias avançados.</div>
+    `;
+  }
+
   if(type === 'addBusiness'){
     title = state.mode==='sujo' ? 'Novo negócio ilegal / fachada' : 'Novo negócio legal';
     body = `
@@ -2152,6 +2174,7 @@ function attachHandlers(){
       const a = el.dataset.action;
       if(a==='editBalance') openModal('editBalance');
       if(a==='addExpense') openModal('addExpense');
+      if(a==='addIncome') openModal('addIncome');
       if(a==='addBusiness') openModal('addBusiness');
       if(a==='addProperty') openModal('addProperty');
       if(a==='addEvent') openModal('addEvent');
@@ -2338,6 +2361,13 @@ async function handleConfirmAsync(){
     const amount = parseFloat($('#mAmount').value) || 0;
     state.clean.fixedExpenses.push({ id: uid('exp'), label, amount });
     saveState(); closeModal(); showToast('Gasto fixo adicionado.'); return;
+  }
+
+  if(type === 'addIncome'){
+    const label = $('#mLabel').value.trim() || 'Ganho sem nome';
+    const amount = parseFloat($('#mAmount').value) || 0;
+    state.clean.fixedIncomes.push({ id: uid('inc'), label, amount });
+    saveState(); closeModal(); showToast('Ganho fixo adicionado.'); return;
   }
 
   if(type === 'addBusiness'){
