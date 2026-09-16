@@ -500,6 +500,23 @@
   }
   .tabbar, .subtabs{position:relative;}
 
+  /* ---------- ANIMAÇÕES DOS "APPS" (abrir/fechar/navegar/listas) ---------- */
+  @keyframes appShellIn{
+    from{opacity:0;transform:translateY(30px) scale(.95);}
+    to{opacity:1;transform:translateY(0) scale(1);}
+  }
+  @keyframes appShellOut{
+    from{opacity:1;transform:translateY(0) scale(1);}
+    to{opacity:0;transform:translateY(18px) scale(.96);}
+  }
+  @keyframes overlayFadeOut{from{opacity:1;}to{opacity:0;}}
+  .app-shell-enter{animation:appShellIn .32s cubic-bezier(.2,.8,.2,1);}
+  .app-shell-exit{animation:appShellOut .2s ease forwards;}
+  .app-overlay-closing{animation:overlayFadeOut .2s ease forwards;}
+  .inv-wrap, .codex-wrap{animation:viewIn .26s cubic-bezier(.2,.8,.2,1);}
+  .stagger-in{animation:viewIn .35s cubic-bezier(.2,.8,.2,1) both;}
+  .apps-grid .app-icon-tile{animation:appShellIn .3s cubic-bezier(.2,.8,.2,1) both;}
+
   /* ---------- DIÁRIO (botão escondido + visão CAT/DOG) ---------- */
   .diary-trigger{
     position:fixed;bottom:14px;right:14px;z-index:60;
@@ -651,8 +668,8 @@
   .inv-capacity-value{font-family:'Chakra Petch',sans-serif;font-size:27px;font-weight:700;margin-top:6px;}
   .inv-capacity-value .inv-capacity-max{font-size:14px;color:var(--text-dim);font-weight:500;}
   .inv-capacity-track{margin-top:12px;height:8px;}
-  .inv-add-wrap{margin:14px 0 6px;}
-  .inv-add-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13.5px;}
+  .inv-add-wrap{margin:12px 0 6px;display:flex;justify-content:flex-end;}
+  .inv-add-btn{width:auto;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:7px 15px;font-size:12px;border-radius:999px;}
   .inv-section-head .inv-section-title{display:flex;align-items:center;gap:7px;}
   .inv-mini-add{
     width:26px;height:26px;border-radius:50%;flex-shrink:0;
@@ -3093,6 +3110,11 @@ function fmtCarga(n){
   return v % 1 === 0 ? v.toFixed(0) : v.toFixed(2);
 }
 
+// atraso crescente pra dar um efeito de cascata quando uma lista aparece
+function staggerDelay(i){
+  return `animation-delay:${Math.min(i,10)*30}ms;`;
+}
+
 /* ============================================================
    Helper compartilhado: arrastar-e-soltar por ponteiro (mouse e
    touch) — usado no inventário (mover item entre lugar/recipiente/
@@ -3120,6 +3142,8 @@ function enableDragDrop(root, { dragSelector, dropSelector, onTap, onDrop }){
       const r = dragEl.getBoundingClientRect();
       ghost = dragEl.cloneNode(true);
       ghost.classList.add('dnd-ghost');
+      ghost.classList.remove('stagger-in');
+      ghost.style.animation = 'none';
       ghost.style.width = r.width + 'px';
       document.body.appendChild(ghost);
     }
@@ -3182,6 +3206,7 @@ function renderAppStatusBar(){
    ============================================================ */
 function openAppsLauncher(){
   const overlay = document.getElementById('appsOverlay');
+  overlay.classList.remove('app-overlay-closing');
   overlay.style.display = 'flex';
   overlay.innerHTML = `
     <div class="diary-head">
@@ -3189,11 +3214,11 @@ function openAppsLauncher(){
       <div class="icon-btn" id="appsClose">✕</div>
     </div>
     <div class="apps-grid">
-      <button class="app-icon-tile" id="launchInventory">
+      <button class="app-icon-tile" id="launchInventory" style="animation-delay:0ms;">
         <div class="app-icon-glyph app-icon-inventory">🎒</div>
         <div class="app-icon-label">Depósito</div>
       </button>
-      <button class="app-icon-tile" id="launchCodex">
+      <button class="app-icon-tile" id="launchCodex" style="animation-delay:50ms;">
         <div class="app-icon-glyph app-icon-codex">📔</div>
         <div class="app-icon-label">Memórias</div>
       </button>
@@ -3206,8 +3231,12 @@ function openAppsLauncher(){
 
 function closeAppsLauncher(){
   const overlay = document.getElementById('appsOverlay');
-  overlay.style.display = 'none';
-  overlay.innerHTML = '';
+  overlay.classList.add('app-overlay-closing');
+  setTimeout(()=>{
+    overlay.style.display = 'none';
+    overlay.innerHTML = '';
+    overlay.classList.remove('app-overlay-closing');
+  }, 180);
 }
 
 /* ============================================================
@@ -3262,6 +3291,8 @@ function computePlayerCapacityUsage(){
   return loose + receptaclesUsed;
 }
 
+let inventoryJustOpened = false;
+
 async function openInventory(){
   inventoryOpen = true;
   invView = 'list';
@@ -3271,7 +3302,9 @@ async function openInventory(){
   invFormDraft = null;
   invRecFormPhoto = undefined;
   invRecFormDraft = null;
+  inventoryJustOpened = true;
   const overlay = document.getElementById('inventoryOverlay');
+  overlay.classList.remove('app-overlay-closing');
   overlay.style.display = 'flex';
   overlay.innerHTML = `<div class="diary-empty" style="margin-top:60px;">Carregando inventário…</div>`;
   render();
@@ -3290,8 +3323,19 @@ function closeInventory(){
   invView = 'list';
   invEditingId = null;
   const overlay = document.getElementById('inventoryOverlay');
-  overlay.style.display = 'none';
-  overlay.innerHTML = '';
+  const shell = overlay.querySelector('.app-shell');
+  if(shell){
+    shell.classList.add('app-shell-exit');
+    overlay.classList.add('app-overlay-closing');
+    setTimeout(()=>{
+      overlay.style.display = 'none';
+      overlay.innerHTML = '';
+      overlay.classList.remove('app-overlay-closing');
+    }, 200);
+  } else {
+    overlay.style.display = 'none';
+    overlay.innerHTML = '';
+  }
   render();
 }
 
@@ -3329,8 +3373,10 @@ function subscribeInventoryRealtime(){
 
 function renderInventoryOverlay(){
   const overlay = document.getElementById('inventoryOverlay');
+  const enterClass = inventoryJustOpened ? ' app-shell-enter' : '';
+  inventoryJustOpened = false;
   overlay.innerHTML = `
-    <div class="app-shell app-theme-inventory">
+    <div class="app-shell app-theme-inventory${enterClass}">
       ${renderAppStatusBar()}
       <div class="app-chrome-head">
         <div class="app-chrome-title">Depósito</div>
@@ -3380,15 +3426,15 @@ function renderInventoryList(){
       <div class="inv-section-title section-title" style="margin:0;">🎒 Com você</div>
     </div>
     <div class="inv-loose-zone" data-drop="loose">
-      ${inventoryReceptacles.map(r=>renderReceptacleCard(r, itemsByReceptacle[r.id]||[])).join('')}
-      ${loose.length ? `<div class="inv-items">${loose.map(it=>renderItemRowHtml(it)).join('')}</div>` : ''}
+      ${inventoryReceptacles.map((r,i)=>renderReceptacleCard(r, itemsByReceptacle[r.id]||[], i)).join('')}
+      ${loose.length ? `<div class="inv-items">${loose.map((it,i)=>renderItemRowHtml(it,i)).join('')}</div>` : ''}
       ${(!inventoryReceptacles.length && !loose.length) ? '<div class="empty-state">Nada com você ainda.</div>' : ''}
     </div>
 
     <div class="inv-section-head">
       <div class="inv-section-title section-title" style="margin:0;">📦 Depósitos</div>
     </div>
-    ${inventoryContainers.length ? inventoryContainers.map(c=>renderContainerCard(c, itemsByContainer[c.id]||[])).join('') : '<div class="empty-state">Nenhum depósito criado ainda.</div>'}
+    ${inventoryContainers.length ? inventoryContainers.map((c,i)=>renderContainerCard(c, itemsByContainer[c.id]||[], i)).join('') : '<div class="empty-state">Nenhum depósito criado ainda.</div>'}
   `;
 }
 
@@ -3421,11 +3467,11 @@ function renderAddChooser(){
   `;
 }
 
-function renderContainerCard(c, items){
+function renderContainerCard(c, items, i=0){
   const used = items.reduce((s,it)=>s + (it.weight*it.quantity), 0);
   const pct = c.capacity ? Math.min(100, Math.round((used/c.capacity)*100)) : 0;
   return `
-    <div class="card inv-container-card" data-drop="container:${c.id}">
+    <div class="card inv-container-card stagger-in" style="${staggerDelay(i)}" data-drop="container:${c.id}">
       <div class="inv-card-head">
         <div class="inv-card-title" data-edit-container="${c.id}" style="cursor:pointer;">
           <div class="inv-card-icon">📦</div>
@@ -3438,18 +3484,18 @@ function renderContainerCard(c, items){
         <div class="hint">${fmtCarga(used)} / ${fmtCarga(c.capacity)} de carga</div>
       ` : `<div class="hint">Sem limite de carga · ${fmtCarga(used)} em uso</div>`}
       <div class="inv-items">
-        ${items.length ? items.map(it=>renderItemRowHtml(it)).join('') : '<div class="empty-state" style="padding:14px;">Vazio.</div>'}
+        ${items.length ? items.map((it,i2)=>renderItemRowHtml(it,i2)).join('') : '<div class="empty-state" style="padding:14px;">Vazio.</div>'}
       </div>
     </div>
   `;
 }
 
-function renderReceptacleCard(r, items){
+function renderReceptacleCard(r, items, i=0){
   const used = items.reduce((s,it)=>s + (it.weight*it.quantity)/2, 0);
   const pct = r.capacity ? Math.min(100, Math.round((used/r.capacity)*100)) : 0;
   const effective = r.base_weight + used;
   return `
-    <div class="card inv-container-card" data-drop="receptacle:${r.id}">
+    <div class="card inv-container-card stagger-in" style="${staggerDelay(i)}" data-drop="receptacle:${r.id}">
       <div class="inv-card-head">
         <div class="inv-card-title" data-edit-receptacle="${r.id}" style="cursor:pointer;">
           <div class="inv-card-icon">🎒</div>
@@ -3460,15 +3506,15 @@ function renderReceptacleCard(r, items){
       <div class="progress-track"><div class="progress-fill" style="width:${pct}%;${pct>=100?'background:var(--danger);':''}"></div></div>
       <div class="hint">${fmtCarga(used)} / ${fmtCarga(r.capacity)} de carga interna · carrega ${fmtCarga(effective)} de você (${fmtCarga(r.base_weight)} vazia)</div>
       <div class="inv-items">
-        ${items.length ? items.map(it=>renderItemRowHtml(it)).join('') : '<div class="empty-state" style="padding:14px;">Vazio.</div>'}
+        ${items.length ? items.map((it,i2)=>renderItemRowHtml(it,i2)).join('') : '<div class="empty-state" style="padding:14px;">Vazio.</div>'}
       </div>
     </div>
   `;
 }
 
-function renderItemRowHtml(it){
+function renderItemRowHtml(it, i=0){
   return `
-    <div class="inv-item-row" data-open-item="${it.id}">
+    <div class="inv-item-row stagger-in" style="${staggerDelay(i)}" data-open-item="${it.id}">
       <div class="inv-item-photo" style="${it.image_url?`background-image:url('${it.image_url}')`:''}">${it.image_url?'':'📦'}</div>
       <div class="inv-item-info">
         <div class="inv-item-name">${it.name}</div>
@@ -3887,13 +3933,17 @@ function syncEntryFormDraft(){
   codexFormDraft = { title: $('#mEntryTitle').value, description: $('#mEntryDescription').value };
 }
 
+let codexJustOpened = false;
+
 async function openCodex(){
   codexOpen = true;
   codexView = 'grid';
   codexCurrentFolder = null;
   codexEditingId = null;
   codexFolderColor = undefined;
+  codexJustOpened = true;
   const overlay = document.getElementById('codexOverlay');
+  overlay.classList.remove('app-overlay-closing');
   overlay.style.display = 'flex';
   overlay.innerHTML = `<div class="diary-empty" style="margin-top:60px;">Carregando codex…</div>`;
   render();
@@ -3912,8 +3962,19 @@ function closeCodex(){
   codexView = 'grid';
   codexEditingId = null;
   const overlay = document.getElementById('codexOverlay');
-  overlay.style.display = 'none';
-  overlay.innerHTML = '';
+  const shell = overlay.querySelector('.app-shell');
+  if(shell){
+    shell.classList.add('app-shell-exit');
+    overlay.classList.add('app-overlay-closing');
+    setTimeout(()=>{
+      overlay.style.display = 'none';
+      overlay.innerHTML = '';
+      overlay.classList.remove('app-overlay-closing');
+    }, 200);
+  } else {
+    overlay.style.display = 'none';
+    overlay.innerHTML = '';
+  }
   render();
 }
 
@@ -3962,6 +4023,8 @@ function codexGoBack(){
 function renderCodexOverlay(){
   const overlay = document.getElementById('codexOverlay');
   const atRoot = codexIsAtRoot();
+  const enterClass = codexJustOpened ? ' app-shell-enter' : '';
+  codexJustOpened = false;
   let backDrop = '';
   if(codexView === 'grid' && codexCurrentFolder){
     const folder = codexFolders.find(f=>f.id===codexCurrentFolder);
@@ -3969,7 +4032,7 @@ function renderCodexOverlay(){
     backDrop = ` data-drop="folder:${parentId}"`;
   }
   overlay.innerHTML = `
-    <div class="app-shell app-theme-codex">
+    <div class="app-shell app-theme-codex${enterClass}">
       ${renderAppStatusBar()}
       <div class="app-chrome-head">
         <div class="app-chrome-title">Memórias</div>
@@ -4003,8 +4066,8 @@ function renderCodexGrid(){
     </div>
     <div class="inv-add-wrap"><button class="btn btn-accent inv-add-btn" id="codexOpenAdd">+ Adicionar</button></div>
     <div class="codex-grid" data-drop="${hereDrop}">
-      ${subfolders.map(f=>renderFolderTile(f)).join('')}
-      ${entriesHere.map(e=>renderEntryTile(e)).join('')}
+      ${subfolders.map((f,i)=>renderFolderTile(f,i)).join('')}
+      ${entriesHere.map((e,i)=>renderEntryTile(e, subfolders.length+i)).join('')}
     </div>
     ${(!subfolders.length && !entriesHere.length) ? '<div class="empty-state">Nada por aqui ainda.</div>' : ''}
   `;
@@ -4031,11 +4094,11 @@ function renderCodexAddChooser(){
   `;
 }
 
-function renderFolderTile(f){
+function renderFolderTile(f, i=0){
   const count = codexFolders.filter(x=>x.parent_folder_id===f.id).length + codexEntries.filter(e=>e.folder_id===f.id).length;
   const color = f.color || CODEX_FOLDER_COLORS[0];
   return `
-    <div class="codex-folder-card" data-open-folder="${f.id}" data-drop="folder:${f.id}" style="--folder-accent:${color};">
+    <div class="codex-folder-card stagger-in" style="--folder-accent:${color};${staggerDelay(i)}" data-open-folder="${f.id}" data-drop="folder:${f.id}">
       <div class="codex-folder-icon" style="background:${color}30;color:${color};">📁</div>
       <div class="name">${f.name}</div>
       <div class="count">${count} ${count===1?'item':'itens'}</div>
@@ -4043,9 +4106,9 @@ function renderFolderTile(f){
   `;
 }
 
-function renderEntryTile(e){
+function renderEntryTile(e, i=0){
   return `
-    <div class="codex-entry-card" data-open-entry="${e.id}" data-drop="entry:${e.id}">
+    <div class="codex-entry-card stagger-in" style="${staggerDelay(i)}" data-open-entry="${e.id}" data-drop="entry:${e.id}">
       ${e.image_url ? `<div class="photo" style="background-image:url('${e.image_url}')"></div>` : `<div class="no-photo">🗂️</div>`}
       <div class="title">${e.title}</div>
     </div>
