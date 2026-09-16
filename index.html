@@ -3942,14 +3942,38 @@ function subscribeCodexRealtime(){
     .subscribe();
 }
 
+function codexIsAtRoot(){
+  return codexView === 'grid' && !codexCurrentFolder;
+}
+
+function codexGoBack(){
+  if(codexView === 'entryDetail'){ codexView='grid'; codexEditingId=null; renderCodexOverlay(); return; }
+  if(codexView === 'entryForm'){ codexView = codexEditingId ? 'entryDetail' : 'grid'; renderCodexOverlay(); return; }
+  if(codexView === 'folderForm' || codexView === 'addChooser'){ codexView='grid'; renderCodexOverlay(); return; }
+  if(codexCurrentFolder){
+    const folder = codexFolders.find(f=>f.id===codexCurrentFolder);
+    codexCurrentFolder = folder ? (folder.parent_folder_id || null) : null;
+    renderCodexOverlay();
+    return;
+  }
+  closeCodex();
+}
+
 function renderCodexOverlay(){
   const overlay = document.getElementById('codexOverlay');
+  const atRoot = codexIsAtRoot();
+  let backDrop = '';
+  if(codexView === 'grid' && codexCurrentFolder){
+    const folder = codexFolders.find(f=>f.id===codexCurrentFolder);
+    const parentId = folder && folder.parent_folder_id ? folder.parent_folder_id : '__root__';
+    backDrop = ` data-drop="folder:${parentId}"`;
+  }
   overlay.innerHTML = `
     <div class="app-shell app-theme-codex">
       ${renderAppStatusBar()}
       <div class="app-chrome-head">
         <div class="app-chrome-title">Memórias</div>
-        <div class="app-chrome-close" id="codexClose">✕</div>
+        <div class="app-chrome-close" id="codexTopBtn"${backDrop} title="${atRoot?'Fechar':'Voltar'}">${atRoot?'✕':'←'}</div>
       </div>
       <div class="app-body"><div class="codex-wrap">${renderCodexBody()}</div></div>
       <div class="app-home-indicator"></div>
@@ -3974,7 +3998,6 @@ function renderCodexGrid(){
     .sort((a,b)=> (a.sort_order||0) - (b.sort_order||0));
   const hereDrop = 'folder:' + (codexCurrentFolder || '__root__');
   return `
-    ${codexCurrentFolder ? `<div class="codex-breadcrumb" id="codexBack" data-drop="folder:${folder && folder.parent_folder_id ? folder.parent_folder_id : '__root__'}">← voltar</div>` : ''}
     <div class="inv-section-head">
       <div class="section-title" style="margin:0;">${folder ? folder.name : 'Início'} ${folder ? `<span class="edit-link" id="codexEditFolder" style="margin-left:8px;">✎ editar</span>` : ''}</div>
     </div>
@@ -3989,7 +4012,6 @@ function renderCodexGrid(){
 
 function renderCodexAddChooser(){
   return `
-    <div class="diary-history-link" id="codexBackToGrid">↺ voltar</div>
     <div class="inv-chooser">
       <div class="inv-chooser-option" id="chooseCodexEntry">
         <div class="inv-chooser-icon">🖼️</div>
@@ -4034,7 +4056,6 @@ function renderFolderForm(){
   const existing = codexEditingId ? codexFolders.find(f=>f.id===codexEditingId) : null;
   const color = codexFolderColor !== undefined ? codexFolderColor : (existing ? (existing.color || CODEX_FOLDER_COLORS[0]) : CODEX_FOLDER_COLORS[0]);
   return `
-    <div class="diary-history-link" id="codexBackToGrid">↺ voltar</div>
     <div class="card" style="margin-top:14px;">
       <div class="field"><label>Nome da pasta</label><input id="mFolderName" value="${existing?existing.name:''}" placeholder="Ex: Aliados"></div>
       <div class="field"><label>Cor</label>
@@ -4057,7 +4078,6 @@ function renderEntryForm(){
   const title = d ? d.title : (existing ? existing.title : '');
   const description = d ? d.description : (existing ? existing.description||'' : '');
   return `
-    <div class="diary-history-link" id="codexBackToGrid">↺ voltar</div>
     <div class="card" style="margin-top:14px;">
       <div class="field"><label>Foto (opcional)</label>
         <div style="display:flex;align-items:center;gap:10px;">
@@ -4079,7 +4099,6 @@ function renderEntryDetail(){
   const existing = codexEditingId ? codexEntries.find(e=>e.id===codexEditingId) : null;
   if(!existing) return '<div class="empty-state">Lembrança não encontrada.</div>';
   return `
-    <div class="diary-history-link" id="codexBackToGrid">↺ voltar</div>
     <div style="margin-top:14px;">
       ${existing.image_url ? `<img class="codex-detail-photo" src="${existing.image_url}">` : `<div class="codex-detail-photo codex-detail-photo-empty">🗂️</div>`}
       <div class="codex-detail-head">
@@ -4095,15 +4114,9 @@ function attachCodexHandlers(){
   const $ = sel => document.querySelector(sel);
   const $$ = sel => document.querySelectorAll(sel);
 
-  $('#codexClose').onclick = closeCodex;
+  $('#codexTopBtn').onclick = codexGoBack;
 
   if(codexView === 'grid'){
-    const back = $('#codexBack');
-    if(back) back.onclick = ()=>{
-      const folder = codexFolders.find(f=>f.id===codexCurrentFolder);
-      codexCurrentFolder = folder ? (folder.parent_folder_id || null) : null;
-      renderCodexOverlay();
-    };
     const openAdd = $('#codexOpenAdd');
     if(openAdd) openAdd.onclick = ()=>{ codexView='addChooser'; renderCodexOverlay(); };
     const editFolder = $('#codexEditFolder');
@@ -4115,13 +4128,11 @@ function attachCodexHandlers(){
   }
 
   if(codexView === 'addChooser'){
-    $('#codexBackToGrid').onclick = ()=>{ codexView='grid'; renderCodexOverlay(); };
     $('#chooseCodexFolder').onclick = ()=>{ codexView='folderForm'; codexEditingId=null; codexFolderColor=undefined; renderCodexOverlay(); };
     $('#chooseCodexEntry').onclick = ()=>{ codexView='entryForm'; codexEditingId=null; codexFormPhoto=undefined; codexFormDraft=null; renderCodexOverlay(); };
   }
 
   if(codexView === 'folderForm'){
-    $('#codexBackToGrid').onclick = ()=>{ codexView='grid'; renderCodexOverlay(); };
     $('#saveFolderBtn').onclick = saveFolder;
     const del = $('#deleteFolderBtn');
     if(del) del.onclick = ()=> deleteFolder(codexEditingId);
@@ -4131,7 +4142,6 @@ function attachCodexHandlers(){
   }
 
   if(codexView === 'entryForm'){
-    $('#codexBackToGrid').onclick = ()=>{ codexView = codexEditingId ? 'entryDetail' : 'grid'; renderCodexOverlay(); };
     $('#entryPhotoBtn').onclick = handleCodexPhotoUpload;
     $('#saveEntryBtn').onclick = saveEntry;
     const del = $('#deleteEntryBtn');
@@ -4139,13 +4149,12 @@ function attachCodexHandlers(){
   }
 
   if(codexView === 'entryDetail'){
-    $('#codexBackToGrid').onclick = ()=>{ codexView='grid'; codexEditingId=null; renderCodexOverlay(); };
     $('#codexEditEntry').onclick = ()=>{ codexView='entryForm'; codexFormPhoto=undefined; codexFormDraft=null; renderCodexOverlay(); };
   }
 }
 
 function setupCodexDrag(){
-  const root = document.querySelector('.codex-wrap');
+  const root = document.querySelector('#codexOverlay .app-shell');
   if(!root) return;
   enableDragDrop(root, {
     dragSelector: '[data-open-entry]',
