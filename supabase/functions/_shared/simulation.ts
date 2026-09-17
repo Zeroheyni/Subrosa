@@ -17,10 +17,12 @@ function triggerHeatEvent(data: any, biz: any, tier: string) {
     pushNotification(data, '🔎', `Investigação preliminar aberta sobre "${biz.name}" (calor ${Math.round(biz.heat)}%).`);
   } else if (tier === 'congelamento') {
     biz.frozenDaysLeft = 3 + Math.floor(Math.random() * 3);
+    biz.frozenDaysTotal = biz.frozenDaysLeft;
     pushNotification(data, '🧊', `"${biz.name}" foi congelado por ${biz.frozenDaysLeft} dias após alerta financeiro.`);
   } else if (tier === 'invasao') {
     const loss = biz.illegal ? 0 : data.clean.balance * 0.15;
     biz.frozenDaysLeft = 6 + Math.floor(Math.random() * 4);
+    biz.frozenDaysTotal = biz.frozenDaysLeft;
     if (loss > 0) {
       data.clean.balance -= loss;
       data.clean.transactions.push({ day: data.day, label: `Perda por invasão — ${biz.name}`, amount: -loss });
@@ -34,10 +36,12 @@ function triggerPropertyHeatEvent(data: any, prop: any, tier: string) {
     pushNotification(data, '🔎', `Investigação preliminar aberta sobre "${prop.name}" (calor ${Math.round(prop.heat)}%).`);
   } else if (tier === 'congelamento') {
     prop.frozenDaysLeft = 3 + Math.floor(Math.random() * 3);
+    prop.frozenDaysTotal = prop.frozenDaysLeft;
     pushNotification(data, '🧊', `"${prop.name}" foi congelada por ${prop.frozenDaysLeft} dias após alerta financeiro.`);
   } else if (tier === 'invasao') {
     const loss = data.clean.balance * 0.1;
     prop.frozenDaysLeft = 6 + Math.floor(Math.random() * 4);
+    prop.frozenDaysTotal = prop.frozenDaysLeft;
     if (loss > 0) {
       data.clean.balance -= loss;
       data.clean.transactions.push({ day: data.day, label: `Perda por invasão — ${prop.name}`, amount: -loss });
@@ -120,6 +124,7 @@ export function advanceDay(data: any) {
   data.history.push(snapshot);
 
   const dayApplying = data.day;
+  data.monthlyStats = data.monthlyStats || { eventsCount: 0, researchesCompleted: 0 };
 
   // 1. Negócios
   data.businesses.forEach((biz: any) => {
@@ -240,19 +245,24 @@ export function advanceDay(data: any) {
     if (res.daysElapsed >= res.durationDays) {
       res.daysElapsed = res.durationDays;
       res.completed = true;
+      data.monthlyStats.researchesCompleted += 1;
       pushNotification(data, res.legal ? '🔬' : '🧪', `Pesquisa "${res.name}" concluída — decida o que fazer com o resultado.`);
     }
   });
 
   // 4. Ganhos e gastos fixos (a cada 30 dias)
+  let monthlyIncomeTotal = 0;
+  let monthlyExpenseTotal = 0;
   if (dayApplying % 30 === 0) {
     (data.clean.fixedIncomes || []).forEach((inc: any) => {
       data.clean.balance += inc.amount;
       data.clean.transactions.push({ day: dayApplying, label: `Ganho fixo — ${inc.label}`, amount: inc.amount });
+      monthlyIncomeTotal += inc.amount;
     });
     data.clean.fixedExpenses.forEach((exp: any) => {
       data.clean.balance -= exp.amount;
       data.clean.transactions.push({ day: dayApplying, label: `Gasto fixo — ${exp.label}`, amount: -exp.amount });
+      monthlyExpenseTotal += exp.amount;
     });
   }
 
@@ -262,8 +272,25 @@ export function advanceDay(data: any) {
     const isRecurringToday = ev.recurring && dayApplying >= ev.day && (!ev.recurEndDay || dayApplying <= ev.recurEndDay);
     if ((isToday || isRecurringToday) && ev.type === 'efeito') {
       applyCalendarEvent(data, ev, dayApplying);
+      data.monthlyStats.eventsCount += 1;
     }
   });
+
+  // 6. Resumo do mês (mesmo ciclo de 30 dias dos ganhos/gastos fixos) —
+  // guarda um retrato pra UI mostrar um cardzinho em vez de só lançar
+  // tudo silenciosamente no extrato.
+  if (dayApplying % 30 === 0) {
+    data.monthlySummary = {
+      day: dayApplying,
+      totalIncome: monthlyIncomeTotal,
+      totalExpense: monthlyExpenseTotal,
+      eventsCount: data.monthlyStats.eventsCount,
+      researchesCompleted: data.monthlyStats.researchesCompleted,
+      researchesInProgress: (data.researches || []).filter((r: any) => !r.completed).length
+    };
+    pushNotification(data, '📊', `Resumo do mês: ${data.monthlyStats.eventsCount} evento(s), ${data.monthlyStats.researchesCompleted} pesquisa(s) concluída(s).`);
+    data.monthlyStats = { eventsCount: 0, researchesCompleted: 0 };
+  }
 
   data.day += 1;
   return data;

@@ -1077,10 +1077,12 @@ function triggerHeatEvent(biz, tier, automatic){
     pushNotification('🔎', `Investigação preliminar aberta sobre "${biz.name}" (calor ${Math.round(biz.heat)}%).`);
   } else if(tier === 'congelamento'){
     biz.frozenDaysLeft = 3 + Math.floor(Math.random()*3);
+    biz.frozenDaysTotal = biz.frozenDaysLeft;
     pushNotification('🧊', `"${biz.name}" foi congelado por ${biz.frozenDaysLeft} dias após alerta financeiro.`);
   } else if(tier === 'invasao'){
     const loss = biz.illegal ? 0 : state.clean.balance * 0.15;
     biz.frozenDaysLeft = 6 + Math.floor(Math.random()*4);
+    biz.frozenDaysTotal = biz.frozenDaysLeft;
     if(loss > 0){
       state.clean.balance -= loss;
       state.clean.transactions.push({ day: state.day, label: `Perda por invasão — ${biz.name}`, amount: -loss });
@@ -1094,10 +1096,12 @@ function triggerPropertyHeatEvent(prop, tier){
     pushNotification('🔎', `Investigação preliminar aberta sobre "${prop.name}" (calor ${Math.round(prop.heat)}%).`);
   } else if(tier === 'congelamento'){
     prop.frozenDaysLeft = 3 + Math.floor(Math.random()*3);
+    prop.frozenDaysTotal = prop.frozenDaysLeft;
     pushNotification('🧊', `"${prop.name}" foi congelada por ${prop.frozenDaysLeft} dias após alerta financeiro.`);
   } else if(tier === 'invasao'){
     const loss = state.clean.balance * 0.1;
     prop.frozenDaysLeft = 6 + Math.floor(Math.random()*4);
+    prop.frozenDaysTotal = prop.frozenDaysLeft;
     if(loss > 0){
       state.clean.balance -= loss;
       state.clean.transactions.push({ day: state.day, label: `Perda por invasão — ${prop.name}`, amount: -loss });
@@ -1367,6 +1371,19 @@ function renderSaldo(){
     <div class="section-title">Visão geral</div>
     <div class="card">${renderOverviewChart(acct.transactions)}</div>
 
+    ${state.monthlySummary ? `
+    <div class="section-title">Resumo do último mês</div>
+    <div class="card">
+      <div class="balance-sub">
+        <div class="stat"><div class="stat-label">Ganhos fixos</div><div class="stat-value pos">${fmt(state.monthlySummary.totalIncome)}</div></div>
+        <div class="stat"><div class="stat-label">Gastos fixos</div><div class="stat-value neg">${fmt(state.monthlySummary.totalExpense)}</div></div>
+        <div class="stat"><div class="stat-label">Eventos</div><div class="stat-value">${state.monthlySummary.eventsCount}</div></div>
+        <div class="stat"><div class="stat-label">Pesquisas concluídas</div><div class="stat-value">${state.monthlySummary.researchesCompleted}</div></div>
+      </div>
+      <div class="hint" style="margin-top:10px;">Dia ${state.monthlySummary.day} · ${state.monthlySummary.researchesInProgress} pesquisa(s) em andamento</div>
+    </div>
+    ` : ''}
+
     <div class="section-title">Ganhos fixos ${isMaster ? `<span class="add-link" data-action="addIncome">+ adicionar</span>` : ''}</div>
     <div class="card">
       ${acct.fixedIncomes.length ? acct.fixedIncomes.map(e=>`
@@ -1551,6 +1568,14 @@ function renderInvestimentos(){
   `;
 }
 
+// barrinha de progresso pra contagens regressivas (congelamento, evento
+// ativo) — some sozinha se não tiver o total guardado (dado antigo)
+function renderCountdownBar(daysLeft, daysTotal, color){
+  if(!daysTotal || daysTotal <= 0) return '';
+  const pct = Math.max(0, Math.min(100, Math.round(100 * (1 - daysLeft/daysTotal))));
+  return `<div class="progress-track" style="margin-top:6px;"><div class="progress-fill" style="width:${pct}%;background:${color};"></div></div>`;
+}
+
 function renderNegocios(){
   const list = state.mode === 'sujo'
     ? state.businesses
@@ -1595,7 +1620,10 @@ function renderBusinessCard(b){
       <div class="heat-track"><div class="heat-fill" style="width:${b.heat}%;background:${heatColor}"></div></div>
       <div class="heat-labels"><span>Calor ${Math.round(b.heat)}%</span><span>${b.launderPercent||0}% hiperfaturado · ${fmt(launderedPerDay)}/dia lavado</span></div>
       ` : ''}
-      ${b.frozenDaysLeft>0?`<div class="badge-event debuff">🧊 congelado por mais ${b.frozenDaysLeft} dia(s)</div>`:''}
+      ${b.frozenDaysLeft>0?`
+        <div class="badge-event debuff">🧊 congelado por mais ${b.frozenDaysLeft} dia(s)</div>
+        ${renderCountdownBar(b.frozenDaysLeft, b.frozenDaysTotal, 'var(--danger)')}
+      `:''}
     </div>`;
 }
 
@@ -1629,8 +1657,14 @@ function renderPropertyCard(p){
       <div class="heat-track"><div class="heat-fill" style="width:${p.heat||0}%;background:${heatColor}"></div></div>
       <div class="heat-labels"><span>Calor ${Math.round(p.heat||0)}%</span><span>${p.launderPercent||0}% hiperfaturado · ${fmt(launderedPerDay)}/dia lavado</span></div>
       ` : ''}
-      ${p.frozenDaysLeft>0?`<div class="badge-event debuff">🧊 congelada por mais ${p.frozenDaysLeft} dia(s)</div>`:''}
-      ${p.activeEvent ? `<div class="badge-event ${p.activeEvent.percent>=0?'buff':'debuff'}">${p.activeEvent.percent>=0?'📈':'📉'} ${p.activeEvent.label} (${p.activeEvent.percent>0?'+':''}${p.activeEvent.percent}%) · ${p.activeEvent.daysLeft}d restantes</div>` : ''}
+      ${p.frozenDaysLeft>0?`
+        <div class="badge-event debuff">🧊 congelada por mais ${p.frozenDaysLeft} dia(s)</div>
+        ${renderCountdownBar(p.frozenDaysLeft, p.frozenDaysTotal, 'var(--danger)')}
+      `:''}
+      ${p.activeEvent ? `
+        <div class="badge-event ${p.activeEvent.percent>=0?'buff':'debuff'}">${p.activeEvent.percent>=0?'📈':'📉'} ${p.activeEvent.label} (${p.activeEvent.percent>0?'+':''}${p.activeEvent.percent}%) · ${p.activeEvent.daysLeft}d restantes</div>
+        ${renderCountdownBar(p.activeEvent.daysLeft, p.activeEvent.totalDays, p.activeEvent.percent>=0?'var(--clean-1)':'var(--danger)')}
+      ` : ''}
     </div>`;
 }
 
@@ -3129,6 +3163,14 @@ function staggerDelay(i){
   return `animation-delay:${Math.min(i,10)*30}ms;`;
 }
 
+// cor da barra de capacidade: vermelha ao estourar, amarela já a
+// partir de 80% pra avisar antes de dar o susto
+function capacityFillStyle(pct){
+  if(pct >= 100) return 'background:var(--danger);';
+  if(pct >= 80) return 'background:var(--warn);';
+  return '';
+}
+
 /* ============================================================
    Helper compartilhado: arrastar-e-soltar por ponteiro (mouse e
    touch) — usado no inventário (mover item entre lugar/recipiente/
@@ -3470,7 +3512,7 @@ function renderInventoryList(){
         ${isMaster ? `<span class="edit-link" id="invEditCapacity">✎ editar</span>` : ''}
       </div>
       <div class="inv-capacity-value">${fmtCarga(used)} <span class="inv-capacity-max">/ ${fmtCarga(max)} de carga</span></div>
-      <div class="progress-track inv-capacity-track"><div class="progress-fill" style="width:${pct}%;${pct>=100?'background:var(--danger);':''}"></div></div>
+      <div class="progress-track inv-capacity-track"><div class="progress-fill" style="width:${pct}%;${capacityFillStyle(pct)}"></div></div>
     </div>
 
     <div class="search-input-wrap"><input type="text" class="search-input" id="invSearchInput" placeholder="Buscar por nome..." value="${invSearchQuery.replace(/"/g,'&quot;')}"></div>
@@ -3534,7 +3576,7 @@ function renderContainerCard(c, items, i=0){
         <span class="inv-mini-add" data-add-item-to="${c.id}" title="Adicionar item">+</span>
       </div>
       ${c.capacity ? `
-        <div class="progress-track"><div class="progress-fill" style="width:${pct}%;${pct>=100?'background:var(--danger);':''}"></div></div>
+        <div class="progress-track"><div class="progress-fill" style="width:${pct}%;${capacityFillStyle(pct)}"></div></div>
         <div class="hint">${fmtCarga(used)} / ${fmtCarga(c.capacity)} de carga</div>
       ` : `<div class="hint">Sem limite de carga · ${fmtCarga(used)} em uso</div>`}
       <div class="inv-items">
@@ -3557,7 +3599,7 @@ function renderReceptacleCard(r, items, i=0){
         </div>
         <span class="inv-mini-add" data-add-item-to-receptacle="${r.id}" title="Adicionar item">+</span>
       </div>
-      <div class="progress-track"><div class="progress-fill" style="width:${pct}%;${pct>=100?'background:var(--danger);':''}"></div></div>
+      <div class="progress-track"><div class="progress-fill" style="width:${pct}%;${capacityFillStyle(pct)}"></div></div>
       <div class="hint">${fmtCarga(used)} / ${fmtCarga(r.capacity)} de carga interna · carrega ${fmtCarga(effective)} de você (${fmtCarga(r.base_weight)} vazia)</div>
       <div class="inv-items">
         ${items.length ? items.map((it,i2)=>renderItemRowHtml(it,i2)).join('') : '<div class="empty-state" style="padding:14px;">Vazio.</div>'}
