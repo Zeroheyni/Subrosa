@@ -4099,7 +4099,7 @@ function renderFolderTile(f, i=0){
   const color = f.color || CODEX_FOLDER_COLORS[0];
   return `
     <div class="codex-folder-card stagger-in" style="--folder-accent:${color};${staggerDelay(i)}" data-open-folder="${f.id}" data-drop="folder:${f.id}">
-      <div class="codex-folder-icon" style="background:${color}30;color:${color};">📁</div>
+      <div class="codex-folder-icon" style="background:${color}30;color:${color};"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M3.5 5.5A1.5 1.5 0 0 1 5 4h4.17a1.5 1.5 0 0 1 1.06.44l1.5 1.5a.5.5 0 0 0 .35.15H19a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 19 18H5a1.5 1.5 0 0 1-1.5-1.5v-11z"/></svg></div>
       <div class="name">${f.name}</div>
       <div class="count">${count} ${count===1?'item':'itens'}</div>
     </div>
