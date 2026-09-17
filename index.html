@@ -137,6 +137,24 @@
     cursor:pointer;
   }
 
+  .presence-badge{
+    font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:1px;
+    padding:7px 10px;border-radius:10px;
+    background:var(--bg-panel);border:1px solid var(--border-soft);color:var(--text-faint);
+    display:flex;align-items:center;gap:6px;
+    cursor:default;user-select:none;
+  }
+  .presence-dot{
+    width:7px;height:7px;border-radius:50%;flex-shrink:0;
+    background:var(--text-faint);
+    transition:background .3s ease, box-shadow .3s ease;
+  }
+  .presence-dot.is-online{
+    background:#3ddc84;
+    box-shadow:0 0 6px #3ddc84, 0 0 12px #3ddc84;
+    animation:pulse 2.2s ease-in-out infinite;
+  }
+
   .mode-cat-btn{
     width:38px;height:38px;border-radius:10px;
     background:var(--bg-panel);
@@ -890,12 +908,40 @@ function logoutMaster(){
   isMaster = false;
   masterToken = null;
   localStorage.removeItem(MASTER_TOKEN_KEY);
+  subscribePresence();
   render();
 }
 
 function enterAsPlayer(){
   isMaster = false;
   render();
+}
+
+// indicador de presença: mostra se mestre/jogador estão com o app aberto
+// agora (Supabase Realtime Presence, efêmero — some sozinho ao fechar a aba).
+let presenceChannel = null;
+let presenceOnline = { master: false, player: false };
+
+function subscribePresence(){
+  if(presenceChannel){
+    sb.removeChannel(presenceChannel);
+    presenceChannel = null;
+  }
+  const role = isMaster ? 'master' : 'player';
+  presenceChannel = sb.channel('subrosa_presence', { config: { presence: { key: role } } });
+  presenceChannel.on('presence', { event: 'sync' }, ()=>{
+    const st = presenceChannel.presenceState();
+    presenceOnline = {
+      master: !!(st.master && st.master.length),
+      player: !!(st.player && st.player.length)
+    };
+    render();
+  });
+  presenceChannel.subscribe(async (status)=>{
+    if(status === 'SUBSCRIBED'){
+      await presenceChannel.track({ online_at: new Date().toISOString() });
+    }
+  });
 }
 
 function isMasterSessionExpiredError(msg){
@@ -992,6 +1038,7 @@ async function loadState(){
   }
   render();
   subscribeRealtime();
+  subscribePresence();
 }
 
 function subscribeRealtime(){
@@ -1344,6 +1391,9 @@ function renderTopbar(){
     <div class="brand-row">
       <div class="brand"><span class="dot"></span>SUBROSA</div>
       <div class="brand-actions">
+        <div class="presence-badge" id="presenceBadge" title="${isMaster?'Jogador':'Mestre'} ${(isMaster?presenceOnline.player:presenceOnline.master)?'online agora':'offline'}">
+          <span class="presence-dot ${(isMaster?presenceOnline.player:presenceOnline.master)?'is-online':''}"></span>${isMaster?'Jogador':'Mestre'}
+        </div>
         <div class="role-badge ${isMaster?'is-master':''}" id="roleBadge" title="${isMaster?'Clique pra sair do modo mestre':'Você está vendo como jogador'}">
           ${isMaster?'MESTRE':'JOGADOR'}
         </div>
