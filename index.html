@@ -714,7 +714,13 @@
     box-shadow:0 14px 30px rgba(0,0,0,0.5);
   }
   .dnd-drop-hover{outline:2px dashed var(--accent-1);outline-offset:2px;background:color-mix(in srgb, var(--accent-1) 10%, transparent);}
-  [data-open-item], [data-open-entry]{touch-action:none;user-select:none;}
+  [data-open-item], [data-open-entry], [data-open-folder]{touch-action:none;user-select:none;}
+  .search-input-wrap{margin:10px 0;}
+  .search-input{
+    width:100%;background:var(--bg-panel-3);border:1px solid var(--border);border-radius:10px;
+    padding:9px 12px;color:var(--text);font-size:13px;font-family:'Inter',sans-serif;
+  }
+  .search-input::placeholder{color:var(--text-faint);}
 
   /* ---------- CODEX ---------- */
   .codex-wrap{max-width:1100px;margin:0 auto;width:100%;}
@@ -1708,6 +1714,7 @@ function renderCharacterForm(existing){
         <div class="char-photo" style="width:60px;height:60px;flex-shrink:0;${photo?`background-image:url('${photo}')`:''}">${photo?'':'👤'}</div>
         <button class="btn btn-ghost btn-sm" type="button" id="charPhotoBtn">${photo?'Trocar foto':'Enviar foto'}</button>
       </div>
+      <div class="hint">Também dá pra colar uma imagem (Ctrl+V) direto aqui.</div>
     </div>
     <div class="field"><label>Nome</label><input id="mName" value="${name}" placeholder="Ex: Dra. Marlene"></div>
     <div class="field"><label>Papel</label><input id="mRole" value="${role}" placeholder="Ex: Pesquisadora, Segurança, Gestor..."></div>
@@ -1748,6 +1755,16 @@ function syncCharacterFormFromDom(){
   ui.modalData.modifiers = modifiers;
 }
 
+// helper compartilhado — sobe um arquivo (do seletor ou colado da área de
+// transferência) pro bucket game-images e devolve a URL pública
+async function uploadGameImage(file){
+  const path = `${Date.now()}_${Math.random().toString(36).slice(2,8)}_${(file.name||'colada.png').replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+  const { error } = await sb.storage.from('game-images').upload(path, file);
+  if(error) throw error;
+  const { data } = sb.storage.from('game-images').getPublicUrl(path);
+  return data.publicUrl;
+}
+
 function handleCharacterPhotoUpload(){
   const input = document.createElement('input');
   input.type = 'file';
@@ -1755,13 +1772,10 @@ function handleCharacterPhotoUpload(){
   input.onchange = async ()=>{
     const file = input.files[0];
     if(!file) return;
-    const path = `${Date.now()}_${Math.random().toString(36).slice(2,8)}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
     try{
-      const { error } = await sb.storage.from('game-images').upload(path, file);
-      if(error) throw error;
-      const { data } = sb.storage.from('game-images').getPublicUrl(path);
+      const url = await uploadGameImage(file);
       syncCharacterFormFromDom();
-      ui.modalData.photo = data.publicUrl;
+      ui.modalData.photo = url;
       render();
     } catch(e){
       console.error('Falha ao enviar foto', e);
@@ -3256,6 +3270,7 @@ let invFormPhoto = undefined;
 let invFormDraft = null; // {name, description, weight, quantity, place} — preserva o formulário quando um upload de foto força um re-render
 let invRecFormPhoto = undefined;
 let invRecFormDraft = null; // {name, description, baseWeight, capacity}
+let invSearchQuery = ''; // busca por nome (depósitos, recipientes, itens)
 
 function syncItemFormDraft(){
   const $ = sel => document.querySelector(sel);
@@ -3302,6 +3317,7 @@ async function openInventory(){
   invFormDraft = null;
   invRecFormPhoto = undefined;
   invRecFormDraft = null;
+  invSearchQuery = '';
   inventoryJustOpened = true;
   const overlay = document.getElementById('inventoryOverlay');
   overlay.classList.remove('app-overlay-closing');
@@ -3407,6 +3423,43 @@ function renderInventoryList(){
     else if(it.receptacle_id){ (itemsByReceptacle[it.receptacle_id] = itemsByReceptacle[it.receptacle_id]||[]).push(it); }
     else loose.push(it);
   });
+
+  const query = invSearchQuery.trim().toLowerCase();
+  const searching = query.length > 0;
+  const matchName = n => (n||'').toLowerCase().includes(query);
+
+  let visibleReceptacles = inventoryReceptacles;
+  let visibleContainers = inventoryContainers;
+  let visibleLoose = loose;
+  let filteredItemsByContainer = itemsByContainer;
+  let filteredItemsByReceptacle = itemsByReceptacle;
+
+  if(searching){
+    visibleLoose = loose.filter(it=>matchName(it.name));
+
+    filteredItemsByContainer = {};
+    visibleContainers = inventoryContainers.filter(c=>{
+      const matchingItems = (itemsByContainer[c.id]||[]).filter(it=>matchName(it.name));
+      const selfMatch = matchName(c.name);
+      if(selfMatch || matchingItems.length){
+        filteredItemsByContainer[c.id] = selfMatch ? (itemsByContainer[c.id]||[]) : matchingItems;
+        return true;
+      }
+      return false;
+    });
+
+    filteredItemsByReceptacle = {};
+    visibleReceptacles = inventoryReceptacles.filter(r=>{
+      const matchingItems = (itemsByReceptacle[r.id]||[]).filter(it=>matchName(it.name));
+      const selfMatch = matchName(r.name);
+      if(selfMatch || matchingItems.length){
+        filteredItemsByReceptacle[r.id] = selfMatch ? (itemsByReceptacle[r.id]||[]) : matchingItems;
+        return true;
+      }
+      return false;
+    });
+  }
+
   const used = computePlayerCapacityUsage();
   const max = (state && state.playerCarryCapacity) || 50;
   const pct = max ? Math.min(100, Math.round((used/max)*100)) : 0;
@@ -3420,21 +3473,22 @@ function renderInventoryList(){
       <div class="progress-track inv-capacity-track"><div class="progress-fill" style="width:${pct}%;${pct>=100?'background:var(--danger);':''}"></div></div>
     </div>
 
+    <div class="search-input-wrap"><input type="text" class="search-input" id="invSearchInput" placeholder="Buscar por nome..." value="${invSearchQuery.replace(/"/g,'&quot;')}"></div>
     <div class="inv-add-wrap"><button class="btn btn-accent inv-add-btn" id="invOpenAdd">+ Adicionar</button></div>
 
     <div class="inv-section-head">
       <div class="inv-section-title section-title" style="margin:0;">🎒 Com você</div>
     </div>
     <div class="inv-loose-zone" data-drop="loose">
-      ${inventoryReceptacles.map((r,i)=>renderReceptacleCard(r, itemsByReceptacle[r.id]||[], i)).join('')}
-      ${loose.length ? `<div class="inv-items">${loose.map((it,i)=>renderItemRowHtml(it,i)).join('')}</div>` : ''}
-      ${(!inventoryReceptacles.length && !loose.length) ? '<div class="empty-state">Nada com você ainda.</div>' : ''}
+      ${visibleReceptacles.map((r,i)=>renderReceptacleCard(r, filteredItemsByReceptacle[r.id]||[], i)).join('')}
+      ${visibleLoose.length ? `<div class="inv-items">${visibleLoose.map((it,i)=>renderItemRowHtml(it,i)).join('')}</div>` : ''}
+      ${(!visibleReceptacles.length && !visibleLoose.length) ? `<div class="empty-state">${searching ? 'Nada encontrado.' : 'Nada com você ainda.'}</div>` : ''}
     </div>
 
     <div class="inv-section-head">
       <div class="inv-section-title section-title" style="margin:0;">📦 Depósitos</div>
     </div>
-    ${inventoryContainers.length ? inventoryContainers.map((c,i)=>renderContainerCard(c, itemsByContainer[c.id]||[], i)).join('') : '<div class="empty-state">Nenhum depósito criado ainda.</div>'}
+    ${visibleContainers.length ? visibleContainers.map((c,i)=>renderContainerCard(c, filteredItemsByContainer[c.id]||[], i)).join('') : `<div class="empty-state">${searching ? 'Nada encontrado.' : 'Nenhum depósito criado ainda.'}</div>`}
   `;
 }
 
@@ -3644,6 +3698,13 @@ function attachInventoryHandlers(){
     const editCap = $('#invEditCapacity');
     if(editCap) editCap.onclick = ()=>{ invView='capacityForm'; renderInventoryOverlay(); };
     $('#invOpenAdd').onclick = ()=>{ invView='addChooser'; renderInventoryOverlay(); };
+    const searchInput = $('#invSearchInput');
+    if(searchInput){
+      searchInput.oninput = ()=>{ invSearchQuery = searchInput.value; renderInventoryOverlay(); };
+      searchInput.focus();
+      const pos = searchInput.value.length;
+      searchInput.setSelectionRange(pos, pos);
+    }
     $$('[data-edit-container]').forEach(el=>{
       el.onclick = ()=>{ invView='containerForm'; invEditingId=el.dataset.editContainer; renderInventoryOverlay(); };
     });
@@ -3925,6 +3986,7 @@ let codexEditingId = null;
 let codexFormPhoto = undefined;
 let codexFormDraft = null; // {title, description} — preserva o formulário quando um upload de foto força um re-render
 let codexFolderColor = undefined; // cor escolhida no formulário de pasta antes de salvar
+let codexSearchQuery = ''; // busca global (pastas + lembranças) na grade
 const CODEX_FOLDER_COLORS = ['#ff4fa6', '#ff9500', '#ffcc00', '#34c759', '#00d4ff', '#5e5ce6', '#ff453a', '#8e8e93'];
 
 function syncEntryFormDraft(){
@@ -3941,6 +4003,7 @@ async function openCodex(){
   codexCurrentFolder = null;
   codexEditingId = null;
   codexFolderColor = undefined;
+  codexSearchQuery = '';
   codexJustOpened = true;
   const overlay = document.getElementById('codexOverlay');
   overlay.classList.remove('app-overlay-closing');
@@ -4004,13 +4067,14 @@ function subscribeCodexRealtime(){
 }
 
 function codexIsAtRoot(){
-  return codexView === 'grid' && !codexCurrentFolder;
+  return codexView === 'grid' && !codexCurrentFolder && !codexSearchQuery;
 }
 
 function codexGoBack(){
   if(codexView === 'entryDetail'){ codexView='grid'; codexEditingId=null; renderCodexOverlay(); return; }
   if(codexView === 'entryForm'){ codexView = codexEditingId ? 'entryDetail' : 'grid'; renderCodexOverlay(); return; }
   if(codexView === 'folderForm' || codexView === 'addChooser'){ codexView='grid'; renderCodexOverlay(); return; }
+  if(codexView === 'grid' && codexSearchQuery){ codexSearchQuery = ''; renderCodexOverlay(); return; }
   if(codexCurrentFolder){
     const folder = codexFolders.find(f=>f.id===codexCurrentFolder);
     codexCurrentFolder = folder ? (folder.parent_folder_id || null) : null;
@@ -4055,21 +4119,32 @@ function renderCodexBody(){
 
 function renderCodexGrid(){
   const folder = codexCurrentFolder ? codexFolders.find(f=>f.id===codexCurrentFolder) : null;
-  const subfolders = codexFolders.filter(f=> (f.parent_folder_id||null) === (codexCurrentFolder||null));
-  const entriesHere = codexEntries
-    .filter(e=> (e.folder_id||null) === (codexCurrentFolder||null))
-    .sort((a,b)=> (a.sort_order||0) - (b.sort_order||0));
+  const query = codexSearchQuery.trim().toLowerCase();
+  const searching = query.length > 0;
+
+  let subfolders, entriesHere;
+  if(searching){
+    subfolders = codexFolders.filter(f=> f.name.toLowerCase().includes(query));
+    entriesHere = codexEntries.filter(e=> e.title.toLowerCase().includes(query));
+  } else {
+    subfolders = codexFolders.filter(f=> (f.parent_folder_id||null) === (codexCurrentFolder||null));
+    entriesHere = codexEntries.filter(e=> (e.folder_id||null) === (codexCurrentFolder||null));
+  }
+  subfolders = subfolders.slice().sort((a,b)=> (a.sort_order||0) - (b.sort_order||0));
+  entriesHere = entriesHere.slice().sort((a,b)=> (a.sort_order||0) - (b.sort_order||0));
+
   const hereDrop = 'folder:' + (codexCurrentFolder || '__root__');
   return `
     <div class="inv-section-head">
-      <div class="section-title" style="margin:0;">${folder ? folder.name : 'Início'} ${folder ? `<span class="edit-link" id="codexEditFolder" style="margin-left:8px;">✎ editar</span>` : ''}</div>
+      <div class="section-title" style="margin:0;">${searching ? 'Resultados da busca' : (folder ? folder.name : 'Início')} ${(!searching && folder) ? `<span class="edit-link" id="codexEditFolder" style="margin-left:8px;">✎ editar</span>` : ''}</div>
     </div>
+    <div class="search-input-wrap"><input type="text" class="search-input" id="codexSearchInput" placeholder="Buscar pastas e lembranças..." value="${codexSearchQuery.replace(/"/g,'&quot;')}"></div>
     <div class="inv-add-wrap"><button class="btn btn-accent inv-add-btn" id="codexOpenAdd">+ Adicionar</button></div>
-    <div class="codex-grid" data-drop="${hereDrop}">
+    <div class="codex-grid" ${searching ? '' : `data-drop="${hereDrop}"`}>
       ${subfolders.map((f,i)=>renderFolderTile(f,i)).join('')}
       ${entriesHere.map((e,i)=>renderEntryTile(e, subfolders.length+i)).join('')}
     </div>
-    ${(!subfolders.length && !entriesHere.length) ? '<div class="empty-state">Nada por aqui ainda.</div>' : ''}
+    ${(!subfolders.length && !entriesHere.length) ? `<div class="empty-state">${searching ? 'Nada encontrado.' : 'Nada por aqui ainda.'}</div>` : ''}
   `;
 }
 
@@ -4147,6 +4222,7 @@ function renderEntryForm(){
           <div class="inv-photo-preview" style="${photo?`background-image:url('${photo}')`:''}">${photo?'':'🗂️'}</div>
           <button class="btn btn-ghost btn-sm" type="button" id="entryPhotoBtn">${photo?'Trocar foto':'Enviar foto'}</button>
         </div>
+        <div class="hint">Também dá pra colar uma imagem (Ctrl+V) direto aqui.</div>
       </div>
       <div class="field"><label>Título</label><input id="mEntryTitle" value="${title}" placeholder="Ex: Zeroh, o contato do porto"></div>
       <div class="field"><label>Descrição</label><textarea id="mEntryDescription">${description}</textarea></div>
@@ -4184,9 +4260,13 @@ function attachCodexHandlers(){
     if(openAdd) openAdd.onclick = ()=>{ codexView='addChooser'; renderCodexOverlay(); };
     const editFolder = $('#codexEditFolder');
     if(editFolder) editFolder.onclick = ()=>{ codexView='folderForm'; codexEditingId=codexCurrentFolder; codexFolderColor=undefined; renderCodexOverlay(); };
-    $$('[data-open-folder]').forEach(el=>{
-      el.onclick = ()=>{ codexCurrentFolder = el.dataset.openFolder; renderCodexOverlay(); };
-    });
+    const searchInput = $('#codexSearchInput');
+    if(searchInput){
+      searchInput.oninput = ()=>{ codexSearchQuery = searchInput.value; renderCodexOverlay(); };
+      searchInput.focus();
+      const pos = searchInput.value.length;
+      searchInput.setSelectionRange(pos, pos);
+    }
     setupCodexDrag();
   }
 
@@ -4220,15 +4300,48 @@ function setupCodexDrag(){
   const root = document.querySelector('#codexOverlay .app-shell');
   if(!root) return;
   enableDragDrop(root, {
-    dragSelector: '[data-open-entry]',
+    dragSelector: '[data-open-entry], [data-open-folder]',
     dropSelector: '[data-drop]',
     onTap: (el)=>{
-      codexView='entryDetail'; codexEditingId=el.dataset.openEntry; renderCodexOverlay();
+      if(el.dataset.openFolder){
+        if(codexSearchQuery) codexSearchQuery = '';
+        codexCurrentFolder = el.dataset.openFolder;
+        renderCodexOverlay();
+      } else {
+        if(codexSearchQuery) codexSearchQuery = '';
+        codexView='entryDetail'; codexEditingId=el.dataset.openEntry; renderCodexOverlay();
+      }
     },
     onDrop: (dragEl, targetEl, ev)=>{
+      const draggedIsFolder = !!dragEl.dataset.openFolder;
+      const dropVal = targetEl.dataset.drop;
+
+      if(draggedIsFolder){
+        const folder = codexFolders.find(f=>f.id===dragEl.dataset.openFolder);
+        if(!folder || !dropVal.startsWith('folder:')) return;
+        const raw = dropVal.slice('folder:'.length);
+        const targetFolderId = raw === '__root__' ? null : raw;
+        if(targetFolderId === folder.id) return;
+        const targetIsFolderTile = targetEl.classList.contains('codex-folder-card');
+        if(targetIsFolderTile){
+          const rect = targetEl.getBoundingClientRect();
+          const relX = (ev.clientX - rect.left) / rect.width;
+          if(relX < 0.25 || relX > 0.75){
+            const targetFolder = codexFolders.find(f=>f.id===targetFolderId);
+            if(targetFolder) moveCodexFolderRelative(folder, targetFolder, relX < 0.25);
+            return;
+          }
+        }
+        if(isCodexFolderDescendant(targetFolderId, folder.id)){
+          showToast('Não dá pra mover uma pasta pra dentro dela mesma.');
+          return;
+        }
+        moveCodexFolder(folder, targetFolderId, null);
+        return;
+      }
+
       const entry = codexEntries.find(e=>e.id===dragEl.dataset.openEntry);
       if(!entry) return;
-      const dropVal = targetEl.dataset.drop;
       if(dropVal.startsWith('folder:')){
         const raw = dropVal.slice('folder:'.length);
         const folderId = raw === '__root__' ? null : raw;
@@ -4243,6 +4356,55 @@ function setupCodexDrag(){
       }
     }
   });
+}
+
+// verdadeiro se folderId é a própria ofAncestorId ou está dentro dela
+// (direto ou aninhado) — usado pra impedir mover uma pasta pra dentro
+// dela mesma ao arrastar
+function isCodexFolderDescendant(folderId, ofAncestorId){
+  if(!folderId) return false;
+  if(folderId === ofAncestorId) return true;
+  let current = codexFolders.find(f=>f.id===folderId);
+  while(current && current.parent_folder_id){
+    if(current.parent_folder_id === ofAncestorId) return true;
+    current = codexFolders.find(f=>f.id===current.parent_folder_id);
+  }
+  return false;
+}
+
+async function moveCodexFolder(folder, parentFolderId, sortOrder){
+  if(sortOrder == null){
+    const siblings = codexFolders.filter(f => (f.parent_folder_id||null) === (parentFolderId||null) && f.id !== folder.id);
+    const maxOrder = siblings.reduce((m,f)=> Math.max(m, f.sort_order||0), -1);
+    sortOrder = maxOrder + 1;
+  }
+  if((folder.parent_folder_id||null) === (parentFolderId||null) && folder.sort_order === sortOrder) return;
+  try{
+    const { error } = await sb.rpc('codex_set_folder_order', { p_id: folder.id, p_parent_folder_id: parentFolderId, p_sort_order: sortOrder });
+    if(error) throw error;
+    await loadCodexData();
+    renderCodexOverlay();
+  } catch(e){
+    console.error('Falha ao mover pasta', e);
+    showToast('Não consegui mover. Tenta de novo.');
+  }
+}
+
+function moveCodexFolderRelative(folder, targetFolder, before){
+  const parentId = targetFolder.parent_folder_id || null;
+  const siblings = codexFolders
+    .filter(f => (f.parent_folder_id||null) === parentId && f.id !== folder.id)
+    .sort((a,b)=> (a.sort_order||0) - (b.sort_order||0));
+  const idx = siblings.findIndex(f=>f.id===targetFolder.id);
+  let prevOrder, nextOrder;
+  if(before){
+    prevOrder = idx > 0 ? (siblings[idx-1].sort_order||0) : (targetFolder.sort_order||0) - 1;
+    nextOrder = targetFolder.sort_order||0;
+  } else {
+    prevOrder = targetFolder.sort_order||0;
+    nextOrder = idx < siblings.length-1 ? (siblings[idx+1].sort_order||0) : (targetFolder.sort_order||0) + 1;
+  }
+  moveCodexFolder(folder, parentId, (prevOrder + nextOrder) / 2);
 }
 
 async function moveCodexEntry(entry, folderId, sortOrder){
@@ -4364,13 +4526,10 @@ function handleCodexPhotoUpload(){
   input.onchange = async ()=>{
     const file = input.files[0];
     if(!file) return;
-    const path = `${Date.now()}_${Math.random().toString(36).slice(2,8)}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
     try{
-      const { error } = await sb.storage.from('game-images').upload(path, file);
-      if(error) throw error;
-      const { data } = sb.storage.from('game-images').getPublicUrl(path);
+      const url = await uploadGameImage(file);
       syncEntryFormDraft();
-      codexFormPhoto = data.publicUrl;
+      codexFormPhoto = url;
       renderCodexOverlay();
     } catch(e){
       console.error('Falha ao enviar foto', e);
@@ -4398,6 +4557,43 @@ if(window.electronAPI){
 }
 
 document.getElementById('diaryTrigger').onclick = openDiary;
+
+// permite colar (Ctrl+V) uma imagem direto no formulário de personagem
+// ou de lembrança do codex, sem precisar abrir o seletor de arquivo.
+// Só age quando um desses formulários está mesmo aberto — em qualquer
+// outro contexto (ex: diário, que já tem o próprio tratamento de colar
+// imagem no editor) o evento passa intocado.
+document.addEventListener('paste', async (e)=>{
+  const inCharacterForm = isMaster && (ui.modal === 'addCharacter' || ui.modal === 'characterDetail');
+  const inCodexEntryForm = codexOpen && codexView === 'entryForm';
+  if(!inCharacterForm && !inCodexEntryForm) return;
+
+  const items = e.clipboardData && e.clipboardData.items;
+  if(!items) return;
+  let file = null;
+  for(const item of items){
+    if(item.type && item.type.startsWith('image/')){ file = item.getAsFile(); break; }
+  }
+  if(!file) return;
+  e.preventDefault();
+
+  try{
+    const url = await uploadGameImage(file);
+    if(inCharacterForm){
+      syncCharacterFormFromDom();
+      ui.modalData.photo = url;
+      render();
+    } else {
+      syncEntryFormDraft();
+      codexFormPhoto = url;
+      renderCodexOverlay();
+    }
+    showToast('Foto colada.');
+  } catch(err){
+    console.error('Falha ao colar foto', err);
+    showToast('Não consegui colar a foto. Tenta de novo.');
+  }
+});
 
 if(masterToken){
   // já tem um token salvo de uma sessão de mestre anterior — tenta usar direto
