@@ -1182,6 +1182,35 @@ function showToast(msg){
   setTimeout(()=>{ ui.toast = null; render(); }, 2200);
 }
 
+// trava o scroll da página por trás dos overlays (diário/inventário/codex/apps).
+// no iOS o touch "vaza" pro body mesmo com o overlay em position:fixed, então
+// precisa fixar o body no lugar (não só overflow:hidden) — contador porque
+// dá pra abrir um overlay de dentro de outro (ex: apps -> codex) por um instante.
+let scrollLockCount = 0;
+let scrollLockY = 0;
+function lockBodyScroll(){
+  if(scrollLockCount === 0){
+    scrollLockY = window.scrollY || window.pageYOffset || 0;
+    document.body.style.position = 'fixed';
+    document.body.style.top = (-scrollLockY) + 'px';
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+  }
+  scrollLockCount++;
+}
+function unlockBodyScroll(){
+  scrollLockCount = Math.max(0, scrollLockCount - 1);
+  if(scrollLockCount === 0){
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    window.scrollTo(0, scrollLockY);
+  }
+}
+
 function toggleMode(btnEl){
   const newMode = state.mode === 'limpo' ? 'sujo' : 'limpo';
   const flash = document.getElementById('modeFlash');
@@ -2764,6 +2793,7 @@ function loadQuillAssets(){
 }
 
 async function openDiary(){
+  lockBodyScroll();
   diaryOpen = true;
   diaryHistoryOpen = false;
   diaryDate = todayISODate(); // sempre abre no dia de hoje, nunca fica preso em onde a pessoa navegou da última vez
@@ -2785,6 +2815,7 @@ async function openDiary(){
 }
 
 function closeDiary(){
+  unlockBodyScroll();
   diaryOpen = false;
   activeQuill = null;
   mountedEditorAuthor = null;
@@ -3302,6 +3333,7 @@ function renderAppStatusBar(){
    fossem outros aplicativos (visual/tema próprio de cada um).
    ============================================================ */
 function openAppsLauncher(){
+  lockBodyScroll();
   const overlay = document.getElementById('appsOverlay');
   overlay.classList.remove('app-overlay-closing');
   overlay.style.display = 'flex';
@@ -3327,6 +3359,7 @@ function openAppsLauncher(){
 }
 
 function closeAppsLauncher(){
+  unlockBodyScroll();
   const overlay = document.getElementById('appsOverlay');
   overlay.classList.add('app-overlay-closing');
   setTimeout(()=>{
@@ -3392,6 +3425,7 @@ function computePlayerCapacityUsage(){
 let inventoryJustOpened = false;
 
 async function openInventory(){
+  lockBodyScroll();
   inventoryOpen = true;
   invView = 'list';
   invEditingId = null;
@@ -3418,6 +3452,7 @@ async function openInventory(){
 }
 
 function closeInventory(){
+  unlockBodyScroll();
   inventoryOpen = false;
   invView = 'list';
   invEditingId = null;
@@ -4081,6 +4116,7 @@ function syncEntryFormDraft(){
 let codexJustOpened = false;
 
 async function openCodex(){
+  lockBodyScroll();
   codexOpen = true;
   codexView = 'grid';
   codexCurrentFolder = null;
@@ -4104,6 +4140,7 @@ async function openCodex(){
 }
 
 function closeCodex(){
+  unlockBodyScroll();
   codexOpen = false;
   codexView = 'grid';
   codexEditingId = null;
