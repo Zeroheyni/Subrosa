@@ -5,6 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SUBROSA // Painel do Império</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='0' y='0' width='24' height='24' rx='6' fill='%23050912'/%3E%3Cg fill='none' stroke='%2300d4ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 9 L7 3 L9.3 8.2'/%3E%3Cpath d='M20 9 L17 3 L14.7 8.2'/%3E%3Cpath d='M4 9 C4 15.2 8 19 12 19 C16 19 20 15.2 20 9 C20 9 16.8 10.6 12 10.6 C7.2 10.6 4 9 4 9 Z'/%3E%3Ccircle cx='9.2' cy='13.2' r='0.9' fill='%2300d4ff' stroke='none'/%3E%3Ccircle cx='14.8' cy='13.2' r='0.9' fill='%2300d4ff' stroke='none'/%3E%3Cpath d='M10.4 15.4 Q12 16.5 13.6 15.4'/%3E%3C/g%3E%3C/svg%3E">
+<!-- PWA: instalável como app no Android (manifest + service worker)
+     e no iOS (meta tags apple-* + apple-touch-icon, já que o iOS
+     ignora boa parte do manifest.json pra esse fim). -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#050912">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SUBROSA">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -435,6 +444,37 @@
 
   .hint{font-size:11px;color:var(--text-faint);line-height:1.5;margin-top:2px;}
 
+  /* ---------- BANNER DE INSTALAR COMO APP (PWA) ---------- */
+  .install-banner{
+    position:fixed;left:14px;right:14px;bottom:14px;z-index:150;
+    max-width:420px;margin:0 auto;
+    background:linear-gradient(160deg, var(--bg-panel-2), var(--bg-panel));
+    border:1px solid var(--accent-1);border-radius:16px;
+    padding:14px;display:flex;align-items:center;gap:12px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.5), 0 0 20px var(--accent-glow);
+    animation:installBannerIn .35s cubic-bezier(.2,.8,.2,1);
+  }
+  @keyframes installBannerIn{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);}}
+  .install-banner-icon{
+    width:38px;height:38px;border-radius:10px;flex-shrink:0;
+    background:linear-gradient(160deg,var(--accent-1),var(--accent-2));
+    display:flex;align-items:center;justify-content:center;font-size:18px;
+  }
+  .install-banner-body{flex:1;min-width:0;}
+  .install-banner-title{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:13px;}
+  .install-banner-sub{font-size:11px;color:var(--text-dim);margin-top:2px;line-height:1.4;}
+  .install-banner-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+  .install-banner-btn{
+    background:linear-gradient(120deg,var(--accent-1),var(--accent-2));color:#04140f;border:none;
+    padding:8px 14px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;
+  }
+  .install-banner-close{
+    width:26px;height:26px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--bg-panel-3);border:1px solid var(--border);color:var(--text-faint);
+    cursor:pointer;font-size:12px;
+  }
+
   /* ---------- TRANSIÇÃO DE MODO (glitch cyberpunk) ---------- */
   #modeFlash{
     position:fixed;inset:0;pointer-events:none;z-index:500;opacity:0;
@@ -819,6 +859,7 @@
 <div id="inventoryOverlay" class="diary-overlay"></div>
 <div id="codexOverlay" class="diary-overlay"></div>
 <div id="appsOverlay" class="diary-overlay"></div>
+<div id="installBanner"></div>
 
 <script>
 /* ============================================================
@@ -4644,6 +4685,94 @@ if(masterToken){
 } else {
   render(); // mostra a tela de escolha mestre/jogador
 }
+
+/* ---------- PWA: instalar como app (Android + iOS) ---------- */
+let deferredInstallPrompt = null;
+const INSTALL_DISMISS_KEY = 'subrosa_install_dismissed';
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(err=>{
+      console.error('Falha ao registrar service worker', err);
+    });
+  });
+}
+
+function isStandaloneMode(){
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+function isIosDevice(){
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+}
+
+// Android/Chrome: intercepta o prompt automático pra mostrar nosso próprio banner
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  renderInstallBanner();
+});
+
+window.addEventListener('appinstalled', ()=>{
+  deferredInstallPrompt = null;
+  renderInstallBanner();
+});
+
+function dismissInstallBanner(){
+  try{ localStorage.setItem(INSTALL_DISMISS_KEY, '1'); } catch(e){}
+  renderInstallBanner();
+}
+
+function renderInstallBanner(){
+  const el = document.getElementById('installBanner');
+  if(!el) return;
+
+  let dismissed = false;
+  try{ dismissed = localStorage.getItem(INSTALL_DISMISS_KEY) === '1'; } catch(e){}
+
+  if(isStandaloneMode() || dismissed){
+    el.innerHTML = '';
+    return;
+  }
+
+  const ios = isIosDevice();
+  // no Android/Chrome só mostra depois que o navegador liberou o beforeinstallprompt;
+  // no iOS não existe esse evento, então mostra direto a instrução manual
+  if(!ios && !deferredInstallPrompt){
+    el.innerHTML = '';
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="install-banner">
+      <div class="install-banner-icon">🐱</div>
+      <div class="install-banner-body">
+        <div class="install-banner-title">Instalar o SUBROSA</div>
+        <div class="install-banner-sub">${ios
+          ? 'Toque em <strong>Compartilhar</strong> e depois em <strong>Adicionar à Tela de Início</strong>.'
+          : 'Adicione à tela inicial pra abrir como um app, sem barra de navegador.'}</div>
+      </div>
+      ${ios ? '' : '<button class="install-banner-btn" id="installBannerAction">Instalar</button>'}
+      <button class="install-banner-close" id="installBannerClose" aria-label="Fechar">✕</button>
+    </div>
+  `;
+
+  const closeBtn = document.getElementById('installBannerClose');
+  if(closeBtn) closeBtn.onclick = dismissInstallBanner;
+
+  const actionBtn = document.getElementById('installBannerAction');
+  if(actionBtn){
+    actionBtn.onclick = async ()=>{
+      if(!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      const { outcome } = await deferredInstallPrompt.userChoice;
+      if(outcome === 'accepted' || outcome === 'dismissed') deferredInstallPrompt = null;
+      renderInstallBanner();
+    };
+  }
+}
+
+if(isIosDevice() && !isStandaloneMode()) renderInstallBanner();
 </script>
 </body>
 </html>
