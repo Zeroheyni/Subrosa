@@ -1951,7 +1951,7 @@ function renderModal(){
     body = `
       <div class="field"><label>Descrição</label><input id="mLabel" placeholder="Ex: Aluguel do cofre"></div>
       <div class="field"><label>Valor mensal</label><input id="mAmount" type="number" placeholder="0"></div>
-      <div class="hint">Gastos fixos são descontados automaticamente a cada 30 dias avançados.</div>
+      <div class="hint">Gastos fixos são descontados automaticamente no dia 1 de cada mês.</div>
     `;
   }
 
@@ -1960,7 +1960,7 @@ function renderModal(){
     body = `
       <div class="field"><label>Descrição</label><input id="mLabel" placeholder="Ex: Mesada, Salário"></div>
       <div class="field"><label>Valor mensal</label><input id="mAmount" type="number" placeholder="0"></div>
-      <div class="hint">Ganhos fixos são creditados automaticamente a cada 30 dias avançados.</div>
+      <div class="hint">Ganhos fixos são creditados automaticamente no dia 1 de cada mês.</div>
     `;
   }
 
@@ -1970,7 +1970,7 @@ function renderModal(){
     body = `
       <div class="field"><label>Descrição</label><input id="mLabel" value="${inc.label}"></div>
       <div class="field"><label>Valor mensal</label><input id="mAmount" type="number" value="${inc.amount}"></div>
-      <div class="hint">Ganhos fixos são creditados automaticamente a cada 30 dias avançados.</div>
+      <div class="hint">Ganhos fixos são creditados automaticamente no dia 1 de cada mês.</div>
       <div class="modal-actions">
         <button class="btn btn-danger btn-sm" id="deleteIncome">Remover</button>
       </div>
@@ -1983,7 +1983,7 @@ function renderModal(){
     body = `
       <div class="field"><label>Descrição</label><input id="mLabel" value="${exp.label}"></div>
       <div class="field"><label>Valor mensal</label><input id="mAmount" type="number" value="${exp.amount}"></div>
-      <div class="hint">Gastos fixos são descontados automaticamente a cada 30 dias avançados.</div>
+      <div class="hint">Gastos fixos são descontados automaticamente no dia 1 de cada mês.</div>
       <div class="modal-actions">
         <button class="btn btn-danger btn-sm" id="deleteExpense">Remover</button>
       </div>

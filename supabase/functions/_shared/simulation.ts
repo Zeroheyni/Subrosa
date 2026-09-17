@@ -7,6 +7,21 @@ function uid(prefix: string): string {
   return prefix + '_' + Math.random().toString(36).slice(2, 9);
 }
 
+// mesmo calendário fictício do index.html (meses de tamanho variável,
+// tipo gregoriano, sem ano bissexto) — usado só pra saber se um dia
+// absoluto é o 1º dia de um mês novo.
+const MONTH_LENGTHS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+const YEAR_LENGTH = MONTH_LENGTHS.reduce((s, n) => s + n, 0); // 365
+
+function isFirstDayOfMonth(dayNum: number): boolean {
+  if (dayNum <= 1) return false; // dia 1 do jogo não conta como "virada de mês"
+  let remaining = dayNum - 1;
+  while (remaining >= YEAR_LENGTH) remaining -= YEAR_LENGTH;
+  let month = 0;
+  while (remaining >= MONTH_LENGTHS[month]) { remaining -= MONTH_LENGTHS[month]; month++; }
+  return (remaining + 1) === 1;
+}
+
 function pushNotification(data: any, icon: string, text: string) {
   data.notifications.unshift({ id: uid('ntf'), day: data.day, icon, text });
   if (data.notifications.length > 60) data.notifications.pop();
@@ -250,10 +265,10 @@ export function advanceDay(data: any) {
     }
   });
 
-  // 4. Ganhos e gastos fixos (a cada 30 dias)
+  // 4. Ganhos e gastos fixos (no dia 1 de cada mês do calendário)
   let monthlyIncomeTotal = 0;
   let monthlyExpenseTotal = 0;
-  if (dayApplying % 30 === 0) {
+  if (isFirstDayOfMonth(dayApplying)) {
     (data.clean.fixedIncomes || []).forEach((inc: any) => {
       data.clean.balance += inc.amount;
       data.clean.transactions.push({ day: dayApplying, label: `Ganho fixo — ${inc.label}`, amount: inc.amount });
@@ -276,10 +291,10 @@ export function advanceDay(data: any) {
     }
   });
 
-  // 6. Resumo do mês (mesmo ciclo de 30 dias dos ganhos/gastos fixos) —
-  // guarda um retrato pra UI mostrar um cardzinho em vez de só lançar
-  // tudo silenciosamente no extrato.
-  if (dayApplying % 30 === 0) {
+  // 6. Resumo do mês (mesmo dia-1-do-mês dos ganhos/gastos fixos) —
+  // guarda um retrato do mês que acabou de passar pra UI mostrar um
+  // cardzinho em vez de só lançar tudo silenciosamente no extrato.
+  if (isFirstDayOfMonth(dayApplying)) {
     data.monthlySummary = {
       day: dayApplying,
       totalIncome: monthlyIncomeTotal,
