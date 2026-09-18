@@ -201,26 +201,12 @@
     transition:color .5s ease, background .5s ease, border-color .5s ease;
   }
   .clock-chip svg{width:12px;height:12px;flex-shrink:0;filter:drop-shadow(0 0 3px var(--clock-c));}
-  .clock-chip.is-editable{cursor:pointer;}
-  .clock-chip.is-editable:hover{background:color-mix(in srgb, var(--clock-c) 22%, transparent);}
+  .clock-chip{cursor:pointer;}
+  .clock-chip:hover{background:color-mix(in srgb, var(--clock-c) 22%, transparent);}
   .clock-chip.p-madrugada{--clock-c:#8f8cff;}
   .clock-chip.p-manha{--clock-c:#ffc46b;}
   .clock-chip.p-tarde{--clock-c:#ff9f43;}
   .clock-chip.p-noite{--clock-c:#5aa9ff;}
-
-  .clock-presets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px;}
-  .clock-preset{
-    display:flex;flex-direction:column;align-items:center;gap:3px;
-    padding:9px 4px;border-radius:10px;cursor:pointer;
-    background:var(--bg-panel);border:1px solid var(--border-soft);color:var(--text-dim);
-    font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.5px;
-    transition:border-color .15s ease, background .15s ease, transform .1s ease;
-  }
-  .clock-preset:hover{border-color:var(--accent-1);background:var(--bg-panel-2);}
-  .clock-preset:active{transform:scale(.96);}
-  .clock-preset svg{width:18px;height:18px;color:var(--accent-1);}
-  .clock-steps{display:flex;gap:8px;margin-top:8px;}
-  .clock-steps .btn{flex:1;padding:8px 6px;font-size:11px;}
   .day-label{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;}
   .day-value{font-family:'Chakra Petch',sans-serif;font-size:16px;font-weight:700;}
   .day-actions{display:flex;gap:8px;}
@@ -865,6 +851,7 @@
   .app-icon-tile:hover .app-icon-glyph{transform:scale(1.07);}
   .app-icon-inventory{background:linear-gradient(160deg, #ffc266, #ff8a00);}
   .app-icon-codex{background:linear-gradient(160deg, #ff8fc7, #c21f95);}
+  .app-icon-clock{background:linear-gradient(160deg, #7fd0ff, #3a5bff);}
   .app-icon-label{font-size:11px;color:var(--text-dim);font-family:'Inter',sans-serif;font-weight:600;}
 
   /* ---------- "CHROME" DE APP DE CELULAR (inventário/codex) ---------- */
@@ -896,6 +883,108 @@
     --bg-panel:var(--app-bg-2); --bg-panel-2:var(--app-bg-2); --bg-panel-3:var(--app-bg-3);
     --border:var(--app-border); --border-soft:var(--app-border); --text:var(--app-fg); --text-dim:#c9a878; --text-faint:#8a6d47;
   }
+  /* ---------- APP RELÓGIO ---------- */
+  @property --clock-c{syntax:'<color>';inherits:true;initial-value:#5aa9ff;}
+  .app-theme-clock{
+    --clock-c:#5aa9ff;
+    --app-accent:var(--clock-c); --app-bg:#050a1a; --app-bg-2:#0a1330; --app-bg-3:#101c40; --app-border:#1c2f5e; --app-fg:#e2ecff;
+    --accent-1:var(--clock-c); --accent-2:var(--clock-c); --accent-glow:color-mix(in srgb, var(--clock-c) 40%, transparent);
+    --bg-panel:var(--app-bg-2); --bg-panel-2:var(--app-bg-2); --bg-panel-3:var(--app-bg-3);
+    --border:var(--app-border); --border-soft:var(--app-border); --text:var(--app-fg); --text-dim:#9db4e6; --text-faint:#5f78b0;
+    background:
+      radial-gradient(90% 46% at 50% 0%, color-mix(in srgb, var(--clock-c) 26%, transparent), transparent 72%),
+      linear-gradient(180deg, var(--app-bg-2), var(--app-bg));
+    transition:--clock-c .9s ease;
+  }
+  .app-theme-clock.p-madrugada{--clock-c:#8f8cff;}
+  .app-theme-clock.p-manha{--clock-c:#ffc46b;}
+  .app-theme-clock.p-tarde{--clock-c:#ff9f43;}
+  .app-theme-clock.p-noite{--clock-c:#5aa9ff;}
+
+  .clock-app{display:flex;flex-direction:column;align-items:center;padding:0 2px 6px;}
+  .clock-date{text-align:center;margin:0 0 14px;}
+  .clock-date-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--text-faint);}
+  .clock-date-value{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:21px;color:var(--app-fg);margin-top:4px;}
+
+  .clock-dial{
+    position:relative;width:100%;max-width:340px;aspect-ratio:1;
+    touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+    container-type:inline-size;
+  }
+  .clock-dial::before{
+    content:'';position:absolute;inset:-4%;border-radius:50%;z-index:0;
+    background:radial-gradient(circle, color-mix(in srgb, var(--clock-c) 30%, transparent), transparent 66%);
+    filter:blur(16px);opacity:.75;pointer-events:none;
+  }
+  .clock-dial > svg{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible;z-index:1;}
+  .clock-dial.is-master{cursor:grab;}
+  .clock-dial.dragging{cursor:grabbing;}
+  .clock-ring{fill:none;stroke:var(--clock-c);stroke-width:2;opacity:.65;filter:drop-shadow(0 0 6px var(--clock-c));}
+  .clock-face{stroke:rgba(255,255,255,0.07);stroke-width:1;}
+  .clock-core{fill:rgba(0,0,0,0.28);stroke:color-mix(in srgb, var(--clock-c) 30%, transparent);stroke-width:1;}
+  .clock-tick{stroke:color-mix(in srgb, var(--app-fg) 26%, transparent);stroke-width:1.4;stroke-linecap:round;}
+  .clock-tick.major{stroke:var(--clock-c);stroke-width:2.8;opacity:.95;}
+  .clock-num{fill:var(--text-dim);font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;text-anchor:middle;dominant-baseline:central;}
+  .clock-num.q{fill:var(--app-fg);font-size:18px;font-weight:700;}
+
+  .clock-hand{transform-origin:160px 160px;transition:transform .85s cubic-bezier(.3,1.25,.5,1);will-change:transform;}
+  .clock-dial.dragging .clock-hand, .clock-dial.no-anim .clock-hand{transition:none;}
+  .clock-hand .h-line{stroke:var(--clock-c);stroke-linecap:round;filter:drop-shadow(0 0 5px var(--clock-c));}
+  .clock-hand .h-knob{fill:var(--app-bg);stroke:var(--clock-c);stroke-width:3;filter:drop-shadow(0 0 6px var(--clock-c));}
+  .clock-hand.active .h-knob{fill:var(--clock-c);}
+  .clock-dial.is-master:not(.dragging) .h-knob{animation:clockKnobPulse 2.6s ease-in-out infinite;}
+  @keyframes clockKnobPulse{0%,100%{filter:drop-shadow(0 0 4px var(--clock-c));}50%{filter:drop-shadow(0 0 11px var(--clock-c));}}
+
+  .clock-center{
+    position:absolute;inset:0;z-index:2;pointer-events:none;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2cqw;
+  }
+  .clock-center-icon{color:var(--clock-c);display:flex;filter:drop-shadow(0 0 5px var(--clock-c));}
+  .clock-center-icon svg{width:6.2cqw;height:6.2cqw;min-width:16px;min-height:16px;}
+  .clock-digital{
+    font-family:'Chakra Petch',sans-serif;font-weight:700;font-variant-numeric:tabular-nums;
+    font-size:34px;font-size:10cqw;line-height:1;color:var(--app-fg);letter-spacing:1px;
+    text-shadow:0 0 14px color-mix(in srgb, var(--clock-c) 55%, transparent);
+  }
+  .clock-colon{animation:clockColon 1s steps(1) infinite;}
+  @keyframes clockColon{50%{opacity:.25;}}
+  .clock-period{
+    font-family:'JetBrains Mono',monospace;font-weight:700;font-size:9px;font-size:max(9px,2.9cqw);
+    letter-spacing:.3em;text-transform:uppercase;color:var(--clock-c);margin-right:-.3em;
+  }
+
+  .clock-hint{text-align:center;font-size:12px;color:var(--text-dim);line-height:1.5;margin-top:22px;max-width:300px;}
+  .clock-live{display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1.5px;color:var(--clock-c);text-transform:uppercase;}
+  .clock-live::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--clock-c);box-shadow:0 0 8px var(--clock-c);animation:pulse 2s ease-in-out infinite;}
+  .clock-midnight{
+    border-radius:12px;max-width:320px;text-align:center;
+    font-size:12px;line-height:1.45;color:var(--app-fg);
+    background:color-mix(in srgb, var(--clock-c) 14%, transparent);
+    border:0 solid color-mix(in srgb, var(--clock-c) 50%, transparent);
+    max-height:0;padding:0 14px;margin-top:0;opacity:0;overflow:hidden;pointer-events:none;
+    transition:max-height .25s ease, padding .25s ease, margin .25s ease, opacity .2s ease;
+  }
+  .clock-midnight.show{max-height:90px;padding:9px 14px;margin-top:16px;border-width:1px;opacity:1;}
+
+  .clock-day{width:100%;max-width:320px;margin-top:28px;}
+  .clock-day-title{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--text-faint);text-align:center;margin-bottom:10px;}
+  .clock-day-track{position:relative;display:flex;height:8px;border-radius:99px;}
+  .clock-day-seg{height:100%;opacity:.28;transition:opacity .5s ease;}
+  .clock-day-seg:first-child{border-radius:99px 0 0 99px;}
+  .clock-day-seg:nth-child(4){border-radius:0 99px 99px 0;}
+  .clock-day-seg.on{opacity:.9;}
+  .clock-day-seg.p-madrugada{background:#8f8cff;}
+  .clock-day-seg.p-manha{background:#ffc46b;}
+  .clock-day-seg.p-tarde{background:#ff9f43;}
+  .clock-day-seg.p-noite{background:#5aa9ff;}
+  .clock-day-marker{
+    position:absolute;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;
+    background:#fff;border:3px solid var(--clock-c);box-shadow:0 0 12px var(--clock-c);
+    transition:left .85s cubic-bezier(.3,1.25,.5,1);
+  }
+  .clock-day.dragging .clock-day-marker{transition:none;}
+  .clock-day-labels{display:flex;justify-content:space-between;margin-top:9px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-faint);}
+
   .app-theme-codex{
     --app-accent:#ff4fa6; --app-bg:#150713; --app-bg-2:#210a1c; --app-bg-3:#2b0e25; --app-border:#4a1a3c; --app-fg:#ffd9ee;
     --accent-1:var(--app-accent); --accent-2:#ff8fc7; --accent-glow:rgba(255,79,166,0.35);
@@ -912,6 +1001,7 @@
 <div id="inventoryOverlay" class="diary-overlay"></div>
 <div id="codexOverlay" class="diary-overlay"></div>
 <div id="appsOverlay" class="diary-overlay"></div>
+<div id="clockOverlay" class="diary-overlay"></div>
 <div id="installBanner"></div>
 
 <script>
@@ -1101,6 +1191,7 @@ function subscribeRealtime(){
       (payload)=>{
         state = ensureStateDefaults(payload.new.data);
         render();
+        if(clockOpen && !clockDrag && !clockCommitting) updateClockView();
       }
     )
     .subscribe();
@@ -1436,9 +1527,10 @@ function attachLoginHandlers(){
   if(pinInput) pinInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') submitPin(); });
 }
 
-/* ---------- HORÁRIO VISUAL ----------
-   Só clima: o mestre escolhe o horário na mão e ele não entra na simulação
-   (os eventos continuam acontecendo na passagem do dia). */
+/* ---------- HORÁRIO ----------
+   O mestre escolhe o horário na mão (app Relógio); ele não entra na simulação
+   (os eventos continuam acontecendo na passagem do dia). O único efeito é que
+   passar da meia-noite arrastando os ponteiros avança o dia. */
 const CLOCK_SVG = (inner)=> `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
 const CLOCK_ICONS = {
   madrugada: CLOCK_SVG('<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/><path d="M17 3v3M15.5 4.5h3"/>'),
@@ -1458,22 +1550,7 @@ function clockPeriod(hhmm){
 
 function renderClockChip(){
   const p = clockPeriod(state.clock);
-  return `<span class="clock-chip p-${p} ${isMaster?'is-editable':''}" id="clockChip" title="${CLOCK_LABELS[p]}${isMaster?' — clique pra mudar o horário':''}">${CLOCK_ICONS[p]}${state.clock}</span>`;
-}
-
-const CLOCK_PRESETS = [
-  { time:'00:00', label:'Meia-noite', icon:'noite' },
-  { time:'03:00', label:'Madrugada', icon:'madrugada' },
-  { time:'08:00', label:'Manhã', icon:'manha' },
-  { time:'12:00', label:'Meio-dia', icon:'tarde' },
-  { time:'16:00', label:'Tarde', icon:'tarde' },
-  { time:'20:00', label:'Noite', icon:'noite' }
-];
-
-function shiftClock(hhmm, minutes){
-  const [h, m] = hhmm.split(':').map(Number);
-  const total = (((h*60 + m + minutes) % 1440) + 1440) % 1440;
-  return String(Math.floor(total/60)).padStart(2,'0') + ':' + String(total%60).padStart(2,'0');
+  return `<span class="clock-chip p-${p}" id="clockChip" title="${CLOCK_LABELS[p]} — abrir o relógio">${CLOCK_ICONS[p]}${state.clock}</span>`;
 }
 
 function renderTopbar(){
@@ -2155,25 +2232,6 @@ function renderModal(){
     }
   }
 
-  if(type === 'editClock'){
-    title = 'Horário';
-    body = `
-      <div class="field"><label>Horário atual</label><input id="mClock" type="time" value="${state.clock}"></div>
-      <div class="clock-presets">
-        ${CLOCK_PRESETS.map(p=>`
-          <div class="clock-preset" data-clock-set="${p.time}">${CLOCK_ICONS[p.icon]}<span>${p.label}</span><span>${p.time}</span></div>
-        `).join('')}
-      </div>
-      <div class="clock-steps">
-        <button class="btn btn-ghost" data-clock-step="-60">− 1h</button>
-        <button class="btn btn-ghost" data-clock-step="-30">− 30min</button>
-        <button class="btn btn-ghost" data-clock-step="30">+ 30min</button>
-        <button class="btn btn-ghost" data-clock-step="60">+ 1h</button>
-      </div>
-      <div class="hint" style="margin-top:10px;">Só visual: não afeta eventos nem a simulação. Os eventos continuam acontecendo na passagem do dia — o horário é você quem escolhe.</div>
-    `;
-  }
-
   if(type === 'addExpense'){
     title = 'Novo gasto fixo';
     body = `
@@ -2483,7 +2541,7 @@ function attachHandlers(){
   if(appsBtn) appsBtn.onclick = openAppsLauncher;
 
   const clockChip = $('#clockChip');
-  if(clockChip && isMaster) clockChip.onclick = ()=> openModal('editClock');
+  if(clockChip) clockChip.onclick = openClockApp;
 
   const roleBadge = $('#roleBadge');
   if(roleBadge) roleBadge.onclick = ()=>{
@@ -2588,16 +2646,6 @@ function attachHandlers(){
         if(!sides || sides < 2){ showToast('Digita um número de lados válido (2 ou mais).'); return; }
         rollDice('custom', sides);
       };
-    }
-
-    if(ui.modal === 'editClock'){
-      const clockInput = $('#mClock');
-      $$('[data-clock-set]').forEach(el=>{
-        el.onclick = ()=>{ clockInput.value = el.dataset.clockSet; };
-      });
-      $$('[data-clock-step]').forEach(el=>{
-        el.onclick = ()=>{ clockInput.value = shiftClock(clockInput.value || state.clock, parseInt(el.dataset.clockStep, 10)); };
-      });
     }
 
     if((ui.modal === 'addCharacter' || ui.modal === 'characterDetail') && isMaster){
@@ -2715,12 +2763,6 @@ async function handleConfirmAsync(){
       state.dirty.balance = newBalance;
     }
     saveState(); closeModal(); showToast('Saldo atualizado.'); return;
-  }
-
-  if(type === 'editClock'){
-    const v = $('#mClock').value;
-    if(/^\d{2}:\d{2}$/.test(v)) state.clock = v;
-    saveState(); closeModal(); showToast('Horário atualizado.'); return;
   }
 
   if(type === 'addExpense'){
@@ -3528,11 +3570,18 @@ function openAppsLauncher(){
         <div class="app-icon-glyph app-icon-codex">📔</div>
         <div class="app-icon-label">Memórias</div>
       </button>
+      <button class="app-icon-tile" id="launchClock" style="animation-delay:100ms;">
+        <div class="app-icon-glyph app-icon-clock">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></svg>
+        </div>
+        <div class="app-icon-label">Relógio</div>
+      </button>
     </div>
   `;
   document.getElementById('appsClose').onclick = closeAppsLauncher;
   document.getElementById('launchInventory').onclick = ()=>{ closeAppsLauncher(); openInventory(); };
   document.getElementById('launchCodex').onclick = ()=>{ closeAppsLauncher(); openCodex(); };
+  document.getElementById('launchClock').onclick = ()=>{ closeAppsLauncher(); openClockApp(); };
 }
 
 function closeAppsLauncher(){
@@ -3544,6 +3593,327 @@ function closeAppsLauncher(){
     overlay.innerHTML = '';
     overlay.classList.remove('app-overlay-closing');
   }, 180);
+}
+
+/* ============================================================
+   RELÓGIO — relógio analógico com ponteiros arrastáveis (só o mestre
+   mexe) e o horário digital no meio. Passar da meia-noite avança o dia.
+   Vive fora do #root, igual aos outros apps, então a tela principal
+   re-renderizando não atrapalha o arrasto.
+   ============================================================ */
+let clockOpen = false;
+let clockDrag = null;          // { hand, start, cur, prevMinute, prevHourPos } enquanto arrasta
+let clockCommitting = false;   // true enquanto grava o horário / avança o dia
+
+const pad2 = n => String(n).padStart(2, '0');
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function clockToMin(hhmm){ const [h, m] = hhmm.split(':').map(Number); return h*60 + m; }
+function clockFromMin(t){
+  const n = ((Math.round(t) % 1440) + 1440) % 1440;
+  return pad2(Math.floor(n/60)) + ':' + pad2(n%60);
+}
+
+function openClockApp(){
+  if(clockOpen) return;
+  lockBodyScroll();
+  clockOpen = true;
+  const overlay = document.getElementById('clockOverlay');
+  overlay.classList.remove('app-overlay-closing');
+  overlay.style.display = 'flex';
+  overlay.innerHTML = renderClockApp();
+  attachClockHandlers();
+  updateClockView();
+}
+
+function closeClockApp(){
+  if(!clockOpen) return;
+  unlockBodyScroll();
+  clockOpen = false;
+  clockDrag = null;
+  const overlay = document.getElementById('clockOverlay');
+  const shell = overlay.querySelector('.app-shell');
+  if(shell){
+    shell.classList.add('app-shell-exit');
+    overlay.classList.add('app-overlay-closing');
+    setTimeout(()=>{
+      if(clockOpen) return; // reabriu antes de acabar a animação
+      overlay.style.display = 'none';
+      overlay.innerHTML = '';
+      overlay.classList.remove('app-overlay-closing');
+    }, 200);
+  } else {
+    overlay.style.display = 'none';
+    overlay.innerHTML = '';
+  }
+}
+
+function renderClockApp(){
+  let ticks = '', nums = '';
+  for(let i = 0; i < 60; i++){
+    const major = i % 5 === 0;
+    const a = i * 6 * Math.PI / 180;
+    const r1 = major ? 124 : 130, r2 = 138;
+    ticks += `<line class="clock-tick${major?' major':''}" x1="${(160+Math.sin(a)*r1).toFixed(2)}" y1="${(160-Math.cos(a)*r1).toFixed(2)}" x2="${(160+Math.sin(a)*r2).toFixed(2)}" y2="${(160-Math.cos(a)*r2).toFixed(2)}"/>`;
+  }
+  for(let n = 1; n <= 12; n++){
+    const a = n * 30 * Math.PI / 180;
+    nums += `<text class="clock-num${n%3===0?' q':''}" x="${(160+Math.sin(a)*108).toFixed(2)}" y="${(160-Math.cos(a)*108).toFixed(2)}">${n}</text>`;
+  }
+  return `
+    <div class="app-shell app-theme-clock app-shell-enter">
+      ${renderAppStatusBar()}
+      <div class="app-chrome-head">
+        <div class="app-chrome-title">Relógio</div>
+        <div class="app-chrome-close" id="clockClose">✕</div>
+      </div>
+      <div class="app-body">
+        <div class="clock-app">
+          <div class="clock-date">
+            <div class="clock-date-label">Data corrente</div>
+            <div class="clock-date-value" id="clkDate"></div>
+          </div>
+          <div class="clock-dial ${isMaster?'is-master':''} no-anim" id="clkDial">
+            <svg viewBox="0 0 320 320" aria-hidden="true">
+              <defs>
+                <radialGradient id="clkFace" cx="50%" cy="38%" r="75%">
+                  <stop offset="0" style="stop-color:var(--app-bg-3)"/>
+                  <stop offset="1" style="stop-color:var(--app-bg)"/>
+                </radialGradient>
+                <radialGradient id="clkGloss" cx="50%" cy="50%" r="50%">
+                  <stop offset="0" stop-color="#fff" stop-opacity="0.07"/>
+                  <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+                </radialGradient>
+              </defs>
+              <circle class="clock-ring" cx="160" cy="160" r="153"/>
+              <circle class="clock-face" cx="160" cy="160" r="147" fill="url(#clkFace)"/>
+              <ellipse cx="160" cy="84" rx="110" ry="62" fill="url(#clkGloss)"/>
+              ${ticks}
+              ${nums}
+              <circle class="clock-core" cx="160" cy="160" r="57"/>
+              <g class="clock-hand" id="clkHour">
+                <line class="h-line" x1="160" y1="100" x2="160" y2="84" stroke-width="7"/>
+                <circle class="h-knob" cx="160" cy="84" r="9"/>
+              </g>
+              <g class="clock-hand" id="clkMinute">
+                <line class="h-line" x1="160" y1="100" x2="160" y2="66" stroke-width="4"/>
+                <circle class="h-knob" cx="160" cy="66" r="7"/>
+              </g>
+            </svg>
+            <div class="clock-center">
+              <div class="clock-center-icon" id="clkIcon"></div>
+              <div class="clock-digital"><span id="clkHH">--</span><span class="clock-colon">:</span><span id="clkMM">--</span></div>
+              <div class="clock-period" id="clkPeriod"></div>
+            </div>
+          </div>
+          <div class="clock-midnight" id="clkMidnight"></div>
+          <div class="clock-day" id="clkDay">
+            <div class="clock-day-title">O dia</div>
+            <div class="clock-day-track">
+              <div class="clock-day-seg p-madrugada" data-p="madrugada" style="width:25%"></div>
+              <div class="clock-day-seg p-manha" data-p="manha" style="width:25%"></div>
+              <div class="clock-day-seg p-tarde" data-p="tarde" style="width:25%"></div>
+              <div class="clock-day-seg p-noite" data-p="noite" style="width:25%"></div>
+              <div class="clock-day-marker" id="clkMarker"></div>
+            </div>
+            <div class="clock-day-labels"><span>00h</span><span>06h</span><span>12h</span><span>18h</span><span>24h</span></div>
+          </div>
+          <div class="clock-hint" id="clkHint">${isMaster
+            ? 'Arraste os ponteiros pra definir a hora. Passar da meia-noite avança o dia.'
+            : '<span class="clock-live">Ao vivo</span><br>Só o mestre mexe no horário — você acompanha aqui.'}</div>
+        </div>
+      </div>
+      <div class="app-home-indicator"></div>
+    </div>
+  `;
+}
+
+// gira o ponteiro pelo menor caminho (sem dar a volta inteira quando passa de 59 pra 00)
+function setClockHand(el, target){
+  if(el._a === undefined){ el._a = target; }
+  else {
+    const d = (((target - el._a) % 360) + 540) % 360 - 180;
+    el._a += d;
+  }
+  el.style.transform = `rotate(${el._a}deg)`;
+}
+
+// viewMin: horário provisório (minutos, pode passar de 1440) enquanto arrasta;
+// sem ele, mostra o horário salvo no estado.
+function updateClockView(viewMin){
+  const shell = document.querySelector('#clockOverlay .app-shell');
+  if(!shell) return;
+  const t = viewMin !== undefined ? viewMin : clockToMin(state.clock);
+  const hhmm = clockFromMin(t);
+  const p = clockPeriod(hhmm);
+
+  document.getElementById('clkHH').textContent = hhmm.slice(0,2);
+  document.getElementById('clkMM').textContent = hhmm.slice(3);
+  document.getElementById('clkPeriod').textContent = CLOCK_LABELS[p];
+  document.getElementById('clkIcon').innerHTML = CLOCK_ICONS[p];
+  document.getElementById('clkDate').textContent = formatDate(state.day);
+  shell.classList.remove('p-madrugada','p-manha','p-tarde','p-noite');
+  shell.classList.add('p-' + p);
+
+  setClockHand(document.getElementById('clkHour'), t * 0.5);
+  setClockHand(document.getElementById('clkMinute'), t * 6);
+
+  document.getElementById('clkMarker').style.left = (clockToMin(hhmm) / 1440 * 100) + '%';
+  document.querySelectorAll('#clkDay .clock-day-seg').forEach(seg=> seg.classList.toggle('on', seg.dataset.p === p));
+  document.getElementById('clkDay').classList.toggle('dragging', !!clockDrag);
+
+  const dial = document.getElementById('clkDial');
+  if(dial && dial.classList.contains('no-anim')){
+    requestAnimationFrame(()=> requestAnimationFrame(()=> dial.classList.remove('no-anim')));
+  }
+}
+
+function updateClockMidnightBanner(cur){
+  const el = document.getElementById('clkMidnight');
+  if(!el) return;
+  const cross = Math.floor(cur / 1440);
+  if(cross >= 1){
+    el.innerHTML = `🌙 Passou da meia-noite — ao soltar, o dia avança${cross>1?` ${cross} dias`:''} pra <b>${formatDate(state.day + cross)}</b>.`;
+    el.classList.add('show');
+  } else {
+    el.classList.remove('show');
+  }
+}
+
+function attachClockHandlers(){
+  document.getElementById('clockClose').onclick = closeClockApp;
+  const dial = document.getElementById('clkDial');
+  if(!isMaster) return;
+
+  const angDist = (a, b)=>{ const d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; };
+  const pointer = (e)=>{
+    const box = dial.getBoundingClientRect();
+    const s = 320 / box.width;
+    const x = (e.clientX - box.left - box.width/2) * s;
+    const y = (e.clientY - box.top - box.height/2) * s;
+    return { a: (Math.atan2(x, -y) * 180 / Math.PI + 360) % 360, r: Math.hypot(x, y) };
+  };
+
+  // atualiza o horário provisório a partir da posição do dedo/mouse.
+  // a conta é sempre "quanto andou desde o último ponto" (pelo menor caminho),
+  // então dar a volta no relógio acumula horas de verdade — inclusive passar
+  // da meia-noite (cur >= 1440).
+  const follow = (a)=>{
+    const d = clockDrag;
+    if(d.hand === 'minute'){
+      const m = Math.round(a / 6) % 60;
+      let diff = m - d.prevMinute;
+      if(diff > 30) diff -= 60;
+      if(diff < -30) diff += 60;
+      d.cur += diff;
+      d.prevMinute = m;
+    } else {
+      const frac = (((d.cur % 60) + 60) % 60) / 60;
+      const hp = ((Math.round(a / 30 - frac) % 12) + 12) % 12;
+      let diff = hp - d.prevHourPos;
+      if(diff > 6) diff -= 12;
+      if(diff < -6) diff += 12;
+      d.cur += diff * 60;
+      d.prevHourPos = hp;
+    }
+    updateClockView(d.cur);
+    updateClockMidnightBanner(d.cur);
+  };
+
+  dial.addEventListener('pointerdown', (e)=>{
+    if(clockDrag || clockCommitting || dayActionInFlight) return;
+    const p = pointer(e);
+    if(p.r < 58) return; // miolo (horário digital)
+    const t0 = clockToMin(state.clock);
+    const dH = angDist(p.a, (t0 % 720) * 0.5);
+    const dM = angDist(p.a, (t0 % 60) * 6);
+    const hand = p.r > 94 ? 'minute' : (dH <= dM ? 'hour' : 'minute');
+    clockDrag = { hand, start: t0, cur: t0, prevMinute: t0 % 60, prevHourPos: Math.floor(t0 / 60) % 12 };
+    dial.setPointerCapture(e.pointerId);
+    dial.classList.add('dragging');
+    document.getElementById(hand === 'hour' ? 'clkHour' : 'clkMinute').classList.add('active');
+    e.preventDefault();
+    follow(p.a);
+  });
+  dial.addEventListener('pointermove', (e)=>{
+    if(!clockDrag) return;
+    follow(pointer(e).a);
+  });
+  const end = ()=>{
+    if(!clockDrag) return;
+    commitClockDrag();
+  };
+  dial.addEventListener('pointerup', end);
+  dial.addEventListener('pointercancel', end);
+}
+
+async function saveStateNow(){
+  clearTimeout(saveTimer);
+  await flushSave();
+  while(isSaving || pendingSave) await sleep(50);
+}
+
+async function waitForDay(target, ms){
+  const limit = Date.now() + ms;
+  while(state.day < target && Date.now() < limit) await sleep(100);
+  return state.day >= target;
+}
+
+async function commitClockDrag(){
+  const d = clockDrag;
+  clockDrag = null;
+  const dial = document.getElementById('clkDial');
+  if(dial) dial.classList.remove('dragging');
+  document.querySelectorAll('#clockOverlay .clock-hand.active').forEach(el=> el.classList.remove('active'));
+
+  const cross = Math.floor(d.cur / 1440);
+  const oldTime = clockFromMin(d.start);
+  const newTime = clockFromMin(d.cur);
+  const midnight = document.getElementById('clkMidnight');
+  const hideBanner = ()=>{ if(midnight) midnight.classList.remove('show'); };
+
+  if(cross <= 0){
+    hideBanner();
+    if(newTime !== oldTime){
+      state.clock = newTime;
+      saveState();
+      render();
+      if(cross < 0) showToast('Voltou além da meia-noite: o dia não muda. Use "Voltar dia" se precisar.');
+    }
+    updateClockView();
+    return;
+  }
+
+  if(cross > 1 && !confirm(`Isso vai avançar ${cross} dias. Continuar?`)){
+    hideBanner();
+    updateClockView();
+    return;
+  }
+
+  // atravessou a meia-noite: avança o dia (uma vez por meia-noite). O horário
+  // de antes é gravado primeiro pra o histórico ("Voltar dia") guardar o dia
+  // anterior com a hora em que ele estava, e o horário novo entra depois.
+  clockCommitting = true;
+  if(midnight) midnight.innerHTML = '🌙 Avançando o dia…';
+  const dayBefore = state.day;
+  state.clock = oldTime;
+  await saveStateNow();
+  for(let i = 0; i < cross; i++){
+    const target = state.day + 1;
+    await callDayFunction('advance-day');
+    if(!(await waitForDay(target, 8000))) break;
+  }
+  const advanced = state.day > dayBefore;
+  if(advanced){
+    state.clock = newTime;
+    saveState();
+    showToast(`Meia-noite: agora é ${formatDate(state.day)}.`);
+  } else {
+    showToast('Não consegui avançar o dia. O horário não mudou.');
+  }
+  clockCommitting = false;
+  hideBanner();
+  render();
+  updateClockView();
 }
 
 /* ============================================================
