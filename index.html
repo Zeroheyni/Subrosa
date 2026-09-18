@@ -77,7 +77,7 @@
       var(--bg);
   }
 
-  #root{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;}
+  #root{max-width:452px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;padding:18px 16px 30px;}
 
   .login-screen{
     flex:1;display:flex;align-items:center;justify-content:center;padding:20px;
@@ -98,15 +98,7 @@
   ::-webkit-scrollbar{width:6px;height:6px;}
   ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
 
-  /* ---------- HEADER ---------- */
-  .topbar{
-    padding:18px 16px 12px;
-    display:flex;flex-direction:column;gap:14px;
-    position:sticky;top:0;z-index:20;
-    background:linear-gradient(180deg, var(--bg) 70%, transparent);
-    backdrop-filter:blur(6px);
-  }
-  .brand-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;row-gap:8px;}
+  /* ---------- MARCA ---------- */
   .brand{
     font-family:'Chakra Petch',sans-serif;
     font-weight:700;
@@ -121,21 +113,6 @@
     animation:pulse 2.2s ease-in-out infinite;
   }
   @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
-
-  .brand-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
-
-  .role-badge{
-    font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:1.5px;
-    padding:7px 11px;border-radius:10px;
-    background:var(--bg-panel);border:1px solid var(--border-soft);color:var(--text-faint);
-    cursor:default;user-select:none;
-  }
-  .role-badge.is-master{
-    color:var(--accent-1);border-color:var(--accent-1);
-    background:color-mix(in srgb, var(--accent-1) 12%, var(--bg-panel));
-    box-shadow:0 0 10px var(--accent-glow);
-    cursor:pointer;
-  }
 
   .presence-badge{
     font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:1px;
@@ -178,38 +155,6 @@
     100%{transform:scale(1) rotate(0);}
   }
 
-  .day-row{
-    display:flex;align-items:center;justify-content:space-between;
-    background:var(--bg-panel);
-    border:1px solid var(--border);
-    border-radius:14px;
-    padding:10px 14px;
-  }
-  .day-info{display:flex;flex-direction:column;gap:2px;}
-  .day-label-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-
-  /* horário visual (só clima — não afeta a simulação) */
-  .clock-chip{
-    --clock-c:var(--text-dim);
-    display:inline-flex;align-items:center;gap:5px;
-    font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.8px;
-    padding:2px 8px 2px 6px;border-radius:999px;
-    color:var(--clock-c);
-    background:color-mix(in srgb, var(--clock-c) 12%, transparent);
-    border:1px solid color-mix(in srgb, var(--clock-c) 45%, transparent);
-    text-transform:none;user-select:none;
-    transition:color .5s ease, background .5s ease, border-color .5s ease;
-  }
-  .clock-chip svg{width:12px;height:12px;flex-shrink:0;filter:drop-shadow(0 0 3px var(--clock-c));}
-  .clock-chip{cursor:pointer;}
-  .clock-chip:hover{background:color-mix(in srgb, var(--clock-c) 22%, transparent);}
-  .clock-chip.p-madrugada{--clock-c:#8f8cff;}
-  .clock-chip.p-manha{--clock-c:#ffc46b;}
-  .clock-chip.p-tarde{--clock-c:#ff9f43;}
-  .clock-chip.p-noite{--clock-c:#5aa9ff;}
-  .day-label{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;}
-  .day-value{font-family:'Chakra Petch',sans-serif;font-size:16px;font-weight:700;}
-  .day-actions{display:flex;gap:8px;}
   .icon-btn{
     width:36px;height:36px;border-radius:10px;
     border:1px solid var(--border);
@@ -594,17 +539,8 @@
   .app-overlay-closing{animation:overlayFadeOut .2s ease forwards;}
   .inv-wrap, .codex-wrap{animation:viewIn .26s cubic-bezier(.2,.8,.2,1);}
   .stagger-in{animation:viewIn .35s cubic-bezier(.2,.8,.2,1) both;}
-  .apps-grid .app-icon-tile{animation:appShellIn .3s cubic-bezier(.2,.8,.2,1) both;}
 
-  /* ---------- DIÁRIO (botão escondido + visão CAT/DOG) ---------- */
-  .diary-trigger{
-    position:fixed;bottom:14px;right:14px;z-index:60;
-    width:9px;height:9px;border-radius:50%;
-    background:var(--text-faint);opacity:0.25;border:none;padding:0;cursor:pointer;
-    transition:opacity .3s ease, transform .3s ease, background .3s ease, box-shadow .3s ease;
-    display:none;
-  }
-  .diary-trigger:hover{opacity:1;background:var(--accent-1);box-shadow:0 0 10px var(--accent-glow);transform:scale(1.6);}
+  /* ---------- DIÁRIO (visão CAT/DOG) ---------- */
 
   .diary-overlay{
     position:fixed;inset:0;z-index:300;
@@ -841,18 +777,133 @@
   .codex-detail-title{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:18px;}
   .codex-detail-desc{font-size:13.5px;color:var(--text-dim);line-height:1.6;margin-top:10px;white-space:pre-wrap;}
 
-  /* ---------- TELA DE APPS (launcher) ---------- */
-  .apps-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:22px;max-width:420px;margin:24px auto 0;}
-  .app-icon-tile{display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;background:none;border:none;padding:0;}
-  .app-icon-glyph{
-    width:64px;height:64px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:28px;
-    box-shadow:0 8px 20px rgba(0,0,0,0.45);transition:transform .15s ease;
+  /* ---------- ÍCONES DE APP ---------- */
+  .app-icon-tile{
+    display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;
+    background:none;border:none;padding:0;-webkit-tap-highlight-color:transparent;
   }
-  .app-icon-tile:hover .app-icon-glyph{transform:scale(1.07);}
+  .app-icon-glyph{
+    position:relative;width:62px;height:62px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:28px;
+    box-shadow:0 8px 20px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.28);transition:transform .15s ease;
+  }
+  .app-icon-tile:hover .app-icon-glyph{transform:scale(1.06);}
+  .app-icon-tile:active .app-icon-glyph{transform:scale(.9);}
+  .app-icon-bank{background:linear-gradient(160deg, #00d4ff, #2f6bff);}
   .app-icon-inventory{background:linear-gradient(160deg, #ffc266, #ff8a00);}
   .app-icon-codex{background:linear-gradient(160deg, #ff8fc7, #c21f95);}
   .app-icon-clock{background:linear-gradient(160deg, #7fd0ff, #3a5bff);}
-  .app-icon-label{font-size:11px;color:var(--text-dim);font-family:'Inter',sans-serif;font-weight:600;}
+  .app-icon-dice{background:linear-gradient(160deg, #b58cff, #6a3df0);}
+  .app-icon-diary{background:linear-gradient(160deg, #5be3a5, #12a06a);}
+  .app-icon-calendar{background:linear-gradient(180deg, #ffffff, #e6eaf4);flex-direction:column;gap:1px;}
+  .cal-icon-m{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:800;letter-spacing:1.5px;color:#ff3b5c;}
+  .cal-icon-d{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:29px;line-height:1;color:#12131a;}
+  .app-icon-label{font-size:11px;color:rgba(255,255,255,0.9);font-family:'Inter',sans-serif;font-weight:600;text-shadow:0 1px 6px rgba(0,0,0,0.6);}
+  .app-badge{
+    position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:99px;
+    background:#ff3b30;color:#fff;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(255,59,48,0.55);
+    border:2px solid rgba(8,12,26,0.9);box-sizing:content-box;
+  }
+
+  /* ---------- MOLDURA DE CELULAR (tela inicial, Banco, Calendário) ---------- */
+  .phone{
+    --app-fg:var(--text);
+    width:100%;max-width:420px;margin:0 auto;flex:1;
+    min-height:calc(100vh - 48px);
+    display:flex;flex-direction:column;position:relative;
+    border-radius:34px;border:1px solid rgba(255,255,255,0.07);
+    box-shadow:0 24px 70px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.02);
+  }
+  .phone-app{background:color-mix(in srgb, var(--bg) 92%, transparent);}
+  .phone-sticky{
+    position:sticky;top:0;z-index:20;border-radius:34px 34px 0 0;
+    background:linear-gradient(180deg, var(--bg) 78%, transparent);backdrop-filter:blur(6px);
+  }
+  .phone-head{display:flex;align-items:center;gap:12px;padding:8px 16px 12px;}
+  .phone-home-btn{
+    width:36px;height:36px;border-radius:50%;flex-shrink:0;cursor:pointer;
+    border:1px solid var(--border);background:var(--bg-panel-2);color:var(--text);
+    display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1;padding:0 0 3px;
+    transition:border-color .2s ease, color .2s ease;
+  }
+  .phone-home-btn:hover{border-color:var(--accent-1);color:var(--accent-1);}
+  .phone-head-title{flex:1;min-width:0;}
+  .phone-head-sub{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:1px;color:var(--text-faint);margin-top:3px;}
+
+  /* tela inicial */
+  .phone-home{
+    --app-fg:#eaf2ff;
+    --wall-a:#5aa9ff;--wall-b:#2f6bff;--wall-base-1:#0a1226;--wall-base-2:#050912;
+    overflow:hidden;padding-bottom:18px;
+    background:
+      radial-gradient(120% 55% at 50% -8%, color-mix(in srgb, var(--wall-a) 42%, transparent), transparent 70%),
+      radial-gradient(90% 50% at 100% 105%, color-mix(in srgb, var(--wall-b) 38%, transparent), transparent 70%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 34px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 34px),
+      linear-gradient(180deg, var(--wall-base-1), var(--wall-base-2));
+  }
+  .phone-home.p-madrugada{--wall-a:#8f8cff;--wall-b:#3a2f8f;}
+  .phone-home.p-manha{--wall-a:#ffc46b;--wall-b:#ff7a59;}
+  .phone-home.p-tarde{--wall-a:#ff9f43;--wall-b:#ff5f6d;}
+  .phone-home.p-noite{--wall-a:#5aa9ff;--wall-b:#2f6bff;}
+  body.mode-sujo .phone-home{--app-fg:#ffe3e8;--wall-a:#ff1f4b;--wall-b:#7a0d24;--wall-base-1:#12060a;--wall-base-2:#050203;}
+
+  .home-widget{
+    margin:14px 18px 0;padding:22px 18px 18px;border-radius:26px;text-align:center;cursor:pointer;
+    background:rgba(255,255,255,0.07);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border:1px solid rgba(255,255,255,0.12);box-shadow:0 10px 30px rgba(0,0,0,0.35);
+    transition:transform .15s ease;
+  }
+  .home-widget:active{transform:scale(.98);}
+  .hw-time{
+    font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:60px;line-height:1;letter-spacing:2px;color:#fff;
+    font-variant-numeric:tabular-nums;text-shadow:0 0 26px color-mix(in srgb, var(--wall-a) 65%, transparent);
+  }
+  .hw-date{margin-top:10px;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:16px;color:rgba(255,255,255,0.92);}
+  .hw-period{
+    margin-top:8px;display:inline-flex;align-items:center;gap:6px;
+    font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--wall-a);
+  }
+  .hw-period svg{width:14px;height:14px;}
+
+  .home-master{
+    margin:12px 18px 0;padding:12px;border-radius:22px;
+    background:rgba(0,0,0,0.28);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,0.1);display:flex;flex-direction:column;gap:10px;
+  }
+  .hm-head{display:flex;justify-content:space-between;align-items:center;padding:0 2px;}
+  .hm-title{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:2.5px;color:var(--wall-a);}
+  .hm-link{background:none;border:none;color:rgba(255,255,255,0.55);font-size:11px;cursor:pointer;text-decoration:underline;font-family:'Inter',sans-serif;padding:0;}
+  .hm-actions{display:flex;gap:8px;}
+  .hm-btn{
+    flex:1;padding:11px 8px;border-radius:14px;cursor:pointer;
+    border:1px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.08);color:#fff;
+    font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;letter-spacing:.3px;
+    display:flex;align-items:center;justify-content:center;gap:7px;transition:filter .15s ease, transform .1s ease;
+  }
+  .hm-btn:hover{filter:brightness(1.15);}
+  .hm-btn:active{transform:scale(.97);}
+  .hm-btn:disabled{opacity:.35;cursor:not-allowed;}
+  .hm-btn.primary{
+    background:linear-gradient(120deg, var(--wall-a), var(--wall-b));border:none;color:#08101f;
+    box-shadow:0 4px 16px color-mix(in srgb, var(--wall-a) 45%, transparent);
+  }
+  .hm-btn svg{width:16px;height:16px;}
+
+  .home-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:22px 6px;padding:26px 14px 0;align-content:start;flex:1;}
+  .home-dock{
+    margin:22px 14px 0;padding:14px 8px;border-radius:30px;
+    background:rgba(255,255,255,0.09);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    border:1px solid rgba(255,255,255,0.12);
+    display:grid;grid-template-columns:repeat(4,1fr);justify-items:center;
+  }
+  .home-dock .app-icon-label{display:none;}
+  .phone-home .presence-badge{
+    background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.16);color:rgba(255,255,255,0.8);
+    padding:3px 9px;border-radius:99px;font-size:9px;letter-spacing:1.2px;text-transform:uppercase;
+  }
+  .home-enter .app-icon-tile{animation:appShellIn .34s cubic-bezier(.2,.8,.2,1) both;}
+  .home-enter .home-widget, .home-enter .home-master{animation:viewIn .35s cubic-bezier(.2,.8,.2,1) both;}
 
   /* ---------- "CHROME" DE APP DE CELULAR (inventário/codex) ---------- */
   .app-shell{
@@ -996,11 +1047,9 @@
 <body>
 <div id="root"></div>
 <div id="modeFlash"></div>
-<button id="diaryTrigger" class="diary-trigger"></button>
 <div id="diaryOverlay" class="diary-overlay"></div>
 <div id="inventoryOverlay" class="diary-overlay"></div>
 <div id="codexOverlay" class="diary-overlay"></div>
-<div id="appsOverlay" class="diary-overlay"></div>
 <div id="clockOverlay" class="diary-overlay"></div>
 <div id="installBanner"></div>
 
@@ -1364,7 +1413,9 @@ function triggerPropertyEvent(prop, forcedType, automatic){
 /* ============================================================
    UI STATE (modal / toasts, não persistido)
    ============================================================ */
-let ui = { modal: null, modalData: {}, toast: null };
+// app: qual app de tela cheia está aberto por cima da home ('bank' | 'calendar' | null).
+// enter: anima a próxima tela renderizada ('home' | 'app').
+let ui = { modal: null, modalData: {}, toast: null, app: null, bankTab: 'saldo', enter: 'home' };
 
 function showToast(msg){
   ui.toast = msg;
@@ -1440,26 +1491,27 @@ function closeModal(){
    ============================================================ */
 function render(){
   const root = document.getElementById('root');
-  const diaryTrigger = document.getElementById('diaryTrigger');
 
   if(state === null){
     document.body.className = '';
     root.innerHTML = renderLoginScreen();
     attachLoginHandlers();
-    if(diaryTrigger) diaryTrigger.style.display = 'none';
     return;
   }
 
   document.body.className = state.mode === 'sujo' ? 'mode-sujo' : '';
+  const enter = ui.enter;
+  ui.enter = null;
+  let screen;
+  if(ui.app === 'bank') screen = renderBankApp(enter);
+  else if(ui.app === 'calendar') screen = renderCalendarApp(enter);
+  else screen = renderHome(enter);
   root.innerHTML = `
-    ${renderTopbar()}
-    ${renderTabbar()}
-    <main>${renderTabContent()}</main>
+    ${screen}
     ${ui.modal ? renderModal() : ''}
     ${ui.toast ? `<div class="toast">${ui.toast}</div>` : ''}
   `;
   attachHandlers();
-  if(diaryTrigger) diaryTrigger.style.display = diaryOpen ? 'none' : 'block';
 }
 
 let loginMode = 'choose'; // 'choose' | 'pin'
@@ -1549,87 +1601,217 @@ function clockPeriod(hhmm){
   return 'noite';
 }
 
-function renderClockChip(){
-  const p = clockPeriod(state.clock);
-  return `<span class="clock-chip p-${p}" id="clockChip" title="${CLOCK_LABELS[p]} — abrir o relógio">${CLOCK_ICONS[p]}${state.clock}</span>`;
+/* ============================================================
+   TELA INICIAL DE CELULAR
+   O SUBROSA é uma tela de celular: home com widget de hora, grade de
+   apps e dock. Banco e Calendário abrem em tela cheia por cima da home
+   (renderizados no #root); Depósito, Memórias, Relógio e Diário são
+   overlays próprios; Dados é um modal.
+   Pra esconder/mostrar um app conforme o modo, use `visibleIn`
+   ('limpo' | 'sujo'); sem ele o app aparece sempre.
+   ============================================================ */
+const MODE_CAT_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M4 9 L7 3 L9.3 8.2"/>
+  <path d="M20 9 L17 3 L14.7 8.2"/>
+  <path d="M4 9 C4 15.2 8 19 12 19 C16 19 20 15.2 20 9 C20 9 16.8 10.6 12 10.6 C7.2 10.6 4 9 4 9 Z"/>
+  <circle cx="9.2" cy="13.2" r="0.55" fill="currentColor" stroke="none"/>
+  <circle cx="14.8" cy="13.2" r="0.55" fill="currentColor" stroke="none"/>
+  <path d="M10.4 15.4 Q12 16.5 13.6 15.4"/>
+</svg>`;
+
+const APP_SVG = (inner, w=34)=> `<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+
+const PHONE_APPS = [
+  { id:'bank', label:'Banco', dock:true, cls:'app-icon-bank',
+    glyph:()=> APP_SVG('<path d="M4 9 L7 3 L9.3 8.2"/><path d="M20 9 L17 3 L14.7 8.2"/><path d="M4 9 C4 15.2 8 19 12 19 C16 19 20 15.2 20 9 C20 9 16.8 10.6 12 10.6 C7.2 10.6 4 9 4 9 Z"/><circle cx="9.2" cy="13.2" r="0.7" fill="#fff" stroke="none"/><circle cx="14.8" cy="13.2" r="0.7" fill="#fff" stroke="none"/><path d="M10.4 15.4 Q12 16.5 13.6 15.4"/>', 36),
+    open:()=> openScreenApp('bank') },
+  { id:'calendar', label:'Calendário', dock:true, cls:'app-icon-calendar',
+    glyph:()=>{ const d = dayToDate(state.day); return `<span class="cal-icon-m">${MONTH_NAMES[d.month].slice(0,3).toUpperCase()}</span><span class="cal-icon-d">${d.dayOfMonth}</span>`; },
+    badge:()=> unseenNotifCount(),
+    open:()=> openScreenApp('calendar') },
+  { id:'inventory', label:'Depósito', dock:true, cls:'app-icon-inventory', glyph:()=>'🎒', open:()=> openInventory() },
+  { id:'codex', label:'Memórias', dock:true, cls:'app-icon-codex', glyph:()=>'📔', open:()=> openCodex() },
+  { id:'clock', label:'Relógio', cls:'app-icon-clock',
+    glyph:()=> APP_SVG('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/>'),
+    open:()=> openClockApp() },
+  { id:'dice', label:'Dados', cls:'app-icon-dice',
+    glyph:()=> APP_SVG('<path d="M12 2 L21 7 L21 17 L12 22 L3 17 L3 7 Z"/><circle cx="12" cy="12" r="1.6" fill="#fff" stroke="none"/>'),
+    open:()=> openDiceRoller() },
+  { id:'diary', label:'Diário', cls:'app-icon-diary',
+    glyph:()=> APP_SVG('<path d="M6 3h11a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6z"/><path d="M6 3v18M10 8h6M10 12h6"/>'),
+    open:()=> openDiary() }
+];
+
+// badge do Calendário: acontecimentos novos no "Registro" desde a última vez que abriu o app
+const SEEN_NOTIF_KEY = 'subrosa_seen_notif';
+function markNotificationsSeen(){
+  const top = (state.notifications || [])[0];
+  try{ if(top) localStorage.setItem(SEEN_NOTIF_KEY, top.id); } catch(e){}
+}
+function unseenNotifCount(){
+  const list = state.notifications || [];
+  if(!list.length) return 0;
+  let seen = null;
+  try{ seen = localStorage.getItem(SEEN_NOTIF_KEY); } catch(e){}
+  if(!seen){ markNotificationsSeen(); return 0; }
+  const idx = list.findIndex(n => n.id === seen);
+  return idx === -1 ? 0 : idx;
 }
 
-function renderTopbar(){
+function phoneAppsVisible(){
+  return PHONE_APPS.filter(a => !a.visibleIn || a.visibleIn === state.mode);
+}
+
+function renderAppTile(app, i){
+  const badge = app.badge ? app.badge() : 0;
   return `
-  <div class="topbar">
-    <div class="brand-row">
-      <div class="brand"><span class="dot"></span>SUBROSA</div>
-      <div class="brand-actions">
-        <div class="presence-badge" id="presenceBadge" title="${presenceBadgeTitle()}">${presenceBadgeInner()}</div>
-        <div class="role-badge ${isMaster?'is-master':''}" id="roleBadge" title="${isMaster?'Clique pra sair do modo mestre':'Você está vendo como jogador'}">
-          ${isMaster?'MESTRE':'JOGADOR'}
-        </div>
-        <button class="icon-btn" id="diceRollerBtn" title="Rolador de dados">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2 L21 7 L21 17 L12 22 L3 17 L3 7 Z"/>
-            <circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/>
-          </svg>
-        </button>
-        <button class="icon-btn" id="appsBtn" title="Apps">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="6" cy="6" r="2.2"/>
-            <circle cx="12" cy="6" r="2.2"/>
-            <circle cx="18" cy="6" r="2.2"/>
-            <circle cx="6" cy="12" r="2.2"/>
-            <circle cx="12" cy="12" r="2.2"/>
-            <circle cx="18" cy="12" r="2.2"/>
-            <circle cx="6" cy="18" r="2.2"/>
-            <circle cx="12" cy="18" r="2.2"/>
-            <circle cx="18" cy="18" r="2.2"/>
-          </svg>
-        </button>
-        <button class="mode-cat-btn" id="modeCatBtn" title="Alternar limpo / sujo">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M4 9 L7 3 L9.3 8.2"/>
-            <path d="M20 9 L17 3 L14.7 8.2"/>
-            <path d="M4 9 C4 15.2 8 19 12 19 C16 19 20 15.2 20 9 C20 9 16.8 10.6 12 10.6 C7.2 10.6 4 9 4 9 Z"/>
-            <circle cx="9.2" cy="13.2" r="0.55" fill="currentColor" stroke="none"/>
-            <circle cx="14.8" cy="13.2" r="0.55" fill="currentColor" stroke="none"/>
-            <path d="M10.4 15.4 Q12 16.5 13.6 15.4"/>
-          </svg>
-        </button>
-      </div>
+    <button class="app-icon-tile" data-open-app="${app.id}" style="animation-delay:${i*45}ms" aria-label="${app.label}">
+      <div class="app-icon-glyph ${app.cls}">${app.glyph()}${badge ? `<div class="app-badge">${badge > 9 ? '9+' : badge}</div>` : ''}</div>
+      <div class="app-icon-label">${app.label}</div>
+    </button>`;
+}
+
+function renderMasterWidget(){
+  return `
+  <div class="home-master">
+    <div class="hm-head">
+      <span class="hm-title">MESTRE</span>
+      <button class="hm-link" id="homeExitMaster">sair do modo mestre</button>
     </div>
-    <div class="day-row">
-      <div class="day-info">
-        <div class="day-label-line"><span class="day-label">Data corrente</span>${renderClockChip()}</div>
-        <div class="day-value">${formatDate(state.day)}</div>
+    <div class="hm-actions">
+      <button class="hm-btn" id="btnBack" ${(state.history.length===0 || dayActionInFlight)?'disabled':''} title="Voltar um dia">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7 L3 12 L9 17"/><path d="M3 12 H15 A6 6 0 1 0 15 3"/></svg>
+        Voltar dia
+      </button>
+      <button class="hm-btn primary" id="btnForward" ${dayActionInFlight?'disabled':''} title="Avançar um dia">
+        ${dayActionInFlight ? 'Processando…' : 'Avançar dia'}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4 L11 12 L5 20"/><path d="M13 4 L19 12 L13 20"/></svg>
+      </button>
+    </div>
+    <button class="hm-btn" id="homeModeBtn" title="Alternar limpo / sujo">${MODE_CAT_SVG} Modo: ${state.mode === 'limpo' ? 'Limpo' : 'Sujo'}</button>
+  </div>`;
+}
+
+function renderHome(enter){
+  const p = clockPeriod(state.clock);
+  const apps = phoneAppsVisible();
+  const dock = apps.filter(a => a.dock);
+  const grid = apps.filter(a => !a.dock);
+  return `
+  <div class="phone phone-home p-${p} ${enter === 'home' ? 'home-enter' : ''}">
+    ${renderAppStatusBar(true)}
+    <div class="home-widget" data-open-app="clock" title="Abrir o relógio">
+      <div class="hw-time">${state.clock}</div>
+      <div class="hw-date">${formatDate(state.day)}</div>
+      <div class="hw-period">${CLOCK_ICONS[p]}<span>${CLOCK_LABELS[p]}</span></div>
+    </div>
+    ${isMaster ? renderMasterWidget() : ''}
+    <div class="home-grid">${grid.map((a, i) => renderAppTile(a, i)).join('')}</div>
+    <div class="home-dock">${dock.map((a, i) => renderAppTile(a, i + grid.length)).join('')}</div>
+  </div>`;
+}
+
+function renderPhoneHead(title, extraRight){
+  return `
+  <div class="phone-sticky">
+    ${renderAppStatusBar()}
+    <div class="phone-head">
+      <button class="phone-home-btn" data-go-home aria-label="Voltar pra tela inicial">‹</button>
+      <div class="phone-head-title">
+        <div class="brand"><span class="dot"></span>${title}</div>
+        <div class="phone-head-sub">${formatDate(state.day)}</div>
       </div>
-      ${isMaster ? `
-      <div class="day-actions">
-        <button class="icon-btn" id="btnBack" ${(state.history.length===0 || dayActionInFlight)?'disabled':''} title="Voltar um dia">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7 L3 12 L9 17"/><path d="M3 12 H15 A6 6 0 1 0 15 3"/></svg>
-        </button>
-        <button class="icon-btn primary" id="btnForward" ${dayActionInFlight?'disabled':''} title="Avançar um dia">
-          <span>${dayActionInFlight?'Processando…':'Avançar dia'}</span>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4 L11 12 L5 20"/><path d="M13 4 L19 12 L13 20"/></svg>
-        </button>
-      </div>` : ''}
+      ${extraRight || ''}
     </div>
   </div>`;
 }
+
+function renderBankApp(enter){
+  const modeBtn = `<button class="mode-cat-btn" id="modeCatBtn" title="Alternar limpo / sujo">${MODE_CAT_SVG}</button>`;
+  return `
+  <div class="phone phone-app ${enter === 'app' ? 'app-shell-enter' : ''}">
+    ${renderPhoneHead('SUBROSA', modeBtn)}
+    ${renderTabbar()}
+    <main>${renderTabContent()}</main>
+  </div>`;
+}
+
+function renderCalendarApp(enter){
+  return `
+  <div class="phone phone-app ${enter === 'app' ? 'app-shell-enter' : ''}">
+    ${renderPhoneHead('Calendário')}
+    <main>${renderCalendario()}</main>
+  </div>`;
+}
+
+// abre Banco/Calendário em tela cheia por cima da home
+function openScreenApp(id){
+  ui.app = id;
+  ui.enter = 'app';
+  if(id === 'calendar') markNotificationsSeen();
+  pushAppHistory();
+  window.scrollTo(0, 0);
+  render();
+}
+
+let leavingApp = false;
+function goHome(){
+  if(!ui.app || leavingApp) return;
+  leavingApp = true;
+  popAppHistory();
+  const finish = ()=>{
+    if(ui.app === 'calendar') markNotificationsSeen();
+    ui.app = null;
+    ui.enter = 'home';
+    leavingApp = false;
+    window.scrollTo(0, 0);
+    render();
+  };
+  const frame = document.querySelector('#root .phone');
+  if(frame){
+    frame.classList.add('app-shell-exit');
+    setTimeout(finish, 190);
+  } else {
+    finish();
+  }
+}
+
+// botão "voltar" do celular (Android/PWA) fecha o app aberto em vez de sair do site.
+// Cada app aberto empurra 1 entrada no histórico; fechar pela UI desfaz essa entrada.
+let closingFromPop = false;
+function pushAppHistory(){
+  try{ if(!(history.state && history.state.subrosaApp)) history.pushState({ subrosaApp: true }, ''); } catch(e){}
+}
+function popAppHistory(){
+  try{ if(!closingFromPop && history.state && history.state.subrosaApp) history.back(); } catch(e){}
+}
+function closeAllApps(){
+  if(ui.modal === 'diceRoller') closeModal();
+  if(inventoryOpen) closeInventory();
+  if(codexOpen) closeCodex();
+  if(clockOpen) closeClockApp();
+  if(diaryOpen) closeDiary();
+  if(ui.app) goHome();
+}
+window.addEventListener('popstate', ()=>{
+  closingFromPop = true;
+  try{ closeAllApps(); } finally { closingFromPop = false; }
+});
+try{ if(history.state && history.state.subrosaApp) history.replaceState(null, ''); } catch(e){}
 
 function renderTabbar(){
   const tabs = [
     {k:'saldo', l:'Saldo'},
-    {k:'investimentos', l:'Investimentos'},
-    {k:'calendario', l:'Calendário'}
+    {k:'investimentos', l:'Investimentos'}
   ];
   return `<div class="tabbar">
-    ${tabs.map(t=>`<div class="tab-btn ${state.tab===t.k?'active':''}" data-tab="${t.k}">${t.l}</div>`).join('')}
+    ${tabs.map(t=>`<div class="tab-btn ${ui.bankTab===t.k?'active':''}" data-tab="${t.k}">${t.l}</div>`).join('')}
   </div>`;
 }
 
 function renderTabContent(){
-  if(state.tab === 'saldo') return renderSaldo();
-  if(state.tab === 'investimentos') return renderInvestimentos();
-  if(state.tab === 'calendario') return renderCalendario();
-  return '';
+  if(ui.bankTab === 'investimentos') return renderInvestimentos();
+  return renderSaldo();
 }
 
 /* ---------------- SALDO ---------------- */
@@ -2535,21 +2717,23 @@ function attachHandlers(){
   const modeCatBtn = $('#modeCatBtn');
   if(modeCatBtn) modeCatBtn.onclick = ()=> toggleMode(modeCatBtn);
 
-  const diceRollerBtn = $('#diceRollerBtn');
-  if(diceRollerBtn) diceRollerBtn.onclick = openDiceRoller;
+  const homeModeBtn = $('#homeModeBtn');
+  if(homeModeBtn) homeModeBtn.onclick = ()=> toggleMode(homeModeBtn);
 
-  const appsBtn = $('#appsBtn');
-  if(appsBtn) appsBtn.onclick = openAppsLauncher;
-
-  const clockChip = $('#clockChip');
-  if(clockChip) clockChip.onclick = openClockApp;
-
-  const roleBadge = $('#roleBadge');
-  if(roleBadge) roleBadge.onclick = ()=>{
+  const homeExitMaster = $('#homeExitMaster');
+  if(homeExitMaster) homeExitMaster.onclick = ()=>{
     if(isMaster && confirm('Sair do modo mestre? Você vai continuar vendo o jogo, só que como jogador.')){
       logoutMaster();
     }
   };
+
+  $$('[data-open-app]').forEach(el=>{
+    el.onclick = ()=>{
+      const app = PHONE_APPS.find(a => a.id === el.dataset.openApp);
+      if(app) app.open();
+    };
+  });
+  $$('[data-go-home]').forEach(el=>{ el.onclick = goHome; });
 
   const btnBack = $('#btnBack');
   if(btnBack) btnBack.onclick = ()=>{ if(!btnBack.disabled) goBackDay(); };
@@ -2558,7 +2742,7 @@ function attachHandlers(){
   if(btnForward) btnForward.onclick = ()=> advanceDay();
 
   $$('.tab-btn').forEach(el=>{
-    el.onclick = ()=>{ state.tab = el.dataset.tab; saveState(); render(); };
+    el.onclick = ()=>{ ui.bankTab = el.dataset.tab; render(); };
   });
   $$('.subtab').forEach(el=>{
     el.onclick = ()=>{ state.investSubTab = el.dataset.subtab; saveState(); render(); };
@@ -3013,11 +3197,12 @@ function loadQuillAssets(){
 }
 
 async function openDiary(){
+  if(diaryOpen) return;
   lockBodyScroll();
+  pushAppHistory();
   diaryOpen = true;
   diaryHistoryOpen = false;
   diaryDate = todayISODate(); // sempre abre no dia de hoje, nunca fica preso em onde a pessoa navegou da última vez
-  document.getElementById('diaryTrigger').style.display = 'none';
   const overlay = document.getElementById('diaryOverlay');
   overlay.style.display = 'flex';
   overlay.innerHTML = `<div class="diary-empty" style="margin-top:60px;">Carregando diário…</div>`;
@@ -3035,7 +3220,9 @@ async function openDiary(){
 }
 
 function closeDiary(){
+  if(!diaryOpen) return;
   unlockBodyScroll();
+  popAppHistory();
   diaryOpen = false;
   activeQuill = null;
   mountedEditorAuthor = null;
@@ -3043,8 +3230,6 @@ function closeDiary(){
   const overlay = document.getElementById('diaryOverlay');
   overlay.style.display = 'none';
   overlay.innerHTML = '';
-  const trigger = document.getElementById('diaryTrigger');
-  if(trigger && state !== null) trigger.style.display = 'block';
   if(diaryChannel){ sb.removeChannel(diaryChannel); diaryChannel = null; }
 }
 
@@ -3537,65 +3722,18 @@ function refreshAppStatusBars(hhmm){
   document.querySelectorAll('.app-clock-time').forEach(el=>{ el.textContent = hhmm || state.clock; });
 }
 
-function renderAppStatusBar(){
+function renderAppStatusBar(withPresence){
   return `
     <div class="app-statusbar">
       <div class="app-clock-time" title="Horário do RPG">${state.clock}</div>
       <div class="icons">
+        ${withPresence ? `<div class="presence-badge" id="presenceBadge" title="${presenceBadgeTitle()}">${presenceBadgeInner()}</div>` : ''}
         <svg width="14" height="10" viewBox="0 0 16 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="0.5"/><rect x="4.5" y="5" width="3" height="7" rx="0.5"/><rect x="9" y="2" width="3" height="10" rx="0.5"/><rect x="13" y="0" width="3" height="12" rx="0.5"/></svg>
         <svg width="14" height="10" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M1 4.5 C5 0.5 11 0.5 15 4.5"/><path d="M3.5 7 C6.2 4.3 9.8 4.3 12.5 7"/><circle cx="8" cy="10" r="1" fill="currentColor" stroke="none"/></svg>
         <svg width="20" height="10" viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="0.5" y="0.5" width="20" height="11" rx="2.5"/><rect x="2" y="2" width="15" height="8" rx="1.3" fill="currentColor" stroke="none"/><rect x="21.5" y="4" width="2" height="4" rx="1" fill="currentColor" stroke="none"/></svg>
       </div>
     </div>
   `;
-}
-
-/* ============================================================
-   TELA DE APPS — "launcher" pra abrir Inventário/Codex como se
-   fossem outros aplicativos (visual/tema próprio de cada um).
-   ============================================================ */
-function openAppsLauncher(){
-  lockBodyScroll();
-  const overlay = document.getElementById('appsOverlay');
-  overlay.classList.remove('app-overlay-closing');
-  overlay.style.display = 'flex';
-  overlay.innerHTML = `
-    <div class="diary-head">
-      <div class="diary-title">Apps</div>
-      <div class="icon-btn" id="appsClose">✕</div>
-    </div>
-    <div class="apps-grid">
-      <button class="app-icon-tile" id="launchInventory" style="animation-delay:0ms;">
-        <div class="app-icon-glyph app-icon-inventory">🎒</div>
-        <div class="app-icon-label">Depósito</div>
-      </button>
-      <button class="app-icon-tile" id="launchCodex" style="animation-delay:50ms;">
-        <div class="app-icon-glyph app-icon-codex">📔</div>
-        <div class="app-icon-label">Memórias</div>
-      </button>
-      <button class="app-icon-tile" id="launchClock" style="animation-delay:100ms;">
-        <div class="app-icon-glyph app-icon-clock">
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></svg>
-        </div>
-        <div class="app-icon-label">Relógio</div>
-      </button>
-    </div>
-  `;
-  document.getElementById('appsClose').onclick = closeAppsLauncher;
-  document.getElementById('launchInventory').onclick = ()=>{ closeAppsLauncher(); openInventory(); };
-  document.getElementById('launchCodex').onclick = ()=>{ closeAppsLauncher(); openCodex(); };
-  document.getElementById('launchClock').onclick = ()=>{ closeAppsLauncher(); openClockApp(); };
-}
-
-function closeAppsLauncher(){
-  unlockBodyScroll();
-  const overlay = document.getElementById('appsOverlay');
-  overlay.classList.add('app-overlay-closing');
-  setTimeout(()=>{
-    overlay.style.display = 'none';
-    overlay.innerHTML = '';
-    overlay.classList.remove('app-overlay-closing');
-  }, 180);
 }
 
 /* ============================================================
@@ -3619,6 +3757,7 @@ function clockFromMin(t){
 function openClockApp(){
   if(clockOpen) return;
   lockBodyScroll();
+  pushAppHistory();
   clockOpen = true;
   const overlay = document.getElementById('clockOverlay');
   overlay.classList.remove('app-overlay-closing');
@@ -3631,6 +3770,7 @@ function openClockApp(){
 function closeClockApp(){
   if(!clockOpen) return;
   unlockBodyScroll();
+  popAppHistory();
   clockOpen = false;
   clockDrag = null;
   const overlay = document.getElementById('clockOverlay');
@@ -3976,7 +4116,9 @@ function computePlayerCapacityUsage(){
 let inventoryJustOpened = false;
 
 async function openInventory(){
+  if(inventoryOpen) return;
   lockBodyScroll();
+  pushAppHistory();
   inventoryOpen = true;
   invView = 'list';
   invEditingId = null;
@@ -4003,7 +4145,9 @@ async function openInventory(){
 }
 
 function closeInventory(){
+  if(!inventoryOpen) return;
   unlockBodyScroll();
+  popAppHistory();
   inventoryOpen = false;
   invView = 'list';
   invEditingId = null;
@@ -4667,7 +4811,9 @@ function syncEntryFormDraft(){
 let codexJustOpened = false;
 
 async function openCodex(){
+  if(codexOpen) return;
   lockBodyScroll();
+  pushAppHistory();
   codexOpen = true;
   codexView = 'grid';
   codexCurrentFolder = null;
@@ -4691,7 +4837,9 @@ async function openCodex(){
 }
 
 function closeCodex(){
+  if(!codexOpen) return;
   unlockBodyScroll();
+  popAppHistory();
   codexOpen = false;
   codexView = 'grid';
   codexEditingId = null;
@@ -5226,8 +5374,6 @@ if(window.electronAPI){
     document.body.style.zoom = zoomLevel;
   }, { passive:false });
 }
-
-document.getElementById('diaryTrigger').onclick = openDiary;
 
 // permite colar (Ctrl+V) uma imagem direto no formulário de personagem
 // ou de lembrança do codex, sem precisar abrir o seletor de arquivo.
