@@ -688,6 +688,16 @@
   .inv-wrap{max-width:1100px;margin:0 auto;width:100%;}
   .inv-section-head{display:flex;align-items:center;justify-content:space-between;margin:16px 0 8px;}
   .inv-container-card{margin-bottom:12px;}
+  /* recipiente guardado dentro de um depósito */
+  .inv-stored-list{display:flex;flex-direction:column;gap:8px;margin-top:10px;}
+  .inv-receptacle-stored{
+    margin-bottom:0;border-style:dashed;
+    background:color-mix(in srgb, var(--accent-1) 6%, var(--bg-panel));
+  }
+  /* "alça" do recipiente: o título dele é o que se arrasta */
+  [data-edit-receptacle]::after{content:'⠿';margin-left:8px;color:var(--text-faint);font-size:15px;letter-spacing:0;opacity:.8;}
+  /* arrastando um recipiente: cartão de outro recipiente não é destino "de encaixe" */
+  .dnd-drag-receptacle [data-drop^="receptacle:"]{outline:none !important;}
   .inv-items{display:flex;flex-direction:column;gap:2px;margin-top:4px;}
   .inv-item-photo{
     width:38px;height:38px;border-radius:9px;background:var(--bg-panel-3);background-size:cover;background-position:center;
@@ -3843,7 +3853,7 @@ function flushDragRender(){
   if(codexOpen && codexView === 'grid') renderCodexOverlay();
 }
 
-function enableDragDrop(root, { dragSelector, dropSelector, onTap, onDrop, hint }){
+function enableDragDrop(root, { dragSelector, dropSelector, onTap, onDrop, hint, dragClass }){
   const MOUSE_THRESHOLD = 6;
   const LONG_PRESS_MS = 320;
   const TOUCH_SLOP = 10;
@@ -3855,7 +3865,7 @@ function enableDragDrop(root, { dragSelector, dropSelector, onTap, onDrop, hint 
     }
     return null;
   }
-  let scroller = null;
+  let scroller = null, extraRootClass = null;
   let dragEl = null, ghost = null, hintEl = null, currentTarget = null;
   let startX = 0, startY = 0, lastX = 0, lastY = 0;
   let dragging = false, isTouch = false, pressTimer = null, scrollRaf = null;
@@ -3898,6 +3908,8 @@ function enableDragDrop(root, { dragSelector, dropSelector, onTap, onDrop, hint 
     scroller = findScroller();
     dragEl.classList.add('dnd-dragging');
     root.classList.add('dnd-active');
+    extraRootClass = dragClass ? dragClass(dragEl) : null;
+    if(extraRootClass) root.classList.add(extraRootClass);
     const r = dragEl.getBoundingClientRect();
     ghost = dragEl.cloneNode(true);
     ghost.classList.add('dnd-ghost');
@@ -3905,10 +3917,11 @@ function enableDragDrop(root, { dragSelector, dropSelector, onTap, onDrop, hint 
     ghost.style.animation = 'none';
     ghost.style.width = r.width + 'px';
     document.body.appendChild(ghost);
-    if(hint){
+    const hintText = typeof hint === 'function' ? hint(dragEl) : hint;
+    if(hintText){
       hintEl = document.createElement('div');
       hintEl.className = 'dnd-hint';
-      hintEl.textContent = hint;
+      hintEl.textContent = hintText;
       document.body.appendChild(hintEl);
     }
     if(isTouch && navigator.vibrate){ try{ navigator.vibrate(12); }catch(e){} }
@@ -3924,6 +3937,7 @@ function enableDragDrop(root, { dragSelector, dropSelector, onTap, onDrop, hint 
     if(hintEl){ hintEl.remove(); hintEl = null; }
     if(dragEl) dragEl.classList.remove('dnd-dragging', 'dnd-pressing');
     root.classList.remove('dnd-active');
+    if(extraRootClass){ root.classList.remove(extraRootClass); extraRootClass = null; }
     if(currentTarget){ currentTarget.classList.remove('dnd-drop-hover'); currentTarget = null; }
     dragEl = null; dragging = false;
     document.removeEventListener('pointermove', onMove);
@@ -4371,19 +4385,24 @@ function syncReceptacleFormDraft(){
     name: $('#mRecName').value,
     description: $('#mRecDescription').value,
     baseWeight: $('#mRecBaseWeight').value,
-    capacity: $('#mRecCapacity').value
+    capacity: $('#mRecCapacity').value,
+    containerId: $('#mRecContainer') ? $('#mRecContainer').value : undefined
   };
 }
 
 function computePlayerCapacityUsage(){
   const loose = inventoryItems.filter(it=>!it.container_id && !it.receptacle_id)
     .reduce((s,it)=>s + it.weight*it.quantity, 0);
-  const receptaclesUsed = inventoryReceptacles.reduce((s,r)=>{
-    const itemsHalf = inventoryItems.filter(it=>it.receptacle_id===r.id)
-      .reduce((s2,it)=>s2 + (it.weight*it.quantity)/2, 0);
-    return s + r.base_weight + itemsHalf;
-  }, 0);
+  // recipiente guardado num depósito não pesa em você (pesa no depósito)
+  const receptaclesUsed = inventoryReceptacles.filter(r=>!r.container_id).reduce((s,r)=> s + receptacleEffectiveWeight(r), 0);
   return loose + receptaclesUsed;
+}
+
+// peso efetivo de um recipiente = peso vazio + metade dos itens dentro
+function receptacleEffectiveWeight(r){
+  const itemsHalf = inventoryItems.filter(it=>it.receptacle_id===r.id)
+    .reduce((s,it)=> s + (it.weight*it.quantity)/2, 0);
+  return r.base_weight + itemsHalf;
 }
 
 let inventoryJustOpened = false;
@@ -4525,17 +4544,6 @@ function renderInventoryList(){
   if(searching){
     visibleLoose = loose.filter(it=>matchName(it.name));
 
-    filteredItemsByContainer = {};
-    visibleContainers = inventoryContainers.filter(c=>{
-      const matchingItems = (itemsByContainer[c.id]||[]).filter(it=>matchName(it.name));
-      const selfMatch = matchName(c.name);
-      if(selfMatch || matchingItems.length){
-        filteredItemsByContainer[c.id] = selfMatch ? (itemsByContainer[c.id]||[]) : matchingItems;
-        return true;
-      }
-      return false;
-    });
-
     filteredItemsByReceptacle = {};
     visibleReceptacles = inventoryReceptacles.filter(r=>{
       const matchingItems = (itemsByReceptacle[r.id]||[]).filter(it=>matchName(it.name));
@@ -4546,7 +4554,24 @@ function renderInventoryList(){
       }
       return false;
     });
+
+    // um depósito aparece também se guarda um recipiente que bate com a busca
+    filteredItemsByContainer = {};
+    visibleContainers = inventoryContainers.filter(c=>{
+      const matchingItems = (itemsByContainer[c.id]||[]).filter(it=>matchName(it.name));
+      const selfMatch = matchName(c.name);
+      const hasMatchingReceptacle = visibleReceptacles.some(r=>r.container_id === c.id);
+      if(selfMatch || matchingItems.length || hasMatchingReceptacle){
+        filteredItemsByContainer[c.id] = selfMatch ? (itemsByContainer[c.id]||[]) : matchingItems;
+        return true;
+      }
+      return false;
+    });
   }
+
+  const carriedReceptacles = visibleReceptacles.filter(r=>!r.container_id);
+  const storedReceptacles = {};
+  visibleReceptacles.filter(r=>r.container_id).forEach(r=>{ (storedReceptacles[r.container_id] = storedReceptacles[r.container_id]||[]).push(r); });
 
   const used = computePlayerCapacityUsage();
   const max = (state && state.playerCarryCapacity) || 50;
@@ -4563,21 +4588,21 @@ function renderInventoryList(){
 
     <div class="search-input-wrap"><input type="text" class="search-input" id="invSearchInput" placeholder="Buscar por nome..." value="${invSearchQuery.replace(/"/g,'&quot;')}"></div>
     <div class="inv-add-wrap"><button class="btn btn-accent inv-add-btn" id="invOpenAdd">+ Adicionar</button></div>
-    ${inventoryItems.length ? `<div class="dnd-hint-line">Toque num item pra editar · segure e arraste pra mover de lugar.</div>` : ''}
+    ${(inventoryItems.length || inventoryReceptacles.length) ? `<div class="dnd-hint-line">Toque pra editar · segure e arraste pra mover de lugar — itens e recipientes (um recipiente pode ser guardado num depósito).</div>` : ''}
 
     <div class="inv-section-head">
       <div class="inv-section-title section-title" style="margin:0;">🎒 Com você</div>
     </div>
     <div class="inv-loose-zone" data-drop="loose">
-      ${visibleReceptacles.map((r,i)=>renderReceptacleCard(r, filteredItemsByReceptacle[r.id]||[], i)).join('')}
+      ${carriedReceptacles.map((r,i)=>renderReceptacleCard(r, filteredItemsByReceptacle[r.id]||[], i)).join('')}
       ${visibleLoose.length ? `<div class="inv-items">${visibleLoose.map((it,i)=>renderItemRowHtml(it,i)).join('')}</div>` : ''}
-      ${(!visibleReceptacles.length && !visibleLoose.length) ? `<div class="empty-state">${searching ? 'Nada encontrado.' : 'Nada com você ainda.'}</div>` : ''}
+      ${(!carriedReceptacles.length && !visibleLoose.length) ? `<div class="empty-state">${searching ? 'Nada encontrado.' : 'Nada com você ainda.'}</div>` : ''}
     </div>
 
     <div class="inv-section-head">
       <div class="inv-section-title section-title" style="margin:0;">📦 Depósitos</div>
     </div>
-    ${visibleContainers.length ? visibleContainers.map((c,i)=>renderContainerCard(c, filteredItemsByContainer[c.id]||[], i)).join('') : `<div class="empty-state">${searching ? 'Nada encontrado.' : 'Nenhum depósito criado ainda.'}</div>`}
+    ${visibleContainers.length ? visibleContainers.map((c,i)=>renderContainerCard(c, filteredItemsByContainer[c.id]||[], i, storedReceptacles[c.id]||[], filteredItemsByReceptacle)).join('') : `<div class="empty-state">${searching ? 'Nada encontrado.' : 'Nenhum depósito criado ainda.'}</div>`}
   `;
 }
 
@@ -4610,9 +4635,14 @@ function renderAddChooser(){
   `;
 }
 
-function renderContainerCard(c, items, i=0){
-  const used = items.reduce((s,it)=>s + (it.weight*it.quantity), 0);
+function renderContainerCard(c, items, i=0, stored=[], itemsByReceptacle={}){
+  // carga do depósito = itens (peso cheio) + TODOS os recipientes guardados aqui (peso efetivo),
+  // mesmo os que a busca escondeu
+  const usedItems = inventoryItems.filter(it=>it.container_id===c.id).reduce((s,it)=>s + (it.weight*it.quantity), 0);
+  const usedReceptacles = inventoryReceptacles.filter(r=>r.container_id===c.id).reduce((s,r)=>s + receptacleEffectiveWeight(r), 0);
+  const used = usedItems + usedReceptacles;
   const pct = c.capacity ? Math.min(100, Math.round((used/c.capacity)*100)) : 0;
+  const hasContent = items.length || stored.length;
   return `
     <div class="card inv-container-card stagger-in" style="${staggerDelay(i)}" data-drop="container:${c.id}">
       <div class="inv-card-head">
@@ -4626,19 +4656,26 @@ function renderContainerCard(c, items, i=0){
         <div class="progress-track"><div class="progress-fill" style="width:${pct}%;${capacityFillStyle(pct)}"></div></div>
         <div class="hint">${fmtCarga(used)} / ${fmtCarga(c.capacity)} de carga</div>
       ` : `<div class="hint">Sem limite de carga · ${fmtCarga(used)} em uso</div>`}
+      ${stored.length ? `<div class="inv-stored-list">${stored.map((r,i2)=>renderReceptacleCard(r, itemsByReceptacle[r.id]||[], i2, true)).join('')}</div>` : ''}
       <div class="inv-items">
-        ${items.length ? items.map((it,i2)=>renderItemRowHtml(it,i2)).join('') : '<div class="empty-state" style="padding:14px;">Vazio.</div>'}
+        ${items.length ? items.map((it,i2)=>renderItemRowHtml(it,i2)).join('') : (hasContent ? '' : '<div class="empty-state" style="padding:14px;">Vazio.</div>')}
       </div>
     </div>
   `;
 }
 
-function renderReceptacleCard(r, items, i=0){
-  const used = items.reduce((s,it)=>s + (it.weight*it.quantity)/2, 0);
+function renderReceptacleCard(r, items, i=0, isStored=false){
+  // "used" = carga interna (metade dos itens); com busca ativa `items` vem filtrado, então
+  // a conta usa TODOS os itens do recipiente
+  const allInside = inventoryItems.filter(it=>it.receptacle_id===r.id);
+  const used = allInside.reduce((s,it)=>s + (it.weight*it.quantity)/2, 0);
   const pct = r.capacity ? Math.min(100, Math.round((used/r.capacity)*100)) : 0;
   const effective = r.base_weight + used;
+  const weightNote = isStored
+    ? `guardado aqui · pesa ${fmtCarga(effective)} no depósito (${fmtCarga(r.base_weight)} vazio)`
+    : `carrega ${fmtCarga(effective)} de você (${fmtCarga(r.base_weight)} vazia)`;
   return `
-    <div class="card inv-container-card stagger-in" style="${staggerDelay(i)}" data-drop="receptacle:${r.id}">
+    <div class="card inv-container-card ${isStored ? 'inv-receptacle-stored' : ''} stagger-in" style="${staggerDelay(i)}" data-drop="receptacle:${r.id}">
       <div class="inv-card-head">
         <div class="inv-card-title" data-edit-receptacle="${r.id}" style="cursor:pointer;">
           <div class="inv-card-icon">🎒</div>
@@ -4647,7 +4684,7 @@ function renderReceptacleCard(r, items, i=0){
         <span class="inv-mini-add" data-add-item-to-receptacle="${r.id}" title="Adicionar item">+</span>
       </div>
       <div class="progress-track"><div class="progress-fill" style="width:${pct}%;${capacityFillStyle(pct)}"></div></div>
-      <div class="hint">${fmtCarga(used)} / ${fmtCarga(r.capacity)} de carga interna · carrega ${fmtCarga(effective)} de você (${fmtCarga(r.base_weight)} vazia)</div>
+      <div class="hint">${fmtCarga(used)} / ${fmtCarga(r.capacity)} de carga interna · ${weightNote}</div>
       <div class="inv-items">
         ${items.length ? items.map((it,i2)=>renderItemRowHtml(it,i2)).join('') : '<div class="empty-state" style="padding:14px;">Vazio.</div>'}
       </div>
@@ -4740,6 +4777,7 @@ function renderReceptacleForm(){
   const description = d ? d.description : (existing ? existing.description||'' : '');
   const baseWeight = d ? d.baseWeight : (existing ? existing.base_weight : 0);
   const capacity = d ? d.capacity : (existing && existing.capacity!=null ? existing.capacity : '');
+  const recContainerId = (d && d.containerId !== undefined) ? d.containerId : (existing ? (existing.container_id || '') : '');
   return `
     <div class="diary-history-link" id="invBackToList">↺ voltar</div>
     <div class="card" style="margin-top:14px;">
@@ -4755,7 +4793,14 @@ function renderReceptacleForm(){
         <div class="field"><label>Carga vazia</label><input id="mRecBaseWeight" type="number" step="0.01" value="${baseWeight}"></div>
         <div class="field"><label>Capacidade interna</label><input id="mRecCapacity" type="number" step="0.01" value="${capacity}"></div>
       </div>
-      <div class="hint">Itens dentro valem metade da carga pra capacidade interna. A carga vazia + metade dos itens conta contra a sua carga.</div>
+      ${existing ? `
+        <div class="field"><label>Onde está</label>
+          <select id="mRecContainer">
+            <option value="">Com você</option>
+            ${inventoryContainers.map(c=>`<option value="${c.id}" ${c.id===recContainerId?'selected':''}>Guardado em: ${c.name}</option>`).join('')}
+          </select>
+        </div>` : ''}
+      <div class="hint">Itens dentro valem metade da carga pra capacidade interna. Com você, a carga vazia + metade dos itens conta contra a sua carga; guardado num depósito, conta contra a carga do depósito.</div>
       <div class="modal-actions">
         ${existing ? `<button class="btn btn-danger btn-sm" id="deleteReceptacleBtn">Remover</button>` : ''}
         <button class="btn btn-accent" id="saveReceptacleBtn">Salvar</button>
@@ -4796,9 +4841,6 @@ function attachInventoryHandlers(){
     }
     $$('[data-edit-container]').forEach(el=>{
       el.onclick = ()=>{ invView='containerForm'; invEditingId=el.dataset.editContainer; renderInventoryOverlay(); };
-    });
-    $$('[data-edit-receptacle]').forEach(el=>{
-      el.onclick = ()=>{ invView='receptacleForm'; invEditingId=el.dataset.editReceptacle; invRecFormPhoto=undefined; invRecFormDraft=null; renderInventoryOverlay(); };
     });
     $$('[data-add-item-to]').forEach(el=>{
       el.onclick = ()=>{ invView='itemForm'; invEditingId=null; invFormPlace=el.dataset.addItemTo ? ('container:'+el.dataset.addItemTo) : ''; invFormPhoto=undefined; invFormDraft=null; renderInventoryOverlay(); };
@@ -4849,13 +4891,36 @@ function setupInventoryDrag(){
   const root = document.querySelector('.inv-wrap');
   if(!root) return;
   enableDragDrop(root, {
-    dragSelector: '[data-open-item]',
+    // itens e recipientes (o título do cartão do recipiente é a "alça")
+    dragSelector: '[data-open-item], [data-edit-receptacle]',
     dropSelector: '[data-drop]',
-    hint: 'Solte sobre um lugar, recipiente ou "Com você"',
+    hint: (el)=> el.dataset.editReceptacle
+      ? 'Solte em "Com você" ou sobre um depósito pra guardar o recipiente'
+      : 'Solte sobre um lugar, recipiente ou "Com você"',
+    // enquanto arrasta um recipiente, "dentro de outro recipiente" não é destino válido
+    dragClass: (el)=> el.dataset.editReceptacle ? 'dnd-drag-receptacle' : null,
     onTap: (el)=>{
+      if(el.dataset.editReceptacle){
+        invView='receptacleForm'; invEditingId=el.dataset.editReceptacle; invRecFormPhoto=undefined; invRecFormDraft=null; renderInventoryOverlay();
+        return;
+      }
       invView='itemForm'; invEditingId=el.dataset.openItem; invFormPhoto=undefined; invFormDraft=null; renderInventoryOverlay();
     },
     onDrop: (dragEl, targetEl)=>{
+      if(dragEl.dataset.editReceptacle){
+        const rec = inventoryReceptacles.find(r=>r.id===dragEl.dataset.editReceptacle);
+        if(!rec) return;
+        const val = targetEl.dataset.drop;
+        let containerId = null;
+        if(val.startsWith('container:')) containerId = val.slice('container:'.length);
+        else if(val.startsWith('receptacle:')){
+          // soltou em cima de outro recipiente: vai pro mesmo lugar dele (um recipiente não guarda outro)
+          const other = inventoryReceptacles.find(r=>r.id === val.slice('receptacle:'.length));
+          containerId = other ? (other.container_id || null) : null;
+        }
+        moveInventoryReceptacle(rec, containerId);
+        return;
+      }
       const item = inventoryItems.find(i=>i.id===dragEl.dataset.openItem);
       if(!item) return;
       const dropVal = targetEl.dataset.drop;
@@ -4879,6 +4944,22 @@ async function moveInventoryItem(item, containerId, receptacleId){
     renderInventoryOverlay();
   } catch(e){
     console.error('Falha ao mover item', e);
+    showToast((e.message && e.message.includes('capacidade')) ? e.message : 'Não consegui mover. Tenta de novo.');
+  }
+}
+
+// containerId: depósito onde guardar o recipiente, ou null pra voltar a carregar
+async function moveInventoryReceptacle(rec, containerId){
+  if((rec.container_id||null) === (containerId||null)) return;
+  try{
+    const { error } = await sb.rpc('inventory_move_receptacle', { p_id: rec.id, p_container_id: containerId });
+    if(error) throw error;
+    await loadInventoryData();
+    renderInventoryOverlay();
+    const dest = containerId ? inventoryContainers.find(c=>c.id===containerId) : null;
+    showToast(dest ? `${rec.name} guardado em ${dest.name}.` : `${rec.name} voltou pra você.`);
+  } catch(e){
+    console.error('Falha ao mover recipiente', e);
     showToast((e.message && e.message.includes('capacidade')) ? e.message : 'Não consegui mover. Tenta de novo.');
   }
 }
@@ -4973,6 +5054,11 @@ async function saveReceptacle(){
     if(invEditingId){
       const { error } = await sb.rpc('inventory_update_receptacle', { p_id: invEditingId, p_name: name, p_description: description, p_image_url: imageUrl, p_base_weight: baseWeight, p_capacity: capacity });
       if(error) throw error;
+      const sel = document.getElementById('mRecContainer');
+      if(sel && (sel.value || null) !== (existing.container_id || null)){
+        const { error: moveErr } = await sb.rpc('inventory_move_receptacle', { p_id: invEditingId, p_container_id: sel.value || null });
+        if(moveErr) throw moveErr;
+      }
     } else {
       const { error } = await sb.rpc('inventory_create_receptacle', { p_name: name, p_description: description, p_image_url: imageUrl, p_base_weight: baseWeight, p_capacity: capacity, p_created_by: myRole() });
       if(error) throw error;
