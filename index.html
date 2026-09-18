@@ -1192,6 +1192,7 @@ function subscribeRealtime(){
         state = ensureStateDefaults(payload.new.data);
         render();
         if(clockOpen && !clockDrag && !clockCommitting) updateClockView();
+        else refreshAppStatusBars();
       }
     )
     .subscribe();
@@ -3531,13 +3532,15 @@ function enableDragDrop(root, { dragSelector, dropSelector, onTap, onDrop }){
 }
 
 // barra de status falsa, só pra dar a cara de app de celular de verdade
+// mostra o horário do RPG (o que o mestre definiu no app Relógio), não o da vida real
+function refreshAppStatusBars(hhmm){
+  document.querySelectorAll('.app-clock-time').forEach(el=>{ el.textContent = hhmm || state.clock; });
+}
+
 function renderAppStatusBar(){
-  const now = new Date();
-  const hh = String(now.getHours()).padStart(2,'0');
-  const mm = String(now.getMinutes()).padStart(2,'0');
   return `
     <div class="app-statusbar">
-      <div>${hh}:${mm}</div>
+      <div class="app-clock-time" title="Horário do RPG">${state.clock}</div>
       <div class="icons">
         <svg width="14" height="10" viewBox="0 0 16 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="0.5"/><rect x="4.5" y="5" width="3" height="7" rx="0.5"/><rect x="9" y="2" width="3" height="10" rx="0.5"/><rect x="13" y="0" width="3" height="12" rx="0.5"/></svg>
         <svg width="14" height="10" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M1 4.5 C5 0.5 11 0.5 15 4.5"/><path d="M3.5 7 C6.2 4.3 9.8 4.3 12.5 7"/><circle cx="8" cy="10" r="1" fill="currentColor" stroke="none"/></svg>
@@ -3746,6 +3749,7 @@ function updateClockView(viewMin){
   const hhmm = clockFromMin(t);
   const p = clockPeriod(hhmm);
 
+  refreshAppStatusBars(hhmm);
   document.getElementById('clkHH').textContent = hhmm.slice(0,2);
   document.getElementById('clkMM').textContent = hhmm.slice(3);
   document.getElementById('clkPeriod').textContent = CLOCK_LABELS[p];
