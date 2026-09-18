@@ -530,17 +530,32 @@
     to{opacity:1;transform:translateY(0) scale(1);}
   }
   @keyframes appShellOut{
-    from{opacity:1;transform:translateY(0) scale(1);}
-    to{opacity:0;transform:translateY(18px) scale(.96);}
+    from{opacity:1;transform:scale(1);}
+    to{opacity:0;transform:scale(.14);}
+  }
+  @keyframes appOpenFromIcon{
+    from{opacity:0;transform:scale(.14);}
+    60%{opacity:1;}
+    to{opacity:1;transform:scale(1);}
   }
   @keyframes overlayFadeOut{from{opacity:1;}to{opacity:0;}}
   .app-shell-enter{animation:appShellIn .32s cubic-bezier(.2,.8,.2,1);}
-  .app-shell-exit{animation:appShellOut .2s ease forwards;}
-  .app-overlay-closing{animation:overlayFadeOut .2s ease forwards;}
+  .app-shell-enter.from-icon{animation:appOpenFromIcon .4s cubic-bezier(.2,.9,.25,1);}
+  .app-shell-exit{animation:appShellOut .26s cubic-bezier(.45,0,.75,.4) forwards;transform-origin:50% 92%;}
+  .app-overlay-closing{animation:overlayFadeOut .26s ease forwards;}
   .inv-wrap, .codex-wrap{animation:viewIn .26s cubic-bezier(.2,.8,.2,1);}
   .stagger-in{animation:viewIn .35s cubic-bezier(.2,.8,.2,1) both;}
 
-  /* ---------- DIÁRIO (visão CAT/DOG) ---------- */
+  /* ---------- DIÁRIO (ponto escondido + visão CAT/DOG) ---------- */
+  .diary-trigger{
+    position:fixed;bottom:42px;right:max(30px, calc(50% - 196px));z-index:60;
+    width:9px;height:9px;border-radius:50%;
+    background:var(--text-faint);opacity:0.25;border:none;padding:0;cursor:pointer;
+    transition:opacity .3s ease, transform .3s ease, background .3s ease, box-shadow .3s ease;
+    display:none;
+  }
+  .diary-trigger::after{content:'';position:absolute;inset:-6px;}
+  .diary-trigger:hover{opacity:1;background:var(--accent-1);box-shadow:0 0 10px var(--accent-glow);transform:scale(1.6);}
 
   .diary-overlay{
     position:fixed;inset:0;z-index:300;
@@ -793,7 +808,6 @@
   .app-icon-codex{background:linear-gradient(160deg, #ff8fc7, #c21f95);}
   .app-icon-clock{background:linear-gradient(160deg, #7fd0ff, #3a5bff);}
   .app-icon-dice{background:linear-gradient(160deg, #b58cff, #6a3df0);}
-  .app-icon-diary{background:linear-gradient(160deg, #5be3a5, #12a06a);}
   .app-icon-calendar{background:linear-gradient(180deg, #ffffff, #e6eaf4);flex-direction:column;gap:1px;}
   .cal-icon-m{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:800;letter-spacing:1.5px;color:#ff3b5c;}
   .cal-icon-d{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:29px;line-height:1;color:#12131a;}
@@ -836,8 +850,8 @@
     --wall-a:#5aa9ff;--wall-b:#2f6bff;--wall-base-1:#0a1226;--wall-base-2:#050912;
     overflow:hidden;padding-bottom:18px;
     background:
-      radial-gradient(120% 55% at 50% -8%, color-mix(in srgb, var(--wall-a) 42%, transparent), transparent 70%),
-      radial-gradient(90% 50% at 100% 105%, color-mix(in srgb, var(--wall-b) 38%, transparent), transparent 70%),
+      radial-gradient(120% 55% at 50% -8%, color-mix(in srgb, var(--wall-a) 55%, transparent), transparent 70%),
+      radial-gradient(90% 50% at 100% 105%, color-mix(in srgb, var(--wall-b) 45%, transparent), transparent 70%),
       repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 34px),
       repeating-linear-gradient(90deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 34px),
       linear-gradient(180deg, var(--wall-base-1), var(--wall-base-2));
@@ -847,6 +861,36 @@
   .phone-home.p-tarde{--wall-a:#ff9f43;--wall-b:#ff5f6d;}
   .phone-home.p-noite{--wall-a:#5aa9ff;--wall-b:#2f6bff;}
   body.mode-sujo .phone-home{--app-fg:#ffe3e8;--wall-a:#ff1f4b;--wall-b:#7a0d24;--wall-base-1:#12060a;--wall-base-2:#050203;}
+
+  #ghostHome{
+    position:fixed;top:18px;left:50%;transform:translateX(-50%);
+    width:min(420px, calc(100vw - 32px));height:calc(100vh - 48px);
+    z-index:-1;pointer-events:none;display:flex;
+  }
+  #ghostHome .phone-home{height:100%;min-height:0;}
+
+  /* orbe de luz que flutua devagar atrás dos ícones (dá vida ao papel de parede) */
+  .phone-home::before{
+    content:'';position:absolute;z-index:0;width:280px;height:280px;left:-80px;top:42%;border-radius:50%;
+    background:radial-gradient(circle, color-mix(in srgb, var(--wall-b) 38%, transparent), transparent 70%);
+    filter:blur(28px);pointer-events:none;animation:orbFloat 16s ease-in-out infinite alternate;
+  }
+  @keyframes orbFloat{
+    from{transform:translate(0,0) scale(1);}
+    to{transform:translate(150px,-90px) scale(1.2);}
+  }
+  @media (prefers-reduced-motion: reduce){ .phone-home::before{animation:none;} }
+  .phone-home > *{position:relative;z-index:1;}
+
+  .home-balance{
+    margin:12px 18px 0;padding:14px 18px;border-radius:22px;cursor:pointer;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    background:rgba(255,255,255,0.06);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border:1px solid rgba(255,255,255,0.1);transition:transform .15s ease;
+  }
+  .home-balance:active{transform:scale(.98);}
+  .hb-label{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--wall-a);}
+  .hb-value{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:21px;color:#fff;letter-spacing:.5px;}
 
   .home-widget{
     margin:14px 18px 0;padding:22px 18px 18px;border-radius:26px;text-align:center;cursor:pointer;
@@ -903,7 +947,7 @@
     padding:3px 9px;border-radius:99px;font-size:9px;letter-spacing:1.2px;text-transform:uppercase;
   }
   .home-enter .app-icon-tile{animation:appShellIn .34s cubic-bezier(.2,.8,.2,1) both;}
-  .home-enter .home-widget, .home-enter .home-master{animation:viewIn .35s cubic-bezier(.2,.8,.2,1) both;}
+  .home-enter .home-widget, .home-enter .home-balance, .home-enter .home-master{animation:viewIn .35s cubic-bezier(.2,.8,.2,1) both;}
 
   /* ---------- "CHROME" DE APP DE CELULAR (inventário/codex) ---------- */
   .app-shell{
@@ -926,7 +970,17 @@
     background:rgba(255,255,255,0.08);color:var(--app-fg);cursor:pointer;font-size:13px;flex-shrink:0;
   }
   .app-body{flex:1;padding:0 18px 20px;overflow-y:auto;}
-  .app-home-indicator{width:120px;height:4px;border-radius:99px;background:rgba(255,255,255,0.25);margin:6px auto 12px;flex-shrink:0;}
+  .app-home-indicator{
+    position:relative;width:120px;height:4px;border-radius:99px;background:rgba(255,255,255,0.25);margin:6px auto 12px;flex-shrink:0;
+    cursor:pointer;touch-action:none;transition:background .2s ease;
+  }
+  .app-home-indicator::after{content:'';position:absolute;inset:-16px -30px;}
+  .app-home-indicator:hover{background:rgba(255,255,255,0.5);}
+  .phone-indicator-wrap{
+    position:sticky;bottom:0;z-index:20;margin-top:auto;padding:10px 0 4px;border-radius:0 0 34px 34px;
+    background:linear-gradient(0deg, var(--bg) 40%, transparent);
+  }
+  .phone-indicator-wrap .app-home-indicator{background:rgba(255,255,255,0.3);}
 
   .app-theme-inventory{
     --app-accent:#ff9500; --app-bg:#170f06; --app-bg-2:#241a0c; --app-bg-3:#2e2210; --app-border:#4a3016; --app-fg:#ffe6c2;
@@ -1047,6 +1101,7 @@
 <body>
 <div id="root"></div>
 <div id="modeFlash"></div>
+<button id="diaryTrigger" class="diary-trigger" aria-label=""></button>
 <div id="diaryOverlay" class="diary-overlay"></div>
 <div id="inventoryOverlay" class="diary-overlay"></div>
 <div id="codexOverlay" class="diary-overlay"></div>
@@ -1489,6 +1544,12 @@ function closeModal(){
 /* ============================================================
    RENDER
    ============================================================ */
+// ponto escondido do Diário: só aparece com o jogo carregado e o diário fechado
+function syncDiaryTrigger(){
+  const t = document.getElementById('diaryTrigger');
+  if(t) t.style.display = (state !== null && !diaryOpen) ? 'block' : 'none';
+}
+
 function render(){
   const root = document.getElementById('root');
 
@@ -1496,6 +1557,7 @@ function render(){
     document.body.className = '';
     root.innerHTML = renderLoginScreen();
     attachLoginHandlers();
+    syncDiaryTrigger();
     return;
   }
 
@@ -1512,6 +1574,11 @@ function render(){
     ${ui.toast ? `<div class="toast">${ui.toast}</div>` : ''}
   `;
   attachHandlers();
+  syncDiaryTrigger();
+  if(enter === 'app' && ui.app){
+    const frame = root.querySelector('.phone-app');
+    if(frame) animateOpenFromIcon(frame, ui.app);
+  }
 }
 
 let loginMode = 'choose'; // 'choose' | 'pin'
@@ -1605,8 +1672,8 @@ function clockPeriod(hhmm){
    TELA INICIAL DE CELULAR
    O SUBROSA é uma tela de celular: home com widget de hora, grade de
    apps e dock. Banco e Calendário abrem em tela cheia por cima da home
-   (renderizados no #root); Depósito, Memórias, Relógio e Diário são
-   overlays próprios; Dados é um modal.
+   (renderizados no #root); Depósito, Memórias e Relógio são overlays
+   próprios; Dados é um modal. O Diário é escondido (só o ponto do canto).
    Pra esconder/mostrar um app conforme o modo, use `visibleIn`
    ('limpo' | 'sujo'); sem ele o app aparece sempre.
    ============================================================ */
@@ -1637,9 +1704,7 @@ const PHONE_APPS = [
   { id:'dice', label:'Dados', cls:'app-icon-dice',
     glyph:()=> APP_SVG('<path d="M12 2 L21 7 L21 17 L12 22 L3 17 L3 7 Z"/><circle cx="12" cy="12" r="1.6" fill="#fff" stroke="none"/>'),
     open:()=> openDiceRoller() },
-  { id:'diary', label:'Diário', cls:'app-icon-diary',
-    glyph:()=> APP_SVG('<path d="M6 3h11a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6z"/><path d="M6 3v18M10 8h6M10 12h6"/>'),
-    open:()=> openDiary() }
+  // o Diário NÃO é um app da grade: fica escondido, aberto só pelo ponto discreto (#diaryTrigger)
 ];
 
 // badge do Calendário: acontecimentos novos no "Registro" desde a última vez que abriu o app
@@ -1705,6 +1770,10 @@ function renderHome(enter){
       <div class="hw-date">${formatDate(state.day)}</div>
       <div class="hw-period">${CLOCK_ICONS[p]}<span>${CLOCK_LABELS[p]}</span></div>
     </div>
+    <div class="home-balance" data-open-app="bank" title="Abrir o banco">
+      <div class="hb-label">${state.mode === 'sujo' ? 'Saldo sujo' : 'Saldo em conta'}</div>
+      <div class="hb-value">${fmt(state.mode === 'sujo' ? state.dirty.balance : state.clean.balance)}</div>
+    </div>
     ${isMaster ? renderMasterWidget() : ''}
     <div class="home-grid">${grid.map((a, i) => renderAppTile(a, i)).join('')}</div>
     <div class="home-dock">${dock.map((a, i) => renderAppTile(a, i + grid.length)).join('')}</div>
@@ -1733,6 +1802,7 @@ function renderBankApp(enter){
     ${renderPhoneHead('SUBROSA', modeBtn)}
     ${renderTabbar()}
     <main>${renderTabContent()}</main>
+    ${PHONE_INDICATOR}
   </div>`;
 }
 
@@ -1741,11 +1811,57 @@ function renderCalendarApp(enter){
   <div class="phone phone-app ${enter === 'app' ? 'app-shell-enter' : ''}">
     ${renderPhoneHead('Calendário')}
     <main>${renderCalendario()}</main>
+    ${PHONE_INDICATOR}
   </div>`;
+}
+
+// barra "home" de baixo: toque ou deslize pra cima volta pra tela inicial
+const PHONE_INDICATOR = `<div class="phone-indicator-wrap"><div class="app-home-indicator" title="Voltar pra tela inicial"></div></div>`;
+
+// de onde o ícone do app estava na tela: o app abre crescendo dali e fecha encolhendo pra lá
+const appOrigins = {};
+function rememberAppOrigin(id, el){
+  const box = (el.querySelector('.app-icon-glyph') || el).getBoundingClientRect();
+  appOrigins[id] = { x: box.left + box.width / 2, y: box.top + box.height / 2 };
+}
+function setAnimOrigin(el, id){
+  const o = appOrigins[id];
+  if(!el || !o) return false;
+  const r = el.getBoundingClientRect();
+  el.style.transformOrigin = `${o.x - r.left}px ${o.y - r.top}px`;
+  return true;
+}
+function animateOpenFromIcon(el, id){
+  if(setAnimOrigin(el, id)) el.classList.add('from-icon');
+}
+function animateExitToIcon(el, id){
+  setAnimOrigin(el, id);
+  el.classList.add('app-shell-exit');
+}
+const APP_EXIT_MS = 260;
+const APP_OPEN_MS = 400;
+
+// Banco/Calendário substituem a home no #root; durante a transição uma cópia
+// estática da home fica atrás (fixa, atrás de tudo) pra o app crescer/encolher
+// sobre a tela inicial em vez de sobre o vazio.
+let ghostHomeTimer = null;
+function showGhostHome(ms){
+  hideGhostHome();
+  const g = document.createElement('div');
+  g.id = 'ghostHome';
+  g.innerHTML = renderHome(null);
+  document.body.appendChild(g);
+  ghostHomeTimer = setTimeout(hideGhostHome, ms);
+}
+function hideGhostHome(){
+  clearTimeout(ghostHomeTimer);
+  const g = document.getElementById('ghostHome');
+  if(g) g.remove();
 }
 
 // abre Banco/Calendário em tela cheia por cima da home
 function openScreenApp(id){
+  showGhostHome(APP_OPEN_MS + 80);
   ui.app = id;
   ui.enter = 'app';
   if(id === 'calendar') markNotificationsSeen();
@@ -1759,6 +1875,7 @@ function goHome(){
   if(!ui.app || leavingApp) return;
   leavingApp = true;
   popAppHistory();
+  const appId = ui.app;
   const finish = ()=>{
     if(ui.app === 'calendar') markNotificationsSeen();
     ui.app = null;
@@ -1769,12 +1886,26 @@ function goHome(){
   };
   const frame = document.querySelector('#root .phone');
   if(frame){
-    frame.classList.add('app-shell-exit');
-    setTimeout(finish, 190);
+    showGhostHome(APP_EXIT_MS + 120);
+    animateExitToIcon(frame, appId);
+    setTimeout(finish, APP_EXIT_MS);
   } else {
     finish();
   }
 }
+
+// deslizar pra cima (ou tocar) na barra de baixo de qualquer app volta pra home
+let indicatorGesture = null;
+document.addEventListener('pointerdown', (e)=>{
+  if(e.target.closest && e.target.closest('.app-home-indicator')) indicatorGesture = { y: e.clientY };
+});
+document.addEventListener('pointerup', (e)=>{
+  if(!indicatorGesture) return;
+  const dy = indicatorGesture.y - e.clientY;
+  indicatorGesture = null;
+  if(dy > 24 || Math.abs(dy) < 6) closeAllApps();
+});
+document.addEventListener('pointercancel', ()=>{ indicatorGesture = null; });
 
 // botão "voltar" do celular (Android/PWA) fecha o app aberto em vez de sair do site.
 // Cada app aberto empurra 1 entrada no histórico; fechar pela UI desfaz essa entrada.
@@ -1795,7 +1926,14 @@ function closeAllApps(){
 }
 window.addEventListener('popstate', ()=>{
   closingFromPop = true;
-  try{ closeAllApps(); } finally { closingFromPop = false; }
+  try{
+    // dentro de um app com telas internas (pasta do Codex, formulário do Depósito),
+    // o "voltar" sobe um nível antes de fechar o app; a entrada do histórico
+    // consumida pelo voltar é reposta pra ele continuar valendo
+    if(codexOpen && !codexIsAtRoot()){ codexGoBack(); pushAppHistory(); }
+    else if(inventoryOpen && invView !== 'list'){ invView = 'list'; renderInventoryOverlay(); pushAppHistory(); }
+    else closeAllApps();
+  } finally { closingFromPop = false; }
 });
 try{ if(history.state && history.state.subrosaApp) history.replaceState(null, ''); } catch(e){}
 
@@ -2730,7 +2868,10 @@ function attachHandlers(){
   $$('[data-open-app]').forEach(el=>{
     el.onclick = ()=>{
       const app = PHONE_APPS.find(a => a.id === el.dataset.openApp);
-      if(app) app.open();
+      if(app){
+        rememberAppOrigin(app.id, el);
+        app.open();
+      }
     };
   });
   $$('[data-go-home]').forEach(el=>{ el.onclick = goHome; });
@@ -3203,6 +3344,7 @@ async function openDiary(){
   diaryOpen = true;
   diaryHistoryOpen = false;
   diaryDate = todayISODate(); // sempre abre no dia de hoje, nunca fica preso em onde a pessoa navegou da última vez
+  syncDiaryTrigger();
   const overlay = document.getElementById('diaryOverlay');
   overlay.style.display = 'flex';
   overlay.innerHTML = `<div class="diary-empty" style="margin-top:60px;">Carregando diário…</div>`;
@@ -3230,6 +3372,7 @@ function closeDiary(){
   const overlay = document.getElementById('diaryOverlay');
   overlay.style.display = 'none';
   overlay.innerHTML = '';
+  syncDiaryTrigger();
   if(diaryChannel){ sb.removeChannel(diaryChannel); diaryChannel = null; }
 }
 
@@ -3763,6 +3906,7 @@ function openClockApp(){
   overlay.classList.remove('app-overlay-closing');
   overlay.style.display = 'flex';
   overlay.innerHTML = renderClockApp();
+  animateOpenFromIcon(overlay.querySelector('.app-shell'), 'clock');
   attachClockHandlers();
   updateClockView();
 }
@@ -3776,14 +3920,14 @@ function closeClockApp(){
   const overlay = document.getElementById('clockOverlay');
   const shell = overlay.querySelector('.app-shell');
   if(shell){
-    shell.classList.add('app-shell-exit');
+    animateExitToIcon(shell, 'clock');
     overlay.classList.add('app-overlay-closing');
     setTimeout(()=>{
       if(clockOpen) return; // reabriu antes de acabar a animação
       overlay.style.display = 'none';
       overlay.innerHTML = '';
       overlay.classList.remove('app-overlay-closing');
-    }, 200);
+    }, APP_EXIT_MS);
   } else {
     overlay.style.display = 'none';
     overlay.innerHTML = '';
@@ -4154,13 +4298,14 @@ function closeInventory(){
   const overlay = document.getElementById('inventoryOverlay');
   const shell = overlay.querySelector('.app-shell');
   if(shell){
-    shell.classList.add('app-shell-exit');
+    animateExitToIcon(shell, 'inventory');
     overlay.classList.add('app-overlay-closing');
     setTimeout(()=>{
+      if(inventoryOpen) return; // reabriu antes de acabar a animação
       overlay.style.display = 'none';
       overlay.innerHTML = '';
       overlay.classList.remove('app-overlay-closing');
-    }, 200);
+    }, APP_EXIT_MS);
   } else {
     overlay.style.display = 'none';
     overlay.innerHTML = '';
@@ -4215,6 +4360,7 @@ function renderInventoryOverlay(){
       <div class="app-home-indicator"></div>
     </div>
   `;
+  if(enterClass) animateOpenFromIcon(overlay.querySelector('.app-shell'), 'inventory');
   attachInventoryHandlers();
 }
 
@@ -4846,13 +4992,14 @@ function closeCodex(){
   const overlay = document.getElementById('codexOverlay');
   const shell = overlay.querySelector('.app-shell');
   if(shell){
-    shell.classList.add('app-shell-exit');
+    animateExitToIcon(shell, 'codex');
     overlay.classList.add('app-overlay-closing');
     setTimeout(()=>{
+      if(codexOpen) return; // reabriu antes de acabar a animação
       overlay.style.display = 'none';
       overlay.innerHTML = '';
       overlay.classList.remove('app-overlay-closing');
-    }, 200);
+    }, APP_EXIT_MS);
   } else {
     overlay.style.display = 'none';
     overlay.innerHTML = '';
@@ -4925,6 +5072,7 @@ function renderCodexOverlay(){
       <div class="app-home-indicator"></div>
     </div>
   `;
+  if(enterClass) animateOpenFromIcon(overlay.querySelector('.app-shell'), 'codex');
   attachCodexHandlers();
 }
 
@@ -5374,6 +5522,8 @@ if(window.electronAPI){
     document.body.style.zoom = zoomLevel;
   }, { passive:false });
 }
+
+document.getElementById('diaryTrigger').onclick = openDiary;
 
 // permite colar (Ctrl+V) uma imagem direto no formulário de personagem
 // ou de lembrança do codex, sem precisar abrir o seletor de arquivo.
