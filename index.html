@@ -126,6 +126,7 @@
     background:var(--text-faint);
     transition:background .3s ease, box-shadow .3s ease;
   }
+  .presence-dot:not(.is-online) + .presence-state{opacity:.55;}
   .presence-dot.is-online{
     background:#3ddc84;
     box-shadow:0 0 6px #3ddc84, 0 0 12px #3ddc84;
@@ -1156,7 +1157,7 @@ function presenceBadgeTitle(){
   return `${isMaster?'Jogador':'Mestre'} ${otherSideOnline()?'online agora':'offline'}`;
 }
 function presenceBadgeInner(){
-  return `<span class="presence-dot ${otherSideOnline()?'is-online':''}"></span>${isMaster?'Jogador':'Mestre'}`;
+  return `<span class="presence-dot ${otherSideOnline()?'is-online':''}"></span><span class="presence-state">${isMaster?'Jogador':'Mestre'} ${otherSideOnline()?'online':'offline'}</span>`;
 }
 
 function subscribePresence(){
