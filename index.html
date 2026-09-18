@@ -186,6 +186,41 @@
     padding:10px 14px;
   }
   .day-info{display:flex;flex-direction:column;gap:2px;}
+  .day-label-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+
+  /* horário visual (só clima — não afeta a simulação) */
+  .clock-chip{
+    --clock-c:var(--text-dim);
+    display:inline-flex;align-items:center;gap:5px;
+    font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.8px;
+    padding:2px 8px 2px 6px;border-radius:999px;
+    color:var(--clock-c);
+    background:color-mix(in srgb, var(--clock-c) 12%, transparent);
+    border:1px solid color-mix(in srgb, var(--clock-c) 45%, transparent);
+    text-transform:none;user-select:none;
+    transition:color .5s ease, background .5s ease, border-color .5s ease;
+  }
+  .clock-chip svg{width:12px;height:12px;flex-shrink:0;filter:drop-shadow(0 0 3px var(--clock-c));}
+  .clock-chip.is-editable{cursor:pointer;}
+  .clock-chip.is-editable:hover{background:color-mix(in srgb, var(--clock-c) 22%, transparent);}
+  .clock-chip.p-madrugada{--clock-c:#8f8cff;}
+  .clock-chip.p-manha{--clock-c:#ffc46b;}
+  .clock-chip.p-tarde{--clock-c:#ff9f43;}
+  .clock-chip.p-noite{--clock-c:#5aa9ff;}
+
+  .clock-presets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px;}
+  .clock-preset{
+    display:flex;flex-direction:column;align-items:center;gap:3px;
+    padding:9px 4px;border-radius:10px;cursor:pointer;
+    background:var(--bg-panel);border:1px solid var(--border-soft);color:var(--text-dim);
+    font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.5px;
+    transition:border-color .15s ease, background .15s ease, transform .1s ease;
+  }
+  .clock-preset:hover{border-color:var(--accent-1);background:var(--bg-panel-2);}
+  .clock-preset:active{transform:scale(.96);}
+  .clock-preset svg{width:18px;height:18px;color:var(--accent-1);}
+  .clock-steps{display:flex;gap:8px;margin-top:8px;}
+  .clock-steps .btn{flex:1;padding:8px 6px;font-size:11px;}
   .day-label{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;}
   .day-value{font-family:'Chakra Petch',sans-serif;font-size:16px;font-weight:700;}
   .day-actions{display:flex;gap:8px;}
@@ -922,6 +957,14 @@ function enterAsPlayer(){
 let presenceChannel = null;
 let presenceOnline = { master: false, player: false };
 
+function otherSideOnline(){ return isMaster ? presenceOnline.player : presenceOnline.master; }
+function presenceBadgeTitle(){
+  return `${isMaster?'Jogador':'Mestre'} ${otherSideOnline()?'online agora':'offline'}`;
+}
+function presenceBadgeInner(){
+  return `<span class="presence-dot ${otherSideOnline()?'is-online':''}"></span>${isMaster?'Jogador':'Mestre'}`;
+}
+
 function subscribePresence(){
   if(presenceChannel){
     sb.removeChannel(presenceChannel);
@@ -935,7 +978,13 @@ function subscribePresence(){
       master: !!(st.master && st.master.length),
       player: !!(st.player && st.player.length)
     };
-    render();
+    // atualiza só o badge (sem render() geral) pra não apagar o que a pessoa
+    // estiver digitando num modal aberto
+    const badge = document.getElementById('presenceBadge');
+    if(badge){
+      badge.innerHTML = presenceBadgeInner();
+      badge.title = presenceBadgeTitle();
+    }
   });
   presenceChannel.subscribe(async (status)=>{
     if(status === 'SUBSCRIBED'){
@@ -1011,6 +1060,7 @@ function defaultState(){
     characters: [],
     events: [],
     notifications: [],
+    clock: '08:00',
     history: []
   };
 }
@@ -1023,6 +1073,7 @@ function ensureStateDefaults(s){
   if(!s.researches) s.researches = [];
   if(!s.characters) s.characters = [];
   if(s.playerCarryCapacity == null) s.playerCarryCapacity = 50;
+  if(!/^\d{2}:\d{2}$/.test(s.clock || '')) s.clock = '08:00';
   if(!s.clean.fixedIncomes) s.clean.fixedIncomes = [];
   return s;
 }
@@ -1385,15 +1436,53 @@ function attachLoginHandlers(){
   if(pinInput) pinInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') submitPin(); });
 }
 
+/* ---------- HORÁRIO VISUAL ----------
+   Só clima: o mestre escolhe o horário na mão e ele não entra na simulação
+   (os eventos continuam acontecendo na passagem do dia). */
+const CLOCK_SVG = (inner)=> `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+const CLOCK_ICONS = {
+  madrugada: CLOCK_SVG('<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/><path d="M17 3v3M15.5 4.5h3"/>'),
+  manha: CLOCK_SVG('<path d="M12 3v3M4.9 8.9l2 2M19.1 8.9l-2 2M2 17h20"/><path d="M6.5 17a5.5 5.5 0 0 1 11 0"/><path d="M8 21h8"/>'),
+  tarde: CLOCK_SVG('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
+  noite: CLOCK_SVG('<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>')
+};
+const CLOCK_LABELS = { madrugada:'Madrugada', manha:'Manhã', tarde:'Tarde', noite:'Noite' };
+
+function clockPeriod(hhmm){
+  const h = parseInt((hhmm || '08:00').slice(0,2), 10);
+  if(h < 6) return 'madrugada';
+  if(h < 12) return 'manha';
+  if(h < 18) return 'tarde';
+  return 'noite';
+}
+
+function renderClockChip(){
+  const p = clockPeriod(state.clock);
+  return `<span class="clock-chip p-${p} ${isMaster?'is-editable':''}" id="clockChip" title="${CLOCK_LABELS[p]}${isMaster?' — clique pra mudar o horário':''}">${CLOCK_ICONS[p]}${state.clock}</span>`;
+}
+
+const CLOCK_PRESETS = [
+  { time:'00:00', label:'Meia-noite', icon:'noite' },
+  { time:'03:00', label:'Madrugada', icon:'madrugada' },
+  { time:'08:00', label:'Manhã', icon:'manha' },
+  { time:'12:00', label:'Meio-dia', icon:'tarde' },
+  { time:'16:00', label:'Tarde', icon:'tarde' },
+  { time:'20:00', label:'Noite', icon:'noite' }
+];
+
+function shiftClock(hhmm, minutes){
+  const [h, m] = hhmm.split(':').map(Number);
+  const total = (((h*60 + m + minutes) % 1440) + 1440) % 1440;
+  return String(Math.floor(total/60)).padStart(2,'0') + ':' + String(total%60).padStart(2,'0');
+}
+
 function renderTopbar(){
   return `
   <div class="topbar">
     <div class="brand-row">
       <div class="brand"><span class="dot"></span>SUBROSA</div>
       <div class="brand-actions">
-        <div class="presence-badge" id="presenceBadge" title="${isMaster?'Jogador':'Mestre'} ${(isMaster?presenceOnline.player:presenceOnline.master)?'online agora':'offline'}">
-          <span class="presence-dot ${(isMaster?presenceOnline.player:presenceOnline.master)?'is-online':''}"></span>${isMaster?'Jogador':'Mestre'}
-        </div>
+        <div class="presence-badge" id="presenceBadge" title="${presenceBadgeTitle()}">${presenceBadgeInner()}</div>
         <div class="role-badge ${isMaster?'is-master':''}" id="roleBadge" title="${isMaster?'Clique pra sair do modo mestre':'Você está vendo como jogador'}">
           ${isMaster?'MESTRE':'JOGADOR'}
         </div>
@@ -1430,7 +1519,7 @@ function renderTopbar(){
     </div>
     <div class="day-row">
       <div class="day-info">
-        <div class="day-label">Data corrente</div>
+        <div class="day-label-line"><span class="day-label">Data corrente</span>${renderClockChip()}</div>
         <div class="day-value">${formatDate(state.day)}</div>
       </div>
       ${isMaster ? `
@@ -2066,6 +2155,25 @@ function renderModal(){
     }
   }
 
+  if(type === 'editClock'){
+    title = 'Horário';
+    body = `
+      <div class="field"><label>Horário atual</label><input id="mClock" type="time" value="${state.clock}"></div>
+      <div class="clock-presets">
+        ${CLOCK_PRESETS.map(p=>`
+          <div class="clock-preset" data-clock-set="${p.time}">${CLOCK_ICONS[p.icon]}<span>${p.label}</span><span>${p.time}</span></div>
+        `).join('')}
+      </div>
+      <div class="clock-steps">
+        <button class="btn btn-ghost" data-clock-step="-60">− 1h</button>
+        <button class="btn btn-ghost" data-clock-step="-30">− 30min</button>
+        <button class="btn btn-ghost" data-clock-step="30">+ 30min</button>
+        <button class="btn btn-ghost" data-clock-step="60">+ 1h</button>
+      </div>
+      <div class="hint" style="margin-top:10px;">Só visual: não afeta eventos nem a simulação. Os eventos continuam acontecendo na passagem do dia — o horário é você quem escolhe.</div>
+    `;
+  }
+
   if(type === 'addExpense'){
     title = 'Novo gasto fixo';
     body = `
@@ -2374,6 +2482,9 @@ function attachHandlers(){
   const appsBtn = $('#appsBtn');
   if(appsBtn) appsBtn.onclick = openAppsLauncher;
 
+  const clockChip = $('#clockChip');
+  if(clockChip && isMaster) clockChip.onclick = ()=> openModal('editClock');
+
   const roleBadge = $('#roleBadge');
   if(roleBadge) roleBadge.onclick = ()=>{
     if(isMaster && confirm('Sair do modo mestre? Você vai continuar vendo o jogo, só que como jogador.')){
@@ -2477,6 +2588,16 @@ function attachHandlers(){
         if(!sides || sides < 2){ showToast('Digita um número de lados válido (2 ou mais).'); return; }
         rollDice('custom', sides);
       };
+    }
+
+    if(ui.modal === 'editClock'){
+      const clockInput = $('#mClock');
+      $$('[data-clock-set]').forEach(el=>{
+        el.onclick = ()=>{ clockInput.value = el.dataset.clockSet; };
+      });
+      $$('[data-clock-step]').forEach(el=>{
+        el.onclick = ()=>{ clockInput.value = shiftClock(clockInput.value || state.clock, parseInt(el.dataset.clockStep, 10)); };
+      });
     }
 
     if((ui.modal === 'addCharacter' || ui.modal === 'characterDetail') && isMaster){
@@ -2594,6 +2715,12 @@ async function handleConfirmAsync(){
       state.dirty.balance = newBalance;
     }
     saveState(); closeModal(); showToast('Saldo atualizado.'); return;
+  }
+
+  if(type === 'editClock'){
+    const v = $('#mClock').value;
+    if(/^\d{2}:\d{2}$/.test(v)) state.clock = v;
+    saveState(); closeModal(); showToast('Horário atualizado.'); return;
   }
 
   if(type === 'addExpense'){
