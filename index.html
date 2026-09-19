@@ -1025,6 +1025,178 @@
     --bg-panel:var(--app-bg-2); --bg-panel-2:var(--app-bg-2); --bg-panel-3:var(--app-bg-3);
     --border:var(--app-border); --border-soft:var(--app-border); --text:var(--app-fg); --text-dim:#c9a878; --text-faint:#8a6d47;
   }
+  /* ---------- APPS MENSAGENS + CONTATOS ---------- */
+  .app-icon-messages{background:linear-gradient(160deg, #5be38f, #12a85a);}
+  .app-icon-contacts{background:linear-gradient(160deg, #a5a2ff, #5b57e8);}
+  .app-theme-messages{
+    --app-accent:#34d27b; --app-bg:#06140e; --app-bg-2:#0b2018; --app-bg-3:#122d21; --app-border:#1d4634; --app-fg:#dcfbe8;
+    --accent-1:var(--app-accent); --accent-2:#7bf0ad; --accent-glow:rgba(52,210,123,0.35);
+    --bg-panel:var(--app-bg-2); --bg-panel-2:var(--app-bg-2); --bg-panel-3:var(--app-bg-3);
+    --border:var(--app-border); --border-soft:var(--app-border); --text:var(--app-fg); --text-dim:#8fcaa8; --text-faint:#527f69;
+  }
+  .app-theme-contacts{
+    --app-accent:#8f8cff; --app-bg:#0a0a1c; --app-bg-2:#12122e; --app-bg-3:#1b1b42; --app-border:#2c2c66; --app-fg:#e8e8ff;
+    --accent-1:var(--app-accent); --accent-2:#b9b7ff; --accent-glow:rgba(143,140,255,0.35);
+    --bg-panel:var(--app-bg-2); --bg-panel-2:var(--app-bg-2); --bg-panel-3:var(--app-bg-3);
+    --border:var(--app-border); --border-soft:var(--app-border); --text:var(--app-fg); --text-dim:#a9a8e0; --text-faint:#66669e;
+  }
+  /* altura fixa: a lista/conversa rola por dentro e o campo de escrever fica sempre à vista */
+  .msg-shell{height:100%;min-height:0;}
+  .msg-shell .app-body{min-height:0;display:flex;flex-direction:column;padding:0;overflow:hidden;}
+  .msg-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:0 16px 14px;}
+  .msg-head-actions{display:flex;align-items:center;gap:8px;}
+  .msg-icon-btn{
+    width:34px;height:34px;border-radius:50%;flex-shrink:0;cursor:pointer;border:none;
+    background:rgba(255,255,255,0.08);color:var(--app-fg);font-size:16px;line-height:1;
+    display:flex;align-items:center;justify-content:center;padding:0;
+  }
+  .msg-icon-btn:active{transform:scale(.92);}
+
+  .msg-avatar{
+    border-radius:50%;flex-shrink:0;background-size:cover;background-position:center;
+    display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;
+    font-family:'Chakra Petch',sans-serif;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.12);
+  }
+  .msg-avatar.ghost{background:var(--bg-panel-3);color:var(--text-faint);}
+
+  .msg-seg{display:flex;gap:6px;padding:0 16px 10px;}
+  .msg-seg-opt{
+    flex:1;text-align:center;padding:8px 6px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;
+    border:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;
+  }
+  .msg-seg-opt.active{border-color:var(--accent-1);color:var(--accent-1);background:color-mix(in srgb, var(--accent-1) 14%, transparent);}
+  .msg-search{padding:0 16px 10px;}
+  .msg-search input{
+    width:100%;background:var(--bg-panel-3);border:1px solid var(--border);border-radius:12px;
+    padding:10px 14px;color:var(--text);font-size:16px;font-family:'Inter',sans-serif;
+  }
+
+  .msg-row{display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid var(--border-soft);cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .msg-row:active{background:rgba(255,255,255,0.05);}
+  .msg-row-main{flex:1;min-width:0;}
+  .msg-row-top, .msg-row-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .msg-row-title{font-weight:700;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .msg-row-time{font-size:11px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;flex-shrink:0;}
+  .msg-row-preview{font-size:12.5px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;}
+  .msg-row.unread .msg-row-title{color:var(--accent-1);}
+  .msg-row.unread .msg-row-preview{color:var(--text);font-weight:600;}
+  .msg-count{
+    min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--accent-1);color:#04140f;
+    font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .msg-flag{font-size:11px;margin-left:4px;opacity:.8;}
+  .msg-list-empty{text-align:center;color:var(--text-faint);font-size:13px;padding:40px 20px;line-height:1.6;}
+
+  /* conversa */
+  .msg-head{display:flex;align-items:center;gap:10px;padding:8px 14px 12px;flex-shrink:0;}
+  .msg-head-info{flex:1;min-width:0;display:flex;align-items:center;gap:10px;cursor:pointer;}
+  .msg-head-title{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .msg-head-sub{font-size:11px;color:var(--text-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
+  .msg-messages{
+    flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+    padding:10px 14px;display:flex;flex-direction:column;gap:3px;
+    border-top:1px solid var(--border-soft);
+  }
+  .msg-day{align-self:center;margin:10px 0 6px;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint);font-family:'JetBrains Mono',monospace;}
+  .msg-sender{font-size:11px;font-weight:700;margin:6px 0 1px 8px;}
+  .msg-b{
+    max-width:80%;padding:8px 11px 6px;border-radius:17px;font-size:14.5px;line-height:1.4;
+    white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;-webkit-user-select:text;user-select:text;
+  }
+  .msg-b.theirs{align-self:flex-start;background:var(--bg-panel-3);border-bottom-left-radius:5px;}
+  .msg-b.mine{align-self:flex-end;background:linear-gradient(140deg,var(--accent-1),var(--accent-2));color:#04140f;border-bottom-right-radius:5px;}
+  .msg-b.undelivered{opacity:.6;border:1px dashed var(--danger);}
+  .msg-b.tap{cursor:pointer;}
+  .msg-meta{font-size:10px;opacity:.6;text-align:right;margin-top:2px;font-family:'JetBrains Mono',monospace;white-space:nowrap;line-height:1.2;}
+  .msg-tick{letter-spacing:-2px;margin-left:4px;}
+  .msg-tick.read{color:#0a4fff;opacity:1;}
+  .msg-b.theirs .msg-tick.read{color:var(--accent-1);}
+  .msg-warn{font-size:10.5px;color:var(--danger);margin-top:3px;font-weight:600;white-space:normal;line-height:1.3;}
+  .msg-b.mine .msg-warn{color:#7a0d24;}
+  .msg-img{display:block;max-width:100%;max-height:260px;border-radius:12px;margin:2px 0 4px;cursor:pointer;}
+  .msg-empty-thread{margin:auto;text-align:center;color:var(--text-faint);font-size:13px;line-height:1.6;padding:30px;}
+
+  .msg-composer{flex-shrink:0;border-top:1px solid var(--border-soft);padding:8px 12px 6px;background:var(--bg-panel);}
+  .msg-notice{
+    font-size:11.5px;line-height:1.45;padding:8px 12px;border-radius:12px;margin-bottom:8px;
+    background:color-mix(in srgb, var(--danger) 12%, transparent);border:1px solid color-mix(in srgb, var(--danger) 45%, transparent);color:var(--text);
+  }
+  .msg-notice.info{background:color-mix(in srgb, var(--accent-1) 10%, transparent);border-color:color-mix(in srgb, var(--accent-1) 40%, transparent);}
+  .msg-notice button{margin-top:6px;}
+  .msg-speakers{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none;}
+  .msg-speakers::-webkit-scrollbar{display:none;}
+  .msg-speaker-chip{
+    display:flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:99px;flex-shrink:0;cursor:pointer;
+    border:1px solid var(--border);font-size:12px;font-weight:600;color:var(--text-dim);
+  }
+  .msg-speaker-chip.active{border-color:var(--accent-1);color:var(--accent-1);background:color-mix(in srgb, var(--accent-1) 14%, transparent);}
+  .msg-speaking{font-size:11px;color:var(--text-faint);margin:0 4px 6px;font-family:'JetBrains Mono',monospace;}
+  .msg-speaking b{color:var(--accent-1);}
+  .msg-pending{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .msg-pending img{height:54px;border-radius:10px;}
+  .msg-input-row{display:flex;align-items:flex-end;gap:8px;}
+  .msg-input-row textarea{
+    flex:1;resize:none;max-height:110px;min-height:40px;background:var(--bg-panel-3);border:1px solid var(--border);border-radius:20px;
+    padding:9px 14px;color:var(--text);font-size:16px;line-height:1.35;font-family:'Inter',sans-serif;
+  }
+  .msg-send{
+    width:40px;height:40px;border-radius:50%;flex-shrink:0;border:none;cursor:pointer;font-size:17px;color:#04140f;
+    background:linear-gradient(140deg,var(--accent-1),var(--accent-2));display:flex;align-items:center;justify-content:center;
+  }
+  .msg-send:disabled{opacity:.35;}
+  .msg-menu{
+    position:absolute;right:14px;top:96px;z-index:30;min-width:190px;padding:6px;border-radius:14px;
+    background:var(--bg-panel-3);border:1px solid var(--border);box-shadow:0 14px 34px rgba(0,0,0,0.55);
+  }
+  .msg-menu-item{padding:11px 12px;border-radius:9px;font-size:13.5px;cursor:pointer;}
+  .msg-menu-item:active{background:rgba(255,255,255,0.08);}
+  .msg-menu-item.danger{color:var(--danger);}
+
+  /* páginas internas (novo, grupo, contato) */
+  .msg-page{padding:0 16px 20px;overflow-y:auto;flex:1;min-height:0;}
+  .msg-page-hero{display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px 0 16px;text-align:center;}
+  .msg-page-name{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:21px;}
+  .msg-page-sub{font-size:12.5px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;}
+  .msg-bio{font-size:13px;color:var(--text-dim);line-height:1.55;text-align:center;padding:0 10px;}
+  .msg-actions{display:flex;gap:10px;margin:8px 0 14px;}
+  .msg-actions .btn{flex:1;padding:12px 8px;}
+  .msg-section{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);margin:16px 2px 8px;}
+  .msg-switch-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 4px;border-bottom:1px solid var(--border-soft);font-size:13.5px;}
+  .msg-switch-row small{display:block;color:var(--text-faint);font-size:11.5px;margin-top:2px;line-height:1.4;}
+  .msg-switch{
+    width:46px;height:28px;border-radius:99px;background:var(--bg-panel-3);border:1px solid var(--border);position:relative;flex-shrink:0;cursor:pointer;
+    transition:background .2s ease;
+  }
+  .msg-switch::after{content:'';position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .2s ease;}
+  .msg-switch.on{background:var(--accent-1);border-color:var(--accent-1);}
+  .msg-switch.on::after{transform:translateX(18px);}
+  .msg-pick-row{display:flex;align-items:center;gap:12px;padding:9px 4px;border-bottom:1px solid var(--border-soft);cursor:pointer;}
+  .msg-check{
+    width:22px;height:22px;border-radius:7px;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;
+    font-size:14px;color:#04140f;
+  }
+  .msg-pick-row.on .msg-check{background:var(--accent-1);border-color:var(--accent-1);}
+  .msg-letter{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:13px;color:var(--accent-1);padding:12px 4px 4px;}
+  .msg-notes{background:color-mix(in srgb, var(--warn) 9%, transparent);border:1px dashed color-mix(in srgb, var(--warn) 45%, transparent);border-radius:12px;padding:10px 12px;font-size:12.5px;color:var(--text-dim);line-height:1.5;white-space:pre-wrap;}
+
+  /* faixa de notificação (desce do topo do celular) */
+  #notifBanner{position:fixed;left:0;right:0;top:0;z-index:500;pointer-events:none;display:flex;justify-content:center;padding:8px 10px 0;}
+  .notif-banner{
+    pointer-events:auto;width:min(420px,100%);display:flex;align-items:center;gap:11px;padding:11px 14px;border-radius:20px;cursor:pointer;
+    background:rgba(18,22,36,0.94);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    border:1px solid rgba(255,255,255,0.14);box-shadow:0 14px 40px rgba(0,0,0,0.55);color:#fff;
+    animation:notifIn .32s cubic-bezier(.2,.9,.25,1);touch-action:none;
+  }
+  .notif-banner.out{animation:notifOut .22s ease forwards;}
+  @keyframes notifIn{from{opacity:0;transform:translateY(-70px) scale(.96);}to{opacity:1;transform:translateY(0) scale(1);}}
+  @keyframes notifOut{to{opacity:0;transform:translateY(-70px) scale(.96);}}
+  .nb-icon{width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;overflow:hidden;}
+  .nb-icon .msg-avatar{width:38px !important;height:38px !important;border-radius:11px;}
+  .nb-body{flex:1;min-width:0;}
+  .nb-title{font-weight:700;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .nb-text{font-size:12.5px;color:rgba(255,255,255,0.78);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
+  .nb-time{font-size:10.5px;color:rgba(255,255,255,0.5);align-self:flex-start;font-family:'JetBrains Mono',monospace;}
+
   /* ---------- APP RELÓGIO ---------- */
   @property --clock-c{syntax:'<color>';inherits:true;initial-value:#5aa9ff;}
   .app-theme-clock{
@@ -1143,6 +1315,9 @@
 <div id="inventoryOverlay" class="diary-overlay"></div>
 <div id="codexOverlay" class="diary-overlay"></div>
 <div id="clockOverlay" class="diary-overlay"></div>
+<div id="messagesOverlay" class="diary-overlay"></div>
+<div id="contactsOverlay" class="diary-overlay"></div>
+<div id="notifBanner"></div>
 <div id="installBanner"></div>
 
 <script>
@@ -1321,6 +1496,7 @@ async function loadState(){
   render();
   subscribeRealtime();
   subscribePresence();
+  initMessaging();
 }
 
 function subscribeRealtime(){
@@ -1330,10 +1506,12 @@ function subscribeRealtime(){
     .on('postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'game_state', filter: 'id=eq.1' },
       (payload)=>{
+        const prevTopNotif = state && state.notifications && state.notifications[0] ? state.notifications[0].id : null;
         state = ensureStateDefaults(payload.new.data);
         render();
         if(clockOpen && !clockDrag && !clockCommitting) updateClockView();
         else refreshAppStatusBars();
+        notifyNewGameEvents(prevTopNotif);
       }
     )
     .subscribe();
@@ -1726,6 +1904,11 @@ const MODE_CAT_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
 const APP_SVG = (inner, w=34)=> `<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
 
 const PHONE_APPS = [
+  // dock (4): Mensagens, Banco, Calendário, Contatos
+  { id:'messages', label:'Mensagens', dock:true, cls:'app-icon-messages',
+    glyph:()=> APP_SVG('<path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H10l-5 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><path d="M8 10h8M8 13h5"/>'),
+    badge:()=> totalUnreadMessages(),
+    open:()=> openMessagesApp() },
   { id:'bank', label:'Banco', dock:true, cls:'app-icon-bank',
     glyph:()=> APP_SVG('<path d="M4 9 L7 3 L9.3 8.2"/><path d="M20 9 L17 3 L14.7 8.2"/><path d="M4 9 C4 15.2 8 19 12 19 C16 19 20 15.2 20 9 C20 9 16.8 10.6 12 10.6 C7.2 10.6 4 9 4 9 Z"/><circle cx="9.2" cy="13.2" r="0.7" fill="#fff" stroke="none"/><circle cx="14.8" cy="13.2" r="0.7" fill="#fff" stroke="none"/><path d="M10.4 15.4 Q12 16.5 13.6 15.4"/>', 36),
     open:()=> openScreenApp('bank') },
@@ -1733,8 +1916,12 @@ const PHONE_APPS = [
     glyph:()=>{ const d = dayToDate(state.day); return `<span class="cal-icon-m">${MONTH_NAMES[d.month].slice(0,3).toUpperCase()}</span><span class="cal-icon-d">${d.dayOfMonth}</span>`; },
     badge:()=> unseenNotifCount(),
     open:()=> openScreenApp('calendar') },
-  { id:'inventory', label:'Depósito', dock:true, cls:'app-icon-inventory', glyph:()=>'🎒', open:()=> openInventory() },
-  { id:'codex', label:'Memórias', dock:true, cls:'app-icon-codex', glyph:()=>'📔', open:()=> openCodex() },
+  { id:'contacts', label:'Contatos', dock:true, cls:'app-icon-contacts',
+    glyph:()=> APP_SVG('<circle cx="12" cy="9" r="3.6"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"/>'),
+    open:()=> openContactsApp() },
+  // grade
+  { id:'inventory', label:'Depósito', cls:'app-icon-inventory', glyph:()=>'🎒', open:()=> openInventory() },
+  { id:'codex', label:'Memórias', cls:'app-icon-codex', glyph:()=>'📔', open:()=> openCodex() },
   { id:'clock', label:'Relógio', cls:'app-icon-clock',
     glyph:()=> APP_SVG('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/>'),
     open:()=> openClockApp() },
@@ -1955,6 +2142,8 @@ function popAppHistory(){
 }
 function closeAllApps(){
   if(ui.modal === 'diceRoller') closeModal();
+  if(messagesOpen) closeMessagesApp();
+  if(contactsOpen) closeContactsApp();
   if(inventoryOpen) closeInventory();
   if(codexOpen) closeCodex();
   if(clockOpen) closeClockApp();
@@ -1967,7 +2156,9 @@ window.addEventListener('popstate', ()=>{
     // dentro de um app com telas internas (pasta do Codex, formulário do Depósito),
     // o "voltar" sobe um nível antes de fechar o app; a entrada do histórico
     // consumida pelo voltar é reposta pra ele continuar valendo
-    if(codexOpen && !codexIsAtRoot()){ codexGoBack(); pushAppHistory(); }
+    if(messagesOpen && msgView !== 'list'){ msgGoBack(); pushAppHistory(); }
+    else if(contactsOpen && ctView !== 'list'){ ctGoBack(); pushAppHistory(); }
+    else if(codexOpen && !codexIsAtRoot()){ codexGoBack(); pushAppHistory(); }
     else if(inventoryOpen && invView !== 'list'){ invView = 'list'; renderInventoryOverlay(); pushAppHistory(); }
     else closeAllApps();
   } finally { closingFromPop = false; }
@@ -4345,6 +4536,1257 @@ async function commitClockDrag(){
   hideBanner();
   render();
   updateClockView();
+}
+
+/* ============================================================
+   MENSAGENS + CONTATOS + NOTIFICAÇÕES
+   O celular é do JOGADOR; o mestre interpreta os contatos (NPCs).
+   Os dois lados veem a MESMA conversa (jogador sempre à direita, contatos
+   à esquerda — dá pra compartilhar a tela na mesa sem confusão). O mestre
+   escolhe "falando como" quem escreve. Tudo aqui é derivado das 4 tabelas
+   msg_* (cache local + Realtime), então funciona igual pros dois lados.
+   ============================================================ */
+let msgContacts = [], msgThreads = [], msgMembers = [], msgMessages = [];
+let msgChannel = null;
+let messagesOpen = false, contactsOpen = false;
+let msgView = 'list';            // 'list' | 'thread' | 'new' | 'groupNew' | 'groupInfo'
+let msgThreadId = null;
+let msgFilter = 'all';           // mestre: 'all' | 'waiting'
+let msgSearch = '', msgNewSearch = '';
+let msgGroupDraft = { name: '', ids: [] };
+let msgGroupEdit = null;         // {name, ids} enquanto o mestre edita um grupo
+let msgJustOpened = false;
+let msgDrafts = {}, msgPendingImages = {}, msgSpeakers = {};
+let ctView = 'list';             // 'list' | 'card' | 'form'
+let ctId = null, ctSearch = '', ctJustOpened = false;
+let ctFormPhoto, ctFormDraft = null;
+
+const escapeHtml = (s)=> String(s ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
+const cssUrl = (u)=> String(u).replace(/'/g, '%27').replace(/\)/g, '%29');
+const tsOf = (v)=> new Date(v).getTime();
+
+/* ---------- dados ---------- */
+async function initMessaging(){
+  if(msgChannel) return;
+  try{
+    await loadMessagingData();
+  } catch(e){
+    console.error('Falha ao carregar mensagens', e);
+    return;
+  }
+  subscribeMessaging();
+  refreshMessagingUI();
+}
+
+async function loadMessagingData(){
+  const [c, t, m, g] = await Promise.all([
+    sb.from('msg_contacts').select('*').order('name'),
+    sb.from('msg_threads').select('*'),
+    sb.from('msg_thread_members').select('*'),
+    sb.from('msg_messages').select('*').order('created_at')
+  ]);
+  if(c.error) throw c.error;
+  if(t.error) throw t.error;
+  if(m.error) throw m.error;
+  if(g.error) throw g.error;
+  msgContacts = c.data || [];
+  msgThreads = t.data || [];
+  msgMembers = m.data || [];
+  msgMessages = g.data || [];
+}
+
+function subscribeMessaging(){
+  if(msgChannel) return;
+  msgChannel = sb.channel('messaging_changes')
+    .on('postgres_changes', { event:'*', schema:'public', table:'msg_contacts' }, (p)=>{
+      applyRealtimeUpsert(msgContacts, p); refreshMessagingUI();
+    })
+    .on('postgres_changes', { event:'*', schema:'public', table:'msg_threads' }, (p)=>{
+      applyRealtimeUpsert(msgThreads, p); refreshMessagingUI();
+    })
+    .on('postgres_changes', { event:'*', schema:'public', table:'msg_thread_members' }, (p)=>{
+      // tabela sem coluna id: a chave é (thread_id, contact_id)
+      if(p.eventType === 'DELETE'){
+        msgMembers = msgMembers.filter(x => !(x.thread_id === p.old.thread_id && x.contact_id === p.old.contact_id));
+      } else if(!msgMembers.some(x => x.thread_id === p.new.thread_id && x.contact_id === p.new.contact_id)){
+        msgMembers.push(p.new);
+      }
+      refreshMessagingUI();
+    })
+    .on('postgres_changes', { event:'*', schema:'public', table:'msg_messages' }, (p)=>{
+      applyRealtimeUpsert(msgMessages, p);
+      if(p.eventType === 'INSERT') onMessageInserted(p.new);
+      refreshMessagingUI();
+    })
+    .subscribe();
+}
+
+/* ---------- ajudantes de exibição ---------- */
+const contactById = (id)=> msgContacts.find(c => c.id === id);
+const threadById = (id)=> msgThreads.find(t => t.id === id);
+function membersOf(threadId){
+  return msgMembers.filter(m => m.thread_id === threadId).map(m => contactById(m.contact_id)).filter(Boolean);
+}
+// contato como ele aparece pra quem olha: o jogador só vê o nome se o mestre já "revelou"
+const contactLabel = (c)=> !c ? 'Contato removido' : ((isMaster || c.revealed) ? c.name : c.phone);
+const contactRevealedToMe = (c)=> !!c && (isMaster || c.revealed);
+// versão curta (primeiro nome; número inteiro se o jogador ainda não sabe quem é)
+const contactShort = (c)=> !c ? 'Contato removido' : (contactRevealedToMe(c) ? c.name.split(' ')[0] : c.phone);
+
+function threadTitle(t){
+  if(t.kind === 'group') return t.name || 'Grupo';
+  return contactLabel(membersOf(t.id)[0]);
+}
+function messageVisibleToMe(m){ return isMaster || m.sender === 'player' || m.delivered; }
+function messagesOf(threadId){
+  return msgMessages.filter(m => m.thread_id === threadId && messageVisibleToMe(m))
+    .sort((a, b) => tsOf(a.created_at) - tsOf(b.created_at));
+}
+function visibleThreads(){
+  return msgThreads
+    .filter(t => t.kind === 'group' || msgThreadId === t.id || messagesOf(t.id).length > 0)
+    .sort((a, b) => tsOf(b.last_message_at) - tsOf(a.last_message_at));
+}
+
+const AVATAR_HUES = [210, 150, 30, 280, 340, 180, 50, 250];
+function hueOf(id){ let h = 0; for(const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return AVATAR_HUES[h % AVATAR_HUES.length]; }
+function initialsOf(name){
+  const parts = String(name || '?').trim().split(/\s+/).filter(Boolean);
+  return ((parts[0] || '?')[0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+}
+function avatarHtml(entity, size = 44, isGroup = false){
+  const style = `width:${size}px;height:${size}px;font-size:${Math.round(size * 0.38)}px;`;
+  if(!entity) return `<div class="msg-avatar ghost" style="${style}">?</div>`;
+  const hidden = !isGroup && !contactRevealedToMe(entity);
+  if(!hidden && entity.image_url) return `<div class="msg-avatar" style="${style}background-image:url('${cssUrl(entity.image_url)}')"></div>`;
+  if(hidden) return `<div class="msg-avatar ghost" style="${style}">#</div>`;
+  const hue = hueOf(entity.id);
+  const bg = `background:linear-gradient(160deg,hsl(${hue} 60% 50%),hsl(${hue} 55% 32%));`;
+  return `<div class="msg-avatar" style="${style}${bg}">${isGroup ? '👥' : escapeHtml(initialsOf(entity.name))}</div>`;
+}
+function threadAvatar(t, size = 46){
+  return t.kind === 'group' ? avatarHtml(t, size, true) : avatarHtml(membersOf(t.id)[0], size);
+}
+
+function threadUnread(t){
+  const since = tsOf(isMaster ? t.master_last_read_at : t.player_last_read_at);
+  return msgMessages.filter(m => m.thread_id === t.id && tsOf(m.created_at) > since &&
+    (isMaster ? m.sender === 'player' : (m.sender === 'contact' && m.delivered))).length;
+}
+function totalUnreadMessages(){
+  return msgThreads.reduce((s, t) => s + ((!isMaster && t.player_muted) ? 0 : threadUnread(t)), 0);
+}
+
+function msgTimeLabel(m){
+  if(!m) return '';
+  if(m.game_day == null) return '';
+  return m.game_day === state.day ? (m.game_clock || '') : formatDateShort(m.game_day);
+}
+function msgPreview(t){
+  const last = messagesOf(t.id).slice(-1)[0];
+  if(!last) return t.kind === 'group' ? 'Grupo criado' : 'Nenhuma mensagem ainda';
+  const base = last.body ? last.body : '📷 Foto';
+  let prefix = '';
+  if(last.sender === 'player') prefix = isMaster ? 'Jogador: ' : 'Você: ';
+  else if(t.kind === 'group') prefix = contactShort(contactById(last.contact_id)) + ': ';
+  return prefix + base;
+}
+
+/* ---------- chamadas ao banco ---------- */
+async function msgRpc(name, args, asMaster = false){
+  const { data, error } = await sb.rpc(name, asMaster ? { p_token: masterToken, ...args } : args);
+  if(error){
+    if(isMasterSessionExpiredError(error.message)) handleExpiredMasterSession();
+    throw error;
+  }
+  return data;
+}
+function msgFail(e, fallback){
+  console.error(fallback, e);
+  showToast(e && e.message && !/^(TypeError|Failed)/.test(e.message) ? e.message : fallback);
+}
+function upsertLocal(arr, row){
+  const i = arr.findIndex(x => x.id === row.id);
+  if(i >= 0) arr[i] = row; else arr.push(row);
+}
+
+/* ---------- notificações: faixa no topo, som, vibração e badges ---------- */
+let bannerTimer = null;
+const msgSoundOn = ()=> { try{ return localStorage.getItem('subrosa_sound') !== '0'; } catch(e){ return true; } };
+let audioCtx = null;
+function playPing(){
+  if(navigator.vibrate){ try{ navigator.vibrate([18, 40, 18]); } catch(e){} }
+  if(!msgSoundOn()) return;
+  try{
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    const now = audioCtx.currentTime;
+    [[880, 0], [1320, 0.11]].forEach(([freq, at])=>{
+      const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+      osc.type = 'sine'; osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, now + at);
+      gain.gain.exponentialRampToValueAtTime(0.07, now + at + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + at + 0.22);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(now + at); osc.stop(now + at + 0.25);
+    });
+  } catch(e){}
+}
+
+// iconHtml já vem pronto (emoji ou avatar); title/text são escapados aqui
+function showBanner({ iconHtml, title, text, onTap }){
+  const host = document.getElementById('notifBanner');
+  if(!host) return;
+  clearTimeout(bannerTimer);
+  host.innerHTML = `
+    <div class="notif-banner" role="button">
+      <div class="nb-icon">${iconHtml}</div>
+      <div class="nb-body"><div class="nb-title">${escapeHtml(title)}</div><div class="nb-text">${escapeHtml(text)}</div></div>
+      <div class="nb-time">agora</div>
+    </div>`;
+  const el = host.firstElementChild;
+  let startY = null;
+  el.addEventListener('pointerdown', (e)=>{ startY = e.clientY; });
+  el.addEventListener('pointerup', (e)=>{
+    const dy = startY == null ? 0 : e.clientY - startY;
+    startY = null;
+    if(dy < -18){ hideBanner(); return; }        // deslizou pra cima: dispensa
+    hideBanner();
+    if(onTap) onTap();
+  });
+  bannerTimer = setTimeout(hideBanner, 4800);
+  playPing();
+}
+function hideBanner(){
+  clearTimeout(bannerTimer);
+  const host = document.getElementById('notifBanner');
+  const el = host && host.firstElementChild;
+  if(!el) return;
+  el.classList.add('out');
+  setTimeout(()=>{ if(host.firstElementChild === el) host.innerHTML = ''; }, 230);
+}
+
+// abrir um app a partir de uma notificação, mesmo com outro app aberto
+function openAppFromNotification(openFn){
+  const anyOpen = ui.app || inventoryOpen || codexOpen || clockOpen || diaryOpen || messagesOpen || contactsOpen;
+  if(!anyOpen){ openFn(); return; }
+  closeAllApps();
+  setTimeout(openFn, 380);   // espera o histórico do navegador assentar
+}
+
+function onMessageInserted(m){
+  const t = threadById(m.thread_id);
+  if(!t) return;
+  const incoming = isMaster ? m.sender === 'player' : (m.sender === 'contact' && m.delivered);
+  if(!incoming) return;
+  const viewing = messagesOpen && msgView === 'thread' && msgThreadId === t.id && document.visibilityState === 'visible';
+  if(viewing){ markThreadRead(t.id); return; }
+  if(!isMaster && t.player_muted) return;
+  const title = threadTitle(t);
+  const who = m.sender === 'player' ? 'Jogador' : contactLabel(contactById(m.contact_id));
+  const body = m.body || '📷 Foto';
+  showBanner({
+    iconHtml: threadAvatar(t, 38),
+    title: (isMaster || t.kind === 'group') ? title : who,
+    text: (isMaster || t.kind === 'group') ? `${who}: ${body}` : body,
+    onTap: ()=> openAppFromNotification(()=> openMessagesApp({ threadId: t.id }))
+  });
+}
+
+// acontecimentos do jogo (Registro do Calendário) também viram notificação
+function notifyNewGameEvents(prevTopId){
+  const list = (state && state.notifications) || [];
+  let fresh = [];
+  if(prevTopId == null){ fresh = list.slice(0, 3); }
+  else {
+    const idx = list.findIndex(n => n.id === prevTopId);
+    if(idx > 0) fresh = list.slice(0, Math.min(idx, 3));
+  }
+  fresh.reverse().forEach((n, i)=>{
+    setTimeout(()=> showBanner({
+      iconHtml: escapeHtml(n.icon || '🔔'),
+      title: 'Calendário',
+      text: n.text,
+      onTap: ()=> openAppFromNotification(()=> openScreenApp('calendar'))
+    }), i * 900);
+  });
+  refreshAppBadges();
+}
+
+// atualiza só as bolinhas dos ícones (sem re-renderizar a home)
+function refreshAppBadges(){
+  PHONE_APPS.forEach(app=>{
+    if(!app.badge) return;
+    const n = app.badge();
+    document.querySelectorAll(`[data-open-app="${app.id}"] .app-icon-glyph`).forEach(g=>{
+      const old = g.querySelector('.app-badge');
+      if(old) old.remove();
+      if(n > 0) g.insertAdjacentHTML('beforeend', `<div class="app-badge">${n > 9 ? '9+' : n}</div>`);
+    });
+  });
+}
+
+// depois de qualquer mudança nos dados: badges + a tela que estiver aberta
+function refreshMessagingUI(){
+  refreshAppBadges();
+  if(messagesOpen){
+    if(msgView === 'list') refreshMsgList();
+    else if(msgView === 'thread') refreshThread();
+    else if(msgView === 'new') refreshMsgNewRows();
+  }
+  if(contactsOpen && ctView === 'list') refreshContactRows();
+  if(contactsOpen && ctView === 'card') renderContactsOverlay();
+}
+
+async function markThreadRead(threadId){
+  const t = threadById(threadId);
+  if(!t) return;
+  const last = messagesOf(threadId).slice(-1)[0];
+  const field = isMaster ? 'master_last_read_at' : 'player_last_read_at';
+  if(last && tsOf(last.created_at) > tsOf(t[field])){
+    t[field] = last.created_at;         // otimista: some a bolinha na hora
+    refreshAppBadges();
+    try{
+      if(isMaster) await msgRpc('msg_mark_read_master', { p_thread_id: threadId }, true);
+      else await msgRpc('msg_mark_read_player', { p_thread_id: threadId });
+    } catch(e){ console.error('Falha ao marcar como lida', e); }
+  }
+}
+
+/* ---------- ajuste do teclado no iOS: o overlay acompanha a área visível ---------- */
+const vvWatchers = {};
+function watchViewport(overlayId, on){
+  const vv = window.visualViewport;
+  const overlay = document.getElementById(overlayId);
+  if(!vv || !overlay) return;
+  if(on){
+    if(vvWatchers[overlayId]) return;
+    const fn = ()=>{
+      overlay.style.height = vv.height + 'px';
+      overlay.style.top = vv.offsetTop + 'px';
+      overlay.style.bottom = 'auto';
+      if(overlayId === 'messagesOverlay' && msgView === 'thread') scrollMsgBottom();
+    };
+    vvWatchers[overlayId] = fn;
+    vv.addEventListener('resize', fn);
+    vv.addEventListener('scroll', fn);
+    fn();
+  } else {
+    const fn = vvWatchers[overlayId];
+    if(fn){ vv.removeEventListener('resize', fn); vv.removeEventListener('scroll', fn); delete vvWatchers[overlayId]; }
+    overlay.style.height = ''; overlay.style.top = ''; overlay.style.bottom = '';
+  }
+}
+
+/* ---------- app MENSAGENS ---------- */
+function openMessagesApp(opts = {}){
+  if(messagesOpen){
+    if(opts.threadId) msgOpenThread(opts.threadId);
+    else if(opts.contactId) msgOpenDirectWith(opts.contactId);
+    return;
+  }
+  lockBodyScroll();
+  if(!opts.keepHistory) pushAppHistory();
+  messagesOpen = true;
+  msgView = 'list'; msgThreadId = null; msgFilter = 'all'; msgSearch = ''; msgJustOpened = true;
+  const overlay = document.getElementById('messagesOverlay');
+  overlay.classList.remove('app-overlay-closing');
+  overlay.style.display = 'flex';
+  renderMessagesOverlay();
+  watchViewport('messagesOverlay', true);
+  if(opts.threadId) msgOpenThread(opts.threadId);
+  else if(opts.contactId) msgOpenDirectWith(opts.contactId);
+}
+
+function closeMessagesApp(opts = {}){
+  if(!messagesOpen) return;
+  unlockBodyScroll();
+  if(!opts.keepHistory) popAppHistory();
+  messagesOpen = false; msgView = 'list'; msgThreadId = null; msgGroupEdit = null;
+  closeMsgMenu();
+  watchViewport('messagesOverlay', false);
+  const overlay = document.getElementById('messagesOverlay');
+  const shell = overlay.querySelector('.app-shell');
+  if(shell && !opts.instant){
+    animateExitToIcon(shell, 'messages');
+    overlay.classList.add('app-overlay-closing');
+    setTimeout(()=>{
+      if(messagesOpen) return;
+      overlay.style.display = 'none'; overlay.innerHTML = ''; overlay.classList.remove('app-overlay-closing');
+    }, APP_EXIT_MS);
+  } else {
+    overlay.style.display = 'none'; overlay.innerHTML = '';
+  }
+  refreshAppBadges();
+}
+
+function msgGoBack(){
+  if(msgView === 'thread' || msgView === 'new'){ msgView = 'list'; msgThreadId = null; }
+  else if(msgView === 'groupNew'){ msgView = 'new'; }
+  else if(msgView === 'groupInfo'){ msgView = 'thread'; msgGroupEdit = null; }
+  closeMsgMenu();
+  renderMessagesOverlay();
+}
+
+function renderMessagesOverlay(){
+  const overlay = document.getElementById('messagesOverlay');
+  const enter = msgJustOpened;
+  msgJustOpened = false;
+  const v = msgView === 'thread' ? viewMsgThread()
+    : msgView === 'new' ? viewMsgNew()
+    : msgView === 'groupNew' ? viewMsgGroupNew()
+    : msgView === 'groupInfo' ? viewMsgGroupInfo()
+    : viewMsgList();
+  overlay.innerHTML = `
+    <div class="app-shell app-theme-messages msg-shell${enter ? ' app-shell-enter' : ''}" style="position:relative;">
+      ${renderAppStatusBar()}
+      ${v.head}
+      <div class="app-body">${v.body}</div>
+      <div class="app-home-indicator"></div>
+    </div>`;
+  if(enter) animateOpenFromIcon(overlay.querySelector('.app-shell'), 'messages');
+  v.attach();
+  if(msgView === 'thread') scrollMsgBottom(true);
+}
+
+const $id = (id)=> document.getElementById(id);
+function scrollMsgBottom(force){
+  const box = $id('msgMessages');
+  if(!box) return;
+  box.scrollTop = box.scrollHeight;
+  if(force) requestAnimationFrame(()=>{ box.scrollTop = box.scrollHeight; });
+}
+
+/* ----- lista de conversas ----- */
+function msgWaitingCount(){ return visibleThreads().filter(t => threadUnread(t) > 0).length; }
+
+function msgRowsHtml(){
+  const q = msgSearch.trim().toLowerCase();
+  let threads = visibleThreads();
+  if(isMaster && msgFilter === 'waiting') threads = threads.filter(t => threadUnread(t) > 0);
+  if(q) threads = threads.filter(t => threadTitle(t).toLowerCase().includes(q) || messagesOf(t.id).some(m => (m.body || '').toLowerCase().includes(q)));
+  if(!threads.length){
+    const txt = q ? 'Nada encontrado.'
+      : (isMaster && msgFilter === 'waiting') ? 'Ninguém está esperando resposta. 🎉'
+      : isMaster ? 'Sem conversas ainda.<br>Toque em ✏️ pra mandar uma mensagem como um contato.'
+      : 'Nenhuma conversa ainda.<br>Toque em ✏️ pra escrever pra alguém.';
+    return `<div class="msg-list-empty">${txt}</div>`;
+  }
+  return threads.map(t=>{
+    const unread = threadUnread(t);
+    const last = messagesOf(t.id).slice(-1)[0];
+    const c = t.kind === 'direct' ? membersOf(t.id)[0] : null;
+    const muted = !isMaster && t.player_muted;
+    const flags = `${c && c.blocked_by_player ? '<span class="msg-flag" title="Bloqueado">🚫</span>' : ''}${muted ? '<span class="msg-flag" title="Silenciada">🔕</span>' : ''}`;
+    return `
+      <div class="msg-row ${unread && !muted ? 'unread' : ''}" data-open-thread="${t.id}">
+        ${threadAvatar(t, 48)}
+        <div class="msg-row-main">
+          <div class="msg-row-top"><span class="msg-row-title">${escapeHtml(threadTitle(t))}${flags}</span><span class="msg-row-time">${escapeHtml(msgTimeLabel(last))}</span></div>
+          <div class="msg-row-bottom"><span class="msg-row-preview">${escapeHtml(msgPreview(t))}</span>${unread && !muted ? `<span class="msg-count">${unread}</span>` : ''}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function viewMsgList(){
+  const waiting = msgWaitingCount();
+  return {
+    head: `
+      <div class="app-chrome-head">
+        <div class="app-chrome-title">Mensagens</div>
+        <div class="msg-head-actions">
+          <button class="msg-icon-btn" id="msgSoundBtn" title="Som das notificações">${msgSoundOn() ? '🔔' : '🔕'}</button>
+          <button class="msg-icon-btn" id="msgNewBtn" title="Nova mensagem">✏️</button>
+          <div class="app-chrome-close" id="msgClose">✕</div>
+        </div>
+      </div>`,
+    body: `
+      ${isMaster ? `<div class="msg-seg">
+        <div class="msg-seg-opt ${msgFilter === 'all' ? 'active' : ''}" data-msg-filter="all">Todas</div>
+        <div class="msg-seg-opt ${msgFilter === 'waiting' ? 'active' : ''}" data-msg-filter="waiting" id="msgWaitingTab">Aguardando resposta${waiting ? ` (${waiting})` : ''}</div>
+      </div>` : ''}
+      <div class="msg-search"><input id="msgSearchInput" placeholder="Buscar" value="${escapeHtml(msgSearch)}" autocomplete="off"></div>
+      <div class="msg-scroll" id="msgRows">${msgRowsHtml()}</div>`,
+    attach: ()=>{
+      $id('msgClose').onclick = ()=> closeMessagesApp();
+      $id('msgNewBtn').onclick = ()=>{ msgView = 'new'; msgNewSearch = ''; renderMessagesOverlay(); };
+      $id('msgSoundBtn').onclick = ()=>{
+        try{ localStorage.setItem('subrosa_sound', msgSoundOn() ? '0' : '1'); } catch(e){}
+        $id('msgSoundBtn').textContent = msgSoundOn() ? '🔔' : '🔕';
+        showToast(msgSoundOn() ? 'Som ligado.' : 'Som desligado (a faixa continua aparecendo).');
+      };
+      document.querySelectorAll('[data-msg-filter]').forEach(el=>{
+        el.onclick = ()=>{ msgFilter = el.dataset.msgFilter; renderMessagesOverlay(); };
+      });
+      $id('msgSearchInput').oninput = (e)=>{ msgSearch = e.target.value; $id('msgRows').innerHTML = msgRowsHtml(); };
+      $id('msgRows').onclick = (e)=>{
+        const row = e.target.closest('[data-open-thread]');
+        if(row) msgOpenThread(row.dataset.openThread);
+      };
+    }
+  };
+}
+
+function refreshMsgList(){
+  const rows = $id('msgRows');
+  if(!rows) return;
+  rows.innerHTML = msgRowsHtml();
+  const tab = $id('msgWaitingTab');
+  if(tab){ const n = msgWaitingCount(); tab.textContent = 'Aguardando resposta' + (n ? ` (${n})` : ''); }
+}
+
+function msgOpenThread(threadId){
+  if(!threadById(threadId)) return;
+  msgThreadId = threadId;
+  msgView = 'thread';
+  renderMessagesOverlay();
+  markThreadRead(threadId);
+}
+
+async function msgOpenDirectWith(contactId){
+  try{
+    const id = await msgRpc('msg_get_or_create_direct', { p_contact_id: contactId });
+    if(!threadById(id) || !membersOf(id).length) await loadMessagingData();
+    msgOpenThread(id);
+  } catch(e){ msgFail(e, 'Não consegui abrir a conversa.'); }
+}
+
+/* ----- conversa ----- */
+function directContactOf(t){ return t.kind === 'direct' ? membersOf(t.id)[0] : null; }
+
+function threadSubtitle(t){
+  if(t.kind === 'group') return membersOf(t.id).map(contactShort).join(', ') || 'Sem membros';
+  const c = directContactOf(t);
+  if(!c) return '';
+  const bits = [];
+  if(isMaster || c.revealed) bits.push(c.phone);
+  else bits.push('número desconhecido');
+  if(c.blocked_by_player) bits.push('🚫 bloqueado');
+  if(isMaster && c.blocked_player) bits.push('🚫 bloqueou o jogador');
+  return bits.join(' · ');
+}
+
+function currentSpeaker(t){
+  const members = membersOf(t.id);
+  if(t.kind === 'direct') return members[0] || null;
+  return members.find(c => c.id === msgSpeakers[t.id]) || members[0] || null;
+}
+
+function canSend(t){
+  if(isMaster) return !!currentSpeaker(t);
+  const c = directContactOf(t);
+  return !(c && c.blocked_by_player);
+}
+
+function bubblesHtml(t){
+  const list = messagesOf(t.id);
+  if(!list.length){
+    return `<div class="msg-empty-thread">${t.kind === 'group' ? 'Grupo criado.<br>Mande a primeira mensagem!' : 'Nenhuma mensagem ainda.<br>Diga oi 👋'}</div>`;
+  }
+  const readAt = tsOf(t.master_last_read_at);
+  let lastDay = null, lastKey = null;
+  return list.map(m=>{
+    let out = '';
+    if(m.game_day != null && m.game_day !== lastDay){ out += `<div class="msg-day">${escapeHtml(formatDate(m.game_day))}</div>`; lastDay = m.game_day; lastKey = null; }
+    const mine = m.sender === 'player';
+    const key = mine ? 'p' : 'c' + m.contact_id;
+    const c = mine ? null : contactById(m.contact_id);
+    if(t.kind === 'group' && !mine && key !== lastKey){
+      out += `<div class="msg-sender" style="color:hsl(${hueOf(m.contact_id || 'x')} 70% 68%)">${escapeHtml(contactLabel(c))}</div>`;
+    }
+    lastKey = key;
+    const undelivered = !m.delivered;
+    const read = mine && m.delivered && readAt >= tsOf(m.created_at);
+    const tick = mine ? `<span class="msg-tick ${read ? 'read' : ''}">${m.delivered ? '✓✓' : '✓'}</span>` : '';
+    let warn = '';
+    if(undelivered && isMaster) warn = mine ? '<div class="msg-warn">🚫 Não entregue: o contato bloqueou o jogador</div>'
+      : '<div class="msg-warn">🚫 Não entregue: o jogador bloqueou este contato</div>';
+    // sem quebras de linha soltas aqui: o balão usa white-space:pre-wrap (respeita o Enter de quem escreve)
+    const img = m.image_url ? `<img class="msg-img" src="${escapeHtml(m.image_url)}" alt="foto" data-msg-img="${escapeHtml(m.image_url)}">` : '';
+    out += `<div class="msg-b ${mine ? 'mine' : 'theirs'} ${undelivered ? 'undelivered' : ''} ${isMaster ? 'tap' : ''}" data-msg-id="${m.id}">${img}${m.body ? escapeHtml(m.body) : ''}<div class="msg-meta">${escapeHtml(m.game_clock || '')}${tick}</div>${warn}</div>`;
+    return out;
+  }).join('');
+}
+
+function composerTopHtml(t){
+  const c = directContactOf(t);
+  if(!isMaster){
+    if(c && c.blocked_by_player){
+      return `<div class="msg-notice">🚫 Você bloqueou este contato. Vocês não recebem as mensagens um do outro.<br><button class="btn btn-ghost btn-sm" data-unblock="${c.id}">Desbloquear</button></div>`;
+    }
+    return '';
+  }
+  // mestre: sempre deixa claro QUEM está falando
+  let out = '';
+  if(t.kind === 'group'){
+    const cur = currentSpeaker(t);
+    out += `<div class="msg-speakers">${membersOf(t.id).map(m => `
+      <div class="msg-speaker-chip ${cur && cur.id === m.id ? 'active' : ''}" data-speaker="${m.id}">${avatarHtml(m, 24)}${escapeHtml(m.name.split(' ')[0])}</div>`).join('')}</div>`;
+  } else if(c){
+    out += `<div class="msg-speaking">Falando como <b>${escapeHtml(c.name)}</b></div>`;
+    if(c.blocked_by_player) out += `<div class="msg-notice">🚫 O jogador bloqueou este contato: o que você enviar <b>não será entregue</b>.</div>`;
+    if(c.blocked_player) out += `<div class="msg-notice info">🚫 Este contato bloqueou o jogador: as mensagens do jogador não chegam.<br><button class="btn btn-ghost btn-sm" data-unblock-player="${c.id}">Desbloquear o jogador</button></div>`;
+  }
+  return out;
+}
+
+function viewMsgThread(){
+  const t = threadById(msgThreadId);
+  const c = directContactOf(t);
+  return {
+    head: `
+      <div class="msg-head">
+        <button class="msg-icon-btn" id="msgBack" aria-label="Voltar">‹</button>
+        <div class="msg-head-info" id="msgHeadInfo">
+          ${threadAvatar(t, 38)}
+          <div style="min-width:0;">
+            <div class="msg-head-title">${escapeHtml(threadTitle(t))}</div>
+            <div class="msg-head-sub" id="msgHeadSub">${escapeHtml(threadSubtitle(t))}</div>
+          </div>
+        </div>
+        <button class="msg-icon-btn" id="msgMenuBtn" aria-label="Mais opções">⋯</button>
+      </div>`,
+    body: `
+      <div class="msg-messages" id="msgMessages">${bubblesHtml(t)}</div>
+      <div class="msg-composer">
+        <div id="msgComposerTop">${composerTopHtml(t)}</div>
+        <div class="msg-pending" id="msgPending" style="display:none;"></div>
+        <div class="msg-input-row" id="msgInputRow" style="${canSend(t) ? '' : 'display:none;'}">
+          <button class="msg-icon-btn" id="msgAttach" title="Enviar foto">📷</button>
+          <textarea id="msgInput" rows="1" placeholder="${escapeHtml(isMaster ? 'Mensagem como ' + ((currentSpeaker(t) || {}).name || '…').split(' ')[0] : 'Mensagem')}" enterkeyhint="send"></textarea>
+          <button class="msg-send" id="msgSend" aria-label="Enviar">➤</button>
+        </div>
+      </div>`,
+    attach: ()=> attachThreadHandlers(t)
+  };
+}
+
+function attachThreadHandlers(t){
+  $id('msgBack').onclick = msgGoBack;
+  $id('msgHeadInfo').onclick = ()=>{
+    const c = directContactOf(t);
+    if(c) openContactCardFromMessages(c.id);
+    else { msgGroupEdit = null; msgView = 'groupInfo'; renderMessagesOverlay(); }
+  };
+  $id('msgMenuBtn').onclick = ()=> showThreadMenu(t);
+
+  const input = $id('msgInput');
+  input.value = msgDrafts[t.id] || '';
+  const autosize = ()=>{ input.style.height = 'auto'; input.style.height = Math.min(110, input.scrollHeight) + 'px'; };
+  autosize();
+  input.oninput = ()=>{ msgDrafts[t.id] = input.value; autosize(); };
+  input.onkeydown = (e)=>{
+    // no computador Enter envia (Shift+Enter quebra linha); no celular Enter quebra linha
+    if(e.key === 'Enter' && !e.shiftKey && window.matchMedia('(pointer:fine)').matches){ e.preventDefault(); msgSendCurrent(); }
+  };
+  input.onfocus = ()=> setTimeout(()=> scrollMsgBottom(), 250);
+  $id('msgSend').onclick = msgSendCurrent;
+  $id('msgAttach').onclick = msgPickImage;
+  renderPending();
+
+  $id('msgComposerTop').onclick = (e)=>{
+    const sp = e.target.closest('[data-speaker]');
+    if(sp){ msgSpeakers[t.id] = sp.dataset.speaker; refreshThread(); const inp = $id('msgInput'); if(inp) inp.placeholder = 'Mensagem como ' + ((currentSpeaker(t) || {}).name || '…').split(' ')[0]; return; }
+    const ub = e.target.closest('[data-unblock]');
+    if(ub){ msgSetBlockedByPlayer(contactById(ub.dataset.unblock), false); return; }
+    const ubp = e.target.closest('[data-unblock-player]');
+    if(ubp){ ctPatchContact(contactById(ubp.dataset.unblockPlayer), { blocked_player: false }, 'O jogador foi desbloqueado.'); }
+  };
+  $id('msgMessages').onclick = (e)=>{
+    const img = e.target.closest('[data-msg-img]');
+    if(img){ window.open(img.dataset.msgImg, '_blank'); return; }
+    const b = e.target.closest('[data-msg-id]');
+    if(b && isMaster) msgDeleteMessage(b.dataset.msgId);
+  };
+}
+
+function refreshThread(){
+  const t = threadById(msgThreadId);
+  if(!t){ msgView = 'list'; msgThreadId = null; renderMessagesOverlay(); showToast('Essa conversa foi apagada.'); return; }
+  const box = $id('msgMessages');
+  if(!box) return;
+  const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 140;
+  box.innerHTML = bubblesHtml(t);
+  if(nearBottom) box.scrollTop = box.scrollHeight;
+  $id('msgHeadSub').textContent = threadSubtitle(t);
+  $id('msgComposerTop').innerHTML = composerTopHtml(t);
+  $id('msgInputRow').style.display = canSend(t) ? '' : 'none';
+  if(threadUnread(t) > 0 && document.visibilityState === 'visible') markThreadRead(t.id);
+}
+
+function renderPending(){
+  const el = $id('msgPending');
+  if(!el) return;
+  const url = msgPendingImages[msgThreadId];
+  if(!url){ el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = 'flex';
+  el.innerHTML = `<img src="${escapeHtml(url)}" alt="foto anexada"><button class="btn btn-ghost btn-sm" id="msgPendingRemove">Remover</button>`;
+  $id('msgPendingRemove').onclick = ()=>{ delete msgPendingImages[msgThreadId]; renderPending(); };
+}
+
+function msgPickImage(){
+  const t = threadById(msgThreadId);
+  if(!t) return;
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/png,image/jpeg,image/gif,image/webp';
+  input.onchange = async ()=>{
+    const file = input.files[0];
+    if(!file) return;
+    showToast('Enviando foto…');
+    try{
+      msgPendingImages[t.id] = await uploadGameImage(file);
+      renderPending();
+    } catch(e){ msgFail(e, 'Não consegui enviar a foto.'); }
+  };
+  input.click();
+}
+
+let msgSending = false;
+async function msgSendCurrent(){
+  const t = threadById(msgThreadId);
+  const input = $id('msgInput');
+  if(!t || !input || msgSending) return;
+  const body = (input.value || '').trim();
+  const image = msgPendingImages[t.id] || null;
+  if(!body && !image) return;
+  const speaker = isMaster ? currentSpeaker(t) : null;
+  if(isMaster && !speaker){ showToast('Escolha quem está falando.'); return; }
+  msgSending = true;
+  const sendBtn = $id('msgSend');
+  if(sendBtn) sendBtn.disabled = true;
+  try{
+    const args = { p_thread_id: t.id, p_body: body, p_image_url: image, p_game_day: state.day, p_game_clock: state.clock };
+    let row;
+    if(isMaster){
+      row = await msgRpc('msg_send_as_contact', { ...args, p_contact_id: speaker.id }, true);
+      msgSpeakers[t.id] = speaker.id;
+      t.master_last_read_at = row.created_at;
+    } else {
+      row = await msgRpc('msg_send_as_player', args);
+      t.player_last_read_at = row.created_at;
+    }
+    upsertLocal(msgMessages, row);
+    t.last_message_at = row.created_at;
+    msgDrafts[t.id] = '';
+    delete msgPendingImages[t.id];
+    input.value = ''; input.style.height = 'auto';
+    renderPending();
+    refreshThread();
+    scrollMsgBottom(true);
+    input.focus();
+  } catch(e){ msgFail(e, 'Não consegui enviar. Tenta de novo.'); }
+  finally{ msgSending = false; const b = $id('msgSend'); if(b) b.disabled = false; }
+}
+
+async function msgDeleteMessage(id){
+  if(!confirm('Apagar esta mensagem pros dois lados?')) return;
+  try{
+    await msgRpc('msg_delete_message', { p_id: id }, true);
+    msgMessages = msgMessages.filter(m => m.id !== id);
+    refreshThread();
+  } catch(e){ msgFail(e, 'Não consegui apagar.'); }
+}
+
+/* ----- menu ⋯ e ações da conversa ----- */
+function closeMsgMenu(){
+  const m = $id('msgMenu');
+  if(m) m.remove();
+  document.removeEventListener('pointerdown', msgMenuOutside, true);
+}
+function msgMenuOutside(e){ if(!e.target.closest('#msgMenu') && !e.target.closest('#msgMenuBtn')) closeMsgMenu(); }
+function showMsgMenu(items){
+  if($id('msgMenu')){ closeMsgMenu(); return; }
+  const shell = document.querySelector('#messagesOverlay .app-shell');
+  if(!shell) return;
+  const menu = document.createElement('div');
+  menu.className = 'msg-menu';
+  menu.id = 'msgMenu';
+  menu.innerHTML = items.map((it, i) => `<div class="msg-menu-item ${it.danger ? 'danger' : ''}" data-mi="${i}">${escapeHtml(it.label)}</div>`).join('');
+  menu.onclick = (e)=>{
+    const el = e.target.closest('[data-mi]');
+    if(!el) return;
+    closeMsgMenu();
+    items[Number(el.dataset.mi)].fn();
+  };
+  shell.appendChild(menu);
+  setTimeout(()=> document.addEventListener('pointerdown', msgMenuOutside, true), 0);
+}
+
+function showThreadMenu(t){
+  const c = directContactOf(t);
+  const items = [];
+  if(c) items.push({ label: 'Ver contato', fn: ()=> openContactCardFromMessages(c.id) });
+  else items.push({ label: 'Informações do grupo', fn: ()=>{ msgGroupEdit = null; msgView = 'groupInfo'; renderMessagesOverlay(); } });
+  if(!isMaster){
+    items.push({ label: t.player_muted ? 'Reativar notificações' : 'Silenciar', fn: ()=> msgToggleMute(t) });
+    if(c) items.push({ label: c.blocked_by_player ? 'Desbloquear contato' : 'Bloquear contato', danger: !c.blocked_by_player, fn: ()=> msgSetBlockedByPlayer(c, !c.blocked_by_player) });
+  } else {
+    items.push({ label: 'Apagar conversa', danger: true, fn: ()=> msgDeleteThread(t) });
+  }
+  showMsgMenu(items);
+}
+
+async function msgToggleMute(t){
+  try{
+    await msgRpc('msg_set_muted', { p_thread_id: t.id, p_muted: !t.player_muted });
+    t.player_muted = !t.player_muted;
+    refreshMessagingUI();
+    showToast(t.player_muted ? 'Conversa silenciada.' : 'Notificações reativadas.');
+    if(msgView === 'groupInfo') renderMessagesOverlay();
+  } catch(e){ msgFail(e, 'Não consegui mudar isso agora.'); }
+}
+
+async function msgSetBlockedByPlayer(c, blocked){
+  if(!c) return;
+  if(blocked && !confirm(`Bloquear ${contactLabel(c)}? Vocês não vão receber as mensagens um do outro.`)) return;
+  try{
+    await msgRpc('msg_set_blocked_by_player', { p_contact_id: c.id, p_blocked: blocked });
+    c.blocked_by_player = blocked;
+    refreshMessagingUI();
+    if(msgView === 'thread') refreshThread();
+    showToast(blocked ? 'Contato bloqueado.' : 'Contato desbloqueado.');
+  } catch(e){ msgFail(e, 'Não consegui mudar o bloqueio.'); }
+}
+
+async function msgDeleteThread(t){
+  if(!confirm(`Apagar a conversa "${threadTitle(t)}" e todas as mensagens? Isso some pros dois lados.`)) return;
+  try{
+    await msgRpc('msg_delete_thread', { p_thread_id: t.id }, true);
+    msgThreads = msgThreads.filter(x => x.id !== t.id);
+    msgMessages = msgMessages.filter(m => m.thread_id !== t.id);
+    msgMembers = msgMembers.filter(m => m.thread_id !== t.id);
+    msgView = 'list'; msgThreadId = null; msgGroupEdit = null;
+    renderMessagesOverlay();
+    showToast('Conversa apagada.');
+  } catch(e){ msgFail(e, 'Não consegui apagar.'); }
+}
+
+/* ----- nova mensagem / novo grupo / info do grupo ----- */
+function contactsVisibleToMe(){
+  return msgContacts.filter(c => isMaster || c.revealed).slice().sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+}
+
+function msgNewRowsHtml(){
+  const q = msgNewSearch.trim().toLowerCase();
+  const list = contactsVisibleToMe().filter(c => !q || c.name.toLowerCase().includes(q) || c.phone.includes(q));
+  return `
+    ${q ? '' : `<div class="msg-pick-row" data-new-group>
+      <div class="msg-avatar" style="width:44px;height:44px;font-size:20px;background:linear-gradient(160deg,var(--accent-1),var(--accent-2));">👥</div>
+      <div><b>Novo grupo</b></div></div>`}
+    ${(!q && isMaster) ? `<div class="msg-pick-row" data-new-contact>
+      <div class="msg-avatar" style="width:44px;height:44px;font-size:20px;background:var(--bg-panel-3);">＋</div>
+      <div><b>Novo contato</b></div></div>` : ''}
+    ${list.length ? list.map(c => `
+      <div class="msg-pick-row" data-chat-with="${c.id}">
+        ${avatarHtml(c, 44)}
+        <div style="min-width:0;"><div style="font-weight:600;">${escapeHtml(contactLabel(c))}</div>
+        <div class="msg-page-sub" style="font-size:11px;">${escapeHtml(c.phone)}${isMaster && !c.revealed ? ' · oculto' : ''}</div></div>
+      </div>`).join('') : `<div class="msg-list-empty">${q ? 'Nada encontrado.' : (isMaster ? 'Crie um contato pra começar.' : 'Você ainda não tem contatos.')}</div>`}`;
+}
+
+function viewMsgNew(){
+  return {
+    head: `<div class="msg-head"><button class="msg-icon-btn" id="msgBack">‹</button><div class="app-chrome-title" style="font-size:18px;">Nova mensagem</div></div>`,
+    body: `
+      <div class="msg-search"><input id="msgNewSearchInput" placeholder="Buscar contato" value="${escapeHtml(msgNewSearch)}" autocomplete="off"></div>
+      <div class="msg-scroll" id="msgNewRows">${msgNewRowsHtml()}</div>`,
+    attach: ()=>{
+      $id('msgBack').onclick = msgGoBack;
+      $id('msgNewSearchInput').oninput = (e)=>{ msgNewSearch = e.target.value; refreshMsgNewRows(); };
+      $id('msgNewRows').onclick = (e)=>{
+        if(e.target.closest('[data-new-group]')){ msgGroupDraft = { name: '', ids: [] }; msgView = 'groupNew'; renderMessagesOverlay(); return; }
+        if(e.target.closest('[data-new-contact]')){ closeMessagesApp({ keepHistory: true, instant: true }); openContactsApp({ newContact: true, keepHistory: true }); return; }
+        const row = e.target.closest('[data-chat-with]');
+        if(row) msgOpenDirectWith(row.dataset.chatWith);
+      };
+    }
+  };
+}
+function refreshMsgNewRows(){ const el = $id('msgNewRows'); if(el) el.innerHTML = msgNewRowsHtml(); }
+
+function pickRowsHtml(selectedIds, attr){
+  const list = contactsVisibleToMe();
+  if(!list.length) return `<div class="msg-list-empty">${isMaster ? 'Crie contatos primeiro.' : 'Você ainda não tem contatos.'}</div>`;
+  return list.map(c => `
+    <div class="msg-pick-row ${selectedIds.includes(c.id) ? 'on' : ''}" ${attr}="${c.id}">
+      <div class="msg-check">${selectedIds.includes(c.id) ? '✓' : ''}</div>
+      ${avatarHtml(c, 40)}
+      <div style="font-weight:600;">${escapeHtml(contactLabel(c))}</div>
+    </div>`).join('');
+}
+
+function viewMsgGroupNew(){
+  return {
+    head: `<div class="msg-head"><button class="msg-icon-btn" id="msgBack">‹</button><div class="app-chrome-title" style="font-size:18px;">Novo grupo</div></div>`,
+    body: `
+      <div class="msg-page">
+        <div class="field"><label>Nome do grupo</label><input id="gName" value="${escapeHtml(msgGroupDraft.name)}" placeholder="Ex: Galera do bairro" style="font-size:16px;" autocomplete="off"></div>
+        <div class="msg-section">Membros (${msgGroupDraft.ids.length})</div>
+        <div id="gRows">${pickRowsHtml(msgGroupDraft.ids, 'data-gpick')}</div>
+        <button class="btn btn-accent btn-block" id="gCreate" style="margin-top:16px;">Criar grupo</button>
+      </div>`,
+    attach: ()=>{
+      $id('msgBack').onclick = msgGoBack;
+      $id('gName').oninput = (e)=>{ msgGroupDraft.name = e.target.value; };
+      $id('gRows').onclick = (e)=>{
+        const row = e.target.closest('[data-gpick]');
+        if(!row) return;
+        const id = row.dataset.gpick;
+        msgGroupDraft.ids = msgGroupDraft.ids.includes(id) ? msgGroupDraft.ids.filter(x => x !== id) : [...msgGroupDraft.ids, id];
+        $id('gRows').innerHTML = pickRowsHtml(msgGroupDraft.ids, 'data-gpick');
+        document.querySelector('.msg-section').textContent = `Membros (${msgGroupDraft.ids.length})`;
+      };
+      $id('gCreate').onclick = async ()=>{
+        const name = msgGroupDraft.name.trim();
+        if(!name){ showToast('Dê um nome pro grupo.'); return; }
+        if(!msgGroupDraft.ids.length){ showToast('Escolha pelo menos um contato.'); return; }
+        try{
+          const id = await msgRpc('msg_create_group', { p_name: name, p_image_url: null, p_contact_ids: msgGroupDraft.ids });
+          if(!threadById(id) || !membersOf(id).length) await loadMessagingData();
+          msgOpenThread(id);
+        } catch(e){ msgFail(e, 'Não consegui criar o grupo.'); }
+      };
+    }
+  };
+}
+
+function viewMsgGroupInfo(){
+  const t = threadById(msgThreadId);
+  if(isMaster && !msgGroupEdit) msgGroupEdit = { name: t.name || '', ids: membersOf(t.id).map(c => c.id) };
+  const members = membersOf(t.id);
+  return {
+    head: `<div class="msg-head"><button class="msg-icon-btn" id="msgBack">‹</button><div class="app-chrome-title" style="font-size:18px;">Informações do grupo</div></div>`,
+    body: `
+      <div class="msg-page">
+        <div class="msg-page-hero">
+          ${avatarHtml(t, 84, true)}
+          ${isMaster
+            ? `<input id="giName" value="${escapeHtml(msgGroupEdit.name)}" style="text-align:center;font-size:18px;width:100%;background:var(--bg-panel-3);border:1px solid var(--border);border-radius:12px;padding:10px;color:var(--text);font-family:'Chakra Petch',sans-serif;font-weight:700;" autocomplete="off">`
+            : `<div class="msg-page-name">${escapeHtml(t.name || 'Grupo')}</div>`}
+          <div class="msg-page-sub">${members.length} membro(s) + você</div>
+        </div>
+        ${!isMaster ? `<div class="msg-switch-row"><div>Silenciar notificações</div><div class="msg-switch ${t.player_muted ? 'on' : ''}" id="giMute"></div></div>` : ''}
+        <div class="msg-section">Membros</div>
+        <div id="giRows">${isMaster ? pickRowsHtml(msgGroupEdit.ids, 'data-gedit') : members.map(c => `
+          <div class="msg-pick-row" data-view-contact="${c.id}">${avatarHtml(c, 40)}<div style="font-weight:600;">${escapeHtml(contactLabel(c))}</div></div>`).join('')}</div>
+        ${isMaster ? `
+          <button class="btn btn-accent btn-block" id="giSave" style="margin-top:16px;">Salvar alterações</button>
+          <button class="btn btn-danger btn-block" id="giDelete" style="margin-top:10px;">Apagar grupo</button>` : ''}
+      </div>`,
+    attach: ()=>{
+      $id('msgBack').onclick = msgGoBack;
+      if(!isMaster){
+        $id('giMute').onclick = ()=> msgToggleMute(t);
+        $id('giRows').onclick = (e)=>{ const r = e.target.closest('[data-view-contact]'); if(r && contactRevealedToMe(contactById(r.dataset.viewContact))) openContactCardFromMessages(r.dataset.viewContact); };
+        return;
+      }
+      $id('giName').oninput = (e)=>{ msgGroupEdit.name = e.target.value; };
+      $id('giRows').onclick = (e)=>{
+        const row = e.target.closest('[data-gedit]');
+        if(!row) return;
+        const id = row.dataset.gedit;
+        msgGroupEdit.ids = msgGroupEdit.ids.includes(id) ? msgGroupEdit.ids.filter(x => x !== id) : [...msgGroupEdit.ids, id];
+        $id('giRows').innerHTML = pickRowsHtml(msgGroupEdit.ids, 'data-gedit');
+      };
+      $id('giSave').onclick = async ()=>{
+        if(!msgGroupEdit.name.trim()){ showToast('O grupo precisa de um nome.'); return; }
+        if(!msgGroupEdit.ids.length){ showToast('Deixe pelo menos um membro.'); return; }
+        try{
+          await msgRpc('msg_update_group', { p_thread_id: t.id, p_name: msgGroupEdit.name, p_image_url: t.image_url || null, p_contact_ids: msgGroupEdit.ids }, true);
+          await loadMessagingData();
+          msgGroupEdit = null; msgView = 'thread';
+          renderMessagesOverlay();
+          showToast('Grupo atualizado.');
+        } catch(e){ msgFail(e, 'Não consegui salvar o grupo.'); }
+      };
+      $id('giDelete').onclick = ()=> msgDeleteThread(t);
+    }
+  };
+}
+
+function openContactCardFromMessages(contactId){
+  closeMessagesApp({ keepHistory: true, instant: true });
+  openContactsApp({ contactId, keepHistory: true });
+}
+
+/* ---------- app CONTATOS ---------- */
+function openContactsApp(opts = {}){
+  if(contactsOpen){
+    if(opts.contactId){ ctView = 'card'; ctId = opts.contactId; renderContactsOverlay(); }
+    else if(opts.newContact){ ctView = 'form'; ctId = null; ctFormPhoto = undefined; ctFormDraft = null; renderContactsOverlay(); }
+    return;
+  }
+  lockBodyScroll();
+  if(!opts.keepHistory) pushAppHistory();
+  contactsOpen = true;
+  ctView = 'list'; ctId = null; ctSearch = ''; ctJustOpened = true; ctFormPhoto = undefined; ctFormDraft = null;
+  if(opts.contactId){ ctView = 'card'; ctId = opts.contactId; }
+  else if(opts.newContact){ ctView = 'form'; }
+  const overlay = document.getElementById('contactsOverlay');
+  overlay.classList.remove('app-overlay-closing');
+  overlay.style.display = 'flex';
+  renderContactsOverlay();
+  watchViewport('contactsOverlay', true);
+}
+
+function closeContactsApp(opts = {}){
+  if(!contactsOpen) return;
+  unlockBodyScroll();
+  if(!opts.keepHistory) popAppHistory();
+  contactsOpen = false; ctView = 'list'; ctId = null;
+  watchViewport('contactsOverlay', false);
+  const overlay = document.getElementById('contactsOverlay');
+  const shell = overlay.querySelector('.app-shell');
+  if(shell && !opts.instant){
+    animateExitToIcon(shell, 'contacts');
+    overlay.classList.add('app-overlay-closing');
+    setTimeout(()=>{
+      if(contactsOpen) return;
+      overlay.style.display = 'none'; overlay.innerHTML = ''; overlay.classList.remove('app-overlay-closing');
+    }, APP_EXIT_MS);
+  } else {
+    overlay.style.display = 'none'; overlay.innerHTML = '';
+  }
+}
+
+function ctGoBack(){
+  if(ctView === 'form' && ctId) ctView = 'card';
+  else ctView = 'list';
+  if(ctView === 'list') ctId = null;
+  ctFormDraft = null; ctFormPhoto = undefined;
+  renderContactsOverlay();
+}
+
+function renderContactsOverlay(){
+  const overlay = document.getElementById('contactsOverlay');
+  if(!overlay || !contactsOpen) return;
+  if(ctView !== 'list' && ctView !== 'form' && !contactById(ctId)) ctView = 'list';
+  if(ctView === 'card' && !contactById(ctId)) ctView = 'list';
+  const enter = ctJustOpened;
+  ctJustOpened = false;
+  const v = ctView === 'card' ? viewCtCard() : ctView === 'form' ? viewCtForm() : viewCtList();
+  overlay.innerHTML = `
+    <div class="app-shell app-theme-contacts msg-shell${enter ? ' app-shell-enter' : ''}">
+      ${renderAppStatusBar()}
+      ${v.head}
+      <div class="app-body">${v.body}</div>
+      <div class="app-home-indicator"></div>
+    </div>`;
+  if(enter) animateOpenFromIcon(overlay.querySelector('.app-shell'), 'contacts');
+  v.attach();
+}
+
+/* ----- lista ----- */
+function ctRowsHtml(){
+  const q = ctSearch.trim().toLowerCase();
+  const list = contactsVisibleToMe().filter(c => !q || c.name.toLowerCase().includes(q) || c.phone.includes(q));
+  if(!list.length) return `<div class="msg-list-empty">${q ? 'Nada encontrado.' : (isMaster ? 'Nenhum contato ainda.<br>Toque em ＋ pra criar o primeiro.' : 'Você ainda não tem contatos.<br>Eles vão aparecendo conforme a história anda.')}</div>`;
+  let letter = '';
+  const html = list.map(c=>{
+    const l = (contactLabel(c)[0] || '#').toUpperCase();
+    let head = '';
+    if(l !== letter){ letter = l; head = `<div class="msg-letter">${escapeHtml(l)}</div>`; }
+    const flags = `${c.blocked_by_player ? '<span class="msg-flag">🚫</span>' : ''}${isMaster && !c.revealed ? '<span class="msg-flag" title="Oculto pro jogador">🙈</span>' : ''}${isMaster && c.blocked_player ? '<span class="msg-flag" title="Bloqueou o jogador">⛔</span>' : ''}`;
+    return `${head}
+      <div class="msg-pick-row" data-ct="${c.id}">
+        ${avatarHtml(c, 44)}
+        <div style="min-width:0;flex:1;">
+          <div style="font-weight:600;">${escapeHtml(contactLabel(c))}${flags}</div>
+          <div class="msg-page-sub" style="font-size:11px;">${escapeHtml(c.phone)}</div>
+        </div>
+      </div>`;
+  }).join('');
+  return html + `<div class="msg-page-sub" style="text-align:center;padding:16px;">${list.length} contato${list.length > 1 ? 's' : ''}</div>`;
+}
+
+function viewCtList(){
+  return {
+    head: `
+      <div class="app-chrome-head">
+        <div class="app-chrome-title">Contatos</div>
+        <div class="msg-head-actions">
+          ${isMaster ? `<button class="msg-icon-btn" id="ctAdd" title="Novo contato">＋</button>` : ''}
+          <div class="app-chrome-close" id="ctClose">✕</div>
+        </div>
+      </div>`,
+    body: `
+      <div class="msg-search"><input id="ctSearchInput" placeholder="Buscar" value="${escapeHtml(ctSearch)}" autocomplete="off"></div>
+      <div class="msg-scroll" id="ctRows">${ctRowsHtml()}</div>`,
+    attach: ()=>{
+      $id('ctClose').onclick = ()=> closeContactsApp();
+      const add = $id('ctAdd');
+      if(add) add.onclick = ()=>{ ctView = 'form'; ctId = null; ctFormPhoto = undefined; ctFormDraft = null; renderContactsOverlay(); };
+      $id('ctSearchInput').oninput = (e)=>{ ctSearch = e.target.value; $id('ctRows').innerHTML = ctRowsHtml(); };
+      $id('ctRows').onclick = (e)=>{
+        const row = e.target.closest('[data-ct]');
+        if(row){ ctView = 'card'; ctId = row.dataset.ct; renderContactsOverlay(); }
+      };
+    }
+  };
+}
+function refreshContactRows(){ const el = $id('ctRows'); if(el) el.innerHTML = ctRowsHtml(); }
+
+/* ----- cartão do contato ----- */
+function viewCtCard(){
+  const c = contactById(ctId);
+  const shown = contactRevealedToMe(c);
+  const chips = [];
+  if(c.blocked_by_player) chips.push('🚫 Bloqueado por você');
+  if(isMaster && !c.revealed) chips.push('🙈 Oculto pro jogador');
+  if(isMaster && c.blocked_player) chips.push('⛔ Bloqueou o jogador');
+  return {
+    head: `
+      <div class="msg-head">
+        <button class="msg-icon-btn" id="ctBack">‹</button>
+        <div style="flex:1;"></div>
+        ${isMaster ? `<button class="btn btn-ghost btn-sm" id="ctEdit">✎ Editar</button>` : ''}
+      </div>`,
+    body: `
+      <div class="msg-page">
+        <div class="msg-page-hero">
+          ${avatarHtml(c, 96)}
+          <div class="msg-page-name">${escapeHtml(contactLabel(c))}</div>
+          <div class="msg-page-sub">${shown ? escapeHtml(c.phone) : 'Número desconhecido'}</div>
+          ${chips.length ? `<div class="msg-page-sub">${chips.map(escapeHtml).join(' · ')}</div>` : ''}
+          ${shown && c.bio ? `<div class="msg-bio">${escapeHtml(c.bio)}</div>` : ''}
+        </div>
+        <div class="msg-actions">
+          <button class="btn btn-accent" id="ctMessage">💬 Mensagem</button>
+          ${!isMaster ? `<button class="btn ${c.blocked_by_player ? 'btn-ghost' : 'btn-danger'}" id="ctBlock">${c.blocked_by_player ? 'Desbloquear' : '🚫 Bloquear'}</button>` : ''}
+        </div>
+        ${isMaster ? `
+          <div class="msg-section">Controles do mestre</div>
+          <div class="msg-switch-row"><div>Visível pro jogador<small>Desligado: o jogador só vê o número (contato desconhecido).</small></div><div class="msg-switch ${c.revealed ? 'on' : ''}" id="ctRevealed"></div></div>
+          <div class="msg-switch-row"><div>Bloqueou o jogador<small>As mensagens do jogador pra esse contato não são entregues.</small></div><div class="msg-switch ${c.blocked_player ? 'on' : ''}" id="ctBlocksPlayer"></div></div>
+          ${c.blocked_by_player ? `<div class="msg-notice" style="margin-top:12px;">🚫 O jogador bloqueou este contato: o que você enviar como ele não é entregue.</div>` : ''}
+          ${c.master_notes ? `<div class="msg-section">Anotações (só você vê)</div><div class="msg-notes">${escapeHtml(c.master_notes)}</div>` : ''}` : ''}
+      </div>`,
+    attach: ()=>{
+      $id('ctBack').onclick = ctGoBack;
+      $id('ctMessage').onclick = ()=>{ closeContactsApp({ keepHistory: true, instant: true }); openMessagesApp({ contactId: c.id, keepHistory: true }); };
+      if(!isMaster){ $id('ctBlock').onclick = ()=> msgSetBlockedByPlayer(c, !c.blocked_by_player); return; }
+      $id('ctEdit').onclick = ()=>{ ctView = 'form'; ctFormPhoto = undefined; ctFormDraft = null; renderContactsOverlay(); };
+      $id('ctRevealed').onclick = ()=> ctPatchContact(c, { revealed: !c.revealed }, c.revealed ? 'Agora o jogador vê só o número.' : 'O jogador agora sabe quem é.');
+      $id('ctBlocksPlayer').onclick = ()=> ctPatchContact(c, { blocked_player: !c.blocked_player }, c.blocked_player ? 'O jogador foi desbloqueado.' : 'Esse contato bloqueou o jogador.');
+    }
+  };
+}
+
+async function ctPatchContact(c, patch, okMsg){
+  if(!c) return;
+  const n = { ...c, ...patch };
+  try{
+    await msgRpc('msg_update_contact', {
+      p_id: c.id, p_name: n.name, p_phone: n.phone, p_image_url: n.image_url, p_bio: n.bio,
+      p_master_notes: n.master_notes, p_revealed: n.revealed, p_blocked_player: n.blocked_player
+    }, true);
+    Object.assign(c, patch);
+    refreshMessagingUI();
+    if(messagesOpen && msgView === 'thread') refreshThread();
+    if(okMsg) showToast(okMsg);
+  } catch(e){ msgFail(e, 'Não consegui salvar.'); }
+}
+
+/* ----- formulário (mestre) ----- */
+function randomPhone(){
+  const r = (n)=> String(Math.floor(Math.random() * Math.pow(10, n))).padStart(n, '0');
+  return `+55 11 9${r(4)}-${r(4)}`;
+}
+function ctSyncDraft(){
+  if(!$id('ctName')) return;
+  ctFormDraft = {
+    name: $id('ctName').value, phone: $id('ctPhone').value, bio: $id('ctBio').value,
+    notes: $id('ctNotes').value, revealed: $id('ctRevealedForm').classList.contains('on')
+  };
+}
+
+function viewCtForm(){
+  const c = ctId ? contactById(ctId) : null;
+  const d = ctFormDraft;
+  const name = d ? d.name : (c ? c.name : '');
+  const phone = d ? d.phone : (c ? c.phone : randomPhone());
+  const bio = d ? d.bio : (c ? c.bio || '' : '');
+  const notes = d ? d.notes : (c ? c.master_notes || '' : '');
+  const revealed = d ? d.revealed : (c ? c.revealed : true);
+  const photo = ctFormPhoto !== undefined ? ctFormPhoto : (c ? c.image_url : null);
+  return {
+    head: `<div class="msg-head"><button class="msg-icon-btn" id="ctBack">‹</button><div class="app-chrome-title" style="font-size:18px;">${c ? 'Editar contato' : 'Novo contato'}</div></div>`,
+    body: `
+      <div class="msg-page">
+        <div class="msg-page-hero">
+          <div class="msg-avatar" style="width:88px;height:88px;font-size:34px;${photo ? `background-image:url('${cssUrl(photo)}')` : 'background:var(--bg-panel-3);'}">${photo ? '' : '👤'}</div>
+          <button class="btn btn-ghost btn-sm" id="ctPhotoBtn">${photo ? 'Trocar foto' : 'Enviar foto'}</button>
+        </div>
+        <div class="field"><label>Nome</label><input id="ctName" value="${escapeHtml(name)}" placeholder="Ex: Ana Souza" style="font-size:16px;" autocomplete="off"></div>
+        <div class="field"><label>Número</label>
+          <div style="display:flex;gap:8px;"><input id="ctPhone" value="${escapeHtml(phone)}" style="font-size:16px;" autocomplete="off"><button class="btn btn-ghost" id="ctDice" title="Sortear número" type="button">🎲</button></div>
+        </div>
+        <div class="field"><label>Sobre (o jogador vê)</label><textarea id="ctBio" placeholder="Quem é, de onde conhece…" style="font-size:16px;">${escapeHtml(bio)}</textarea></div>
+        <div class="field"><label>Anotações (só o mestre vê)</label><textarea id="ctNotes" placeholder="Segredos, motivações, o que ela sabe…" style="font-size:16px;">${escapeHtml(notes)}</textarea></div>
+        <div class="msg-switch-row"><div>Visível pro jogador<small>Desligado: ele só vê o número (contato desconhecido).</small></div><div class="msg-switch ${revealed ? 'on' : ''}" id="ctRevealedForm"></div></div>
+        <button class="btn btn-accent btn-block" id="ctSave" style="margin-top:16px;">Salvar</button>
+        ${c ? `<button class="btn btn-danger btn-block" id="ctDelete" style="margin-top:10px;">Apagar contato</button>` : ''}
+      </div>`,
+    attach: ()=>{
+      $id('ctBack').onclick = ctGoBack;
+      $id('ctRevealedForm').onclick = ()=> $id('ctRevealedForm').classList.toggle('on');
+      $id('ctDice').onclick = ()=>{ $id('ctPhone').value = randomPhone(); };
+      $id('ctPhotoBtn').onclick = ()=>{
+        const input = document.createElement('input');
+        input.type = 'file'; input.accept = 'image/png,image/jpeg,image/gif,image/webp';
+        input.onchange = async ()=>{
+          const file = input.files[0];
+          if(!file) return;
+          try{
+            ctSyncDraft();
+            ctFormPhoto = await uploadGameImage(file);
+            renderContactsOverlay();
+          } catch(e){ msgFail(e, 'Não consegui enviar a foto.'); }
+        };
+        input.click();
+      };
+      $id('ctSave').onclick = async ()=>{
+        const nameV = $id('ctName').value.trim(), phoneV = $id('ctPhone').value.trim();
+        if(!nameV){ showToast('Dê um nome ao contato.'); return; }
+        if(!phoneV){ showToast('O contato precisa de um número.'); return; }
+        const image = ctFormPhoto !== undefined ? ctFormPhoto : (c ? c.image_url : null);
+        const isRevealed = $id('ctRevealedForm').classList.contains('on');
+        try{
+          let saved;
+          if(c){
+            saved = await msgRpc('msg_update_contact', {
+              p_id: c.id, p_name: nameV, p_phone: phoneV, p_image_url: image, p_bio: $id('ctBio').value.trim() || null,
+              p_master_notes: $id('ctNotes').value.trim() || null, p_revealed: isRevealed, p_blocked_player: c.blocked_player
+            }, true);
+          } else {
+            saved = await msgRpc('msg_create_contact', {
+              p_name: nameV, p_phone: phoneV, p_image_url: image, p_bio: $id('ctBio').value.trim() || null,
+              p_master_notes: $id('ctNotes').value.trim() || null, p_revealed: isRevealed
+            }, true);
+          }
+          upsertLocal(msgContacts, saved);
+          ctFormDraft = null; ctFormPhoto = undefined;
+          ctView = 'card'; ctId = saved.id;
+          renderContactsOverlay();
+          showToast('Contato salvo.');
+        } catch(e){ msgFail(e, 'Não consegui salvar o contato.'); }
+      };
+      const del = $id('ctDelete');
+      if(del) del.onclick = async ()=>{
+        if(!confirm(`Apagar ${c.name}? A conversa direta com ele também some.`)) return;
+        try{
+          await msgRpc('msg_delete_contact', { p_id: c.id }, true);
+          await loadMessagingData();
+          ctView = 'list'; ctId = null;
+          renderContactsOverlay();
+          refreshAppBadges();
+          showToast('Contato apagado.');
+        } catch(e){ msgFail(e, 'Não consegui apagar.'); }
+      };
+    }
+  };
 }
 
 /* ============================================================
