@@ -1110,7 +1110,35 @@
   .msg-line.mine{justify-content:flex-end;}
   .msg-line.first, .msg-line.single{margin-top:9px;}
   .msg-av-slot{width:28px;flex-shrink:0;}
-  .msg-sender{font-size:11.5px;font-weight:700;margin:0 0 2px;}
+  .msg-sender{font-size:11.5px;font-weight:700;margin:0 0 3px;display:flex;align-items:center;gap:6px;}
+  .msg-sender .msg-avatar{box-shadow:0 0 0 1.5px color-mix(in srgb, var(--bg-panel-3) 60%, transparent), 0 1px 4px rgba(0,0,0,0.35);}
+  .msg-sender > span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+  /* mensagens agendadas (só o mestre vê) */
+  .msg-sched-head{align-self:center;margin:16px 0 4px;padding:4px 12px;border-radius:99px;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--warn);border:1px dashed color-mix(in srgb, var(--warn) 55%, transparent);font-family:'JetBrains Mono',monospace;}
+  .msg-b.sched-b{background:transparent;border:1.5px dashed color-mix(in srgb, var(--warn) 55%, transparent);cursor:pointer;opacity:.92;animation:none;}
+  .sched-tag{font-size:10.5px;font-weight:700;color:var(--warn);font-family:'JetBrains Mono',monospace;margin-bottom:3px;}
+  .sched-tag span{opacity:.75;font-weight:500;}
+  .sched-as{font-size:11px;color:var(--text-faint);margin-bottom:3px;}
+  .sched-img{border-radius:10px;margin-bottom:4px;opacity:.85;}
+  .sched-sheet{align-items:flex-end;}
+  .sched-card{
+    width:100%;max-height:94%;overflow-y:auto;margin:0;padding:16px 16px 18px;border-radius:24px 24px 0 0;
+    background:var(--bg-panel-2);border:1px solid var(--border);border-bottom:none;animation:sheetUp .24s cubic-bezier(.2,.9,.25,1);
+  }
+  .sched-title{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:18px;margin-bottom:10px;}
+  .sched-to{font-size:13px;color:var(--text-dim);margin-bottom:10px;}
+  .sched-to b{color:var(--accent-1);}
+  .sched-photos{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:-2px 0 12px;}
+  .sched-stepper{display:flex;align-items:center;gap:10px;}
+  .sched-day{flex:1;text-align:center;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:16px;padding:9px 6px;border-radius:12px;background:var(--bg-panel-3);border:1px solid var(--border);}
+  .sched-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+  .sched-chips span{padding:6px 12px;border-radius:99px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);color:var(--text-dim);font-family:'JetBrains Mono',monospace;}
+  .sched-chips span:active{background:color-mix(in srgb, var(--accent-1) 18%, transparent);color:var(--accent-1);}
+  .sched-summary{font-size:12.5px;line-height:1.5;padding:10px 12px;border-radius:12px;margin:4px 0 14px;background:color-mix(in srgb, var(--accent-1) 9%, transparent);border:1px solid color-mix(in srgb, var(--accent-1) 35%, transparent);}
+  .sched-summary.now{background:color-mix(in srgb, var(--warn) 12%, transparent);border-color:color-mix(in srgb, var(--warn) 50%, transparent);}
+  .sched-actions{display:flex;gap:10px;}
+  .sched-actions .btn{flex:1;}
   .msg-b{
     position:relative;max-width:78%;padding:7px 11px 5px;border-radius:18px;font-size:15px;line-height:1.38;
     overflow-wrap:anywhere;word-break:break-word;-webkit-user-select:text;user-select:text;
@@ -1461,6 +1489,8 @@ function logoutMaster(){
   isMaster = false;
   masterToken = null;
   localStorage.removeItem(MASTER_TOKEN_KEY);
+  msgScheduled = [];
+  schedForm = null;
   subscribePresence();
   render();
 }
@@ -1608,7 +1638,7 @@ async function loadState(){
   render();
   subscribeRealtime();
   subscribePresence();
-  initMessaging();
+  initMessaging().then(()=>{ if(isMaster) loadScheduled(); });
 }
 
 function subscribeRealtime(){
@@ -1624,6 +1654,7 @@ function subscribeRealtime(){
         if(clockOpen && !clockDrag && !clockCommitting) updateClockView();
         else refreshAppStatusBars();
         notifyNewGameEvents(prevTopNotif);
+        if(isMaster){ scheduleReloadSoon(); refreshSchedUI(); }      // dia/hora mudaram: "amanhã", "já passou"…
       }
     )
     .subscribe();
@@ -2268,7 +2299,8 @@ window.addEventListener('popstate', ()=>{
     // dentro de um app com telas internas (pasta do Codex, formulário do Depósito),
     // o "voltar" sobe um nível antes de fechar o app; a entrada do histórico
     // consumida pelo voltar é reposta pra ele continuar valendo
-    if(viewerState){ closeImageViewer(); pushAppHistory(); }
+    if(schedForm){ closeSchedule(); pushAppHistory(); }
+    else if(viewerState){ closeImageViewer(); pushAppHistory(); }
     else if(messagesOpen && msgView !== 'list'){ msgGoBack(); pushAppHistory(); }
     else if(contactsOpen && ctView !== 'list'){ ctGoBack(); pushAppHistory(); }
     else if(codexOpen && !codexIsAtRoot()){ codexGoBack(); pushAppHistory(); }
@@ -4729,7 +4761,10 @@ function subscribeMessaging(){
     })
     .on('postgres_changes', { event:'*', schema:'public', table:'msg_messages' }, (p)=>{
       applyRealtimeUpsert(msgMessages, p);
-      if(p.eventType === 'INSERT') onMessageInserted(p.new);
+      if(p.eventType === 'INSERT'){
+        onMessageInserted(p.new);
+        if(isMaster && p.new.sender === 'contact') scheduleReloadSoon();    // pode ter sido uma agendada saindo
+      }
       refreshMessagingUI();
     })
     .subscribe();
@@ -5018,7 +5053,7 @@ function closeMessagesApp(opts = {}){
   unlockBodyScroll();
   if(!opts.keepHistory) popAppHistory();
   messagesOpen = false; msgView = 'list'; msgThreadId = null; msgGroupEdit = null;
-  closeMsgMenu(); closeMsgSheet(); closeImageViewer();
+  closeMsgMenu(); closeMsgSheet(); closeImageViewer(); closeSchedule();
   watchViewport('messagesOverlay', false);
   const overlay = document.getElementById('messagesOverlay');
   const shell = overlay.querySelector('.app-shell');
@@ -5036,7 +5071,7 @@ function closeMessagesApp(opts = {}){
 }
 
 function msgGoBack(){
-  closeMsgSheet();
+  closeMsgSheet(); closeSchedule();
   if(msgView === 'thread' || msgView === 'new'){ if(msgThreadId) delete msgUnreadFrom[msgThreadId]; msgView = 'list'; msgThreadId = null; }
   else if(msgView === 'groupNew'){ msgView = 'new'; }
   else if(msgView === 'groupInfo'){ msgView = 'thread'; msgGroupEdit = null; }
@@ -5077,6 +5112,7 @@ function scrollMsgBottom(force){
 function msgWaitingCount(){ return visibleThreads().filter(t => threadUnread(t) > 0).length; }
 
 function msgRowsHtml(){
+  if(isMaster && msgFilter === 'sched') return schedRowsHtml();
   const q = msgSearch.trim().toLowerCase();
   let threads = visibleThreads();
   if(isMaster && msgFilter === 'waiting') threads = threads.filter(t => threadUnread(t) > 0);
@@ -5120,7 +5156,8 @@ function viewMsgList(){
     body: `
       ${isMaster ? `<div class="msg-seg">
         <div class="msg-seg-opt ${msgFilter === 'all' ? 'active' : ''}" data-msg-filter="all">Todas</div>
-        <div class="msg-seg-opt ${msgFilter === 'waiting' ? 'active' : ''}" data-msg-filter="waiting" id="msgWaitingTab">Aguardando resposta${waiting ? ` (${waiting})` : ''}</div>
+        <div class="msg-seg-opt ${msgFilter === 'waiting' ? 'active' : ''}" data-msg-filter="waiting" id="msgWaitingTab">Aguardando${waiting ? ` (${waiting})` : ''}</div>
+        <div class="msg-seg-opt ${msgFilter === 'sched' ? 'active' : ''}" data-msg-filter="sched" id="msgSchedTab">🕒 Agendadas${msgScheduled.length ? ` (${msgScheduled.length})` : ''}</div>
       </div>` : ''}
       <div class="msg-search"><input id="msgSearchInput" placeholder="Buscar" value="${escapeHtml(msgSearch)}" autocomplete="off"></div>
       <div class="msg-scroll" id="msgRows">${msgRowsHtml()}</div>`,
@@ -5137,6 +5174,9 @@ function viewMsgList(){
       });
       $id('msgSearchInput').oninput = (e)=>{ msgSearch = e.target.value; $id('msgRows').innerHTML = msgRowsHtml(); };
       $id('msgRows').onclick = (e)=>{
+        if(e.target.closest('[data-sched-new]')){ openScheduleSheet({}); return; }
+        const se = e.target.closest('[data-sched-edit]');
+        if(se){ openScheduleSheet({ schedId: se.dataset.schedEdit }); return; }
         const row = e.target.closest('[data-open-thread]');
         if(row) msgOpenThread(row.dataset.openThread);
       };
@@ -5149,7 +5189,9 @@ function refreshMsgList(){
   if(!rows) return;
   rows.innerHTML = msgRowsHtml();
   const tab = $id('msgWaitingTab');
-  if(tab){ const n = msgWaitingCount(); tab.textContent = 'Aguardando resposta' + (n ? ` (${n})` : ''); }
+  if(tab){ const n = msgWaitingCount(); tab.textContent = 'Aguardando' + (n ? ` (${n})` : ''); }
+  const st = $id('msgSchedTab');
+  if(st) st.textContent = '🕒 Agendadas' + (msgScheduled.length ? ` (${msgScheduled.length})` : '');
 }
 
 function msgOpenThread(threadId){
@@ -5409,7 +5451,8 @@ function messageHtml(t, m, pos, isRunStart, readAt){
   const meta = `<span class="msg-meta ${hasImg && !hasCaption ? 'on-img' : ''}">${escapeHtml(m.game_clock || '')}${status}</span>`;
 
   let inner = '';
-  if(showName) inner += `<div class="msg-sender" style="color:hsl(${hueOf(m.contact_id || 'x')} 70% 68%)">${escapeHtml(contactLabel(c))}</div>`;
+  // nos grupos: foto pequena + nome de quem falou (além do avatar ao lado do balão)
+  if(showName) inner += `<div class="msg-sender" style="color:hsl(${hueOf(m.contact_id || 'x')} 70% 68%)">${avatarHtml(c, 18)}<span>${escapeHtml(contactLabel(c))}</span></div>`;
   if(hasImg){
     const fit = fitImage(m.image_w, m.image_h);
     inner += `<div class="msg-imgwrap" data-msg-img="${escapeHtml(m.image_url)}" style="width:${fit.w}px;height:${fit.h}px;"><img src="${escapeHtml(m.image_url)}" alt="foto" draggable="false" decoding="async">${m.pending && m.status === 'sending' ? '<div class="msg-spin"></div>' : ''}${!hasCaption ? meta : ''}</div>`;
@@ -5427,14 +5470,19 @@ function messageHtml(t, m, pos, isRunStart, readAt){
 // cada "peça" = separador de dia/divisor + balão; o diff só refaz o que mudou
 function bubblePieces(t){
   const items = [...messagesOf(t.id), ...outboxOf(t.id)];
-  if(!items.length){
+  const sched = isMaster ? schedForThread(t.id) : [];       // só o mestre vê o que está agendado
+  if(!items.length && !sched.length){
     return [`<div class="msg-empty-thread">${t.kind === 'group' ? 'Grupo criado.<br>Mande a primeira mensagem!' : 'Nenhuma mensagem ainda.<br>Diga oi 👋'}</div>`];
   }
+  const schedPieces = sched.length
+    ? [`<div class="msg-sched-head"><span>🕒 Agendadas</span></div>`, ...sched.map(schedGhostHtml)]
+    : [];
+  if(!items.length) return schedPieces;
   const readAt = tsOf(t.master_last_read_at);
   const boundary = msgUnreadFrom[t.id];
   const key = (x)=> x ? (x.sender === 'player' ? 'p' : 'c' + x.contact_id) : null;
   let lastDay = null, dividerDone = false;
-  return items.map((m, i)=>{
+  const mainPieces = items.map((m, i)=>{
     let piece = '';
     if(m.game_day != null && m.game_day !== lastDay){ piece += `<div class="msg-day">${escapeHtml(formatDate(m.game_day))}</div>`; lastDay = m.game_day; }
     const incomingForMe = isMaster ? m.sender === 'player' : m.sender === 'contact';
@@ -5448,6 +5496,7 @@ function bubblePieces(t){
     const pos = (!gPrev && !gNext) ? 'single' : !gPrev ? 'first' : !gNext ? 'last' : 'mid';
     return piece + messageHtml(t, m, pos, !gPrev, readAt);
   });
+  return mainPieces.concat(schedPieces);
 }
 const piecesToHtml = (pieces, from = 0)=> pieces.slice(from).map((p, i) => `<div class="msg-piece" data-p="${from + i}">${p}</div>`).join('');
 function bubblesHtml(t){
@@ -5524,6 +5573,7 @@ function viewMsgThread(){
         <div class="msg-tray" id="msgTray" style="display:none;"></div>
         <div class="msg-input-row" id="msgInputRow" style="${canSend(t) ? '' : 'display:none;'}">
           <button class="msg-attach" id="msgAttach" aria-label="Anexar foto">${SVG_PLUS}</button>
+          ${isMaster ? `<button class="msg-attach" id="msgSchedBtn" aria-label="Agendar mensagem" title="Agendar pra um dia e hora do RPG">${SVG_CLOCK_BTN}</button>` : ''}
           <div class="msg-input-wrap"><textarea id="msgInput" rows="1" placeholder="${escapeHtml(isMaster ? 'Mensagem como ' + ((currentSpeaker(t) || {}).name || '…').split(' ')[0] : 'Mensagem')}" enterkeyhint="send"></textarea></div>
           <button class="msg-send" id="msgSend" aria-label="Enviar">${SVG_SEND}</button>
         </div>
@@ -5557,6 +5607,8 @@ function attachThreadHandlers(t){
   input.onfocus = ()=> setTimeout(()=> scrollMsgBottom(), 250);
   $id('msgSend').onclick = ()=>{ msgSendCurrent(); };
   $id('msgAttach').onclick = ()=> $id('msgFile').click();
+  const schedBtn = $id('msgSchedBtn');
+  if(schedBtn) schedBtn.onclick = ()=> openScheduleSheet({ threadId: t.id, fromComposer: true });
   $id('msgFile').onchange = (e)=>{ addAttachments(e.target.files); e.target.value = ''; };
   renderAttachTray(); updateSendState();
   $id('msgTray').onclick = (e)=>{
@@ -5582,6 +5634,8 @@ function attachThreadHandlers(t){
   const box = $id('msgMessages');
   box.onclick = (e)=>{
     if(e.target.closest('a')) return;                                   // link: deixa abrir
+    const sg = e.target.closest('[data-sched-id]');
+    if(sg){ openScheduleSheet({ schedId: sg.dataset.schedId }); return; }
     const retry = e.target.closest('[data-retry]');
     if(retry){ const o = msgOutbox.find(x => x.id === retry.dataset.retry); if(o) deliverOutbox(o); return; }
     const disc = e.target.closest('[data-discard]');
@@ -6021,6 +6075,326 @@ function viewMsgGroupInfo(){
 function openContactCardFromMessages(contactId){
   closeMessagesApp({ keepHistory: true, instant: true });
   openContactsApp({ contactId, keepHistory: true });
+}
+
+/* ---------- MENSAGENS AGENDADAS (só o mestre) ----------
+   "No dia X às HH:MM do RPG o contato Y manda a mensagem Z". A entrega roda no
+   banco (gatilho em game_state, ver 13_scheduled_messages.sql): quando o dia ou a
+   hora do jogo mudam, o que venceu sai sozinho — com o app do mestre aberto ou não.
+   A lista é privada; o mestre a lê por RPC e a recarrega quando algo é entregue. */
+let msgScheduled = [];
+let schedForm = null;                 // formulário aberto
+let schedReloadTimer = null;
+const schedRemovedLocally = new Set();
+
+const schedForThread = (tid)=> msgScheduled.filter(s => s.thread_id === tid);
+function whenLabel(day, clock){
+  const diff = day - state.day;
+  if(diff < 0 || (diff === 0 && clock <= state.clock)) return 'já passou';
+  if(diff === 0) return 'hoje';
+  if(diff === 1) return 'amanhã';
+  return `em ${diff} dias`;
+}
+const isDueNow = (day, clock)=> day < state.day || (day === state.day && clock <= state.clock);
+
+async function loadScheduled(){
+  if(!isMaster){ msgScheduled = []; return; }
+  try{
+    const rows = await msgRpc('msg_list_scheduled', {}, true);
+    const prev = msgScheduled;
+    msgScheduled = rows || [];
+    const now = new Set(msgScheduled.map(s => s.id));
+    // sumiu sem eu ter cancelado = o relógio do jogo entregou
+    prev.forEach(s => { if(!now.has(s.id) && !schedRemovedLocally.has(s.id)) notifyScheduledSent(s); });
+    schedRemovedLocally.clear();
+  } catch(e){ console.error('Falha ao carregar agendadas', e); }
+  refreshSchedUI();
+}
+function scheduleReloadSoon(){
+  if(!isMaster) return;
+  clearTimeout(schedReloadTimer);
+  schedReloadTimer = setTimeout(loadScheduled, 600);
+}
+function notifyScheduledSent(s){
+  showBanner({
+    iconHtml: '🕒',
+    title: 'Mensagem agendada enviada',
+    text: `${contactShort(contactById(s.contact_id))}: ${s.body || '📷 Foto'}`,
+    onTap: ()=> openAppFromNotification(()=> openMessagesApp({ threadId: s.thread_id }))
+  });
+}
+function refreshSchedUI(){
+  if(!messagesOpen) return;
+  if(msgView === 'list') refreshMsgList();
+  else if(msgView === 'thread'){ const t = threadById(msgThreadId); if(t) updateBubbles(t); }
+  if(schedForm) updateSchedSummary();
+}
+
+function schedGhostHtml(s){
+  const t = threadById(s.thread_id);
+  const c = contactById(s.contact_id);
+  const as = (t && t.kind === 'group') ? `<div class="sched-as">como ${escapeHtml(contactShort(c))}</div>` : '';
+  const img = s.image_url ? `<div class="msg-imgwrap sched-img" style="width:${Math.round(fitImage(s.image_w, s.image_h).w * 0.6)}px;height:${Math.round(fitImage(s.image_w, s.image_h).h * 0.6)}px;"><img src="${escapeHtml(s.image_url)}" alt="foto"></div>` : '';
+  return `<div class="msg-line theirs single sched"><div class="msg-b theirs single sched-b" data-sched-id="${s.id}">
+    <div class="sched-tag">🕒 ${escapeHtml(formatDateShort(s.send_day))} · ${escapeHtml(s.send_clock)} <span>${escapeHtml(whenLabel(s.send_day, s.send_clock))}</span></div>${as}${img}${s.body ? `<div class="msg-text">${messageTextHtml(s.body)}</div>` : ''}</div></div>`;
+}
+
+function schedRowsHtml(){
+  const q = msgSearch.trim().toLowerCase();
+  let list = msgScheduled.slice();
+  if(q) list = list.filter(s => (s.body || '').toLowerCase().includes(q) || contactLabel(contactById(s.contact_id)).toLowerCase().includes(q));
+  const add = `<div class="msg-pick-row" data-sched-new>
+      <div class="msg-avatar" style="width:48px;height:48px;font-size:22px;background:linear-gradient(160deg,var(--accent-1),var(--accent-2));color:#04140f;">＋</div>
+      <div><b>Agendar nova mensagem</b><div class="msg-page-sub" style="font-size:11px;">Escolha o dia e a hora do RPG</div></div></div>`;
+  if(!list.length) return add + `<div class="msg-list-empty">Nenhuma mensagem agendada.<br>Use o 🕒 dentro de uma conversa ou o botão acima.</div>`;
+  return add + list.map(s=>{
+    const t = threadById(s.thread_id), c = contactById(s.contact_id);
+    return `
+      <div class="msg-row" data-sched-edit="${s.id}">
+        ${avatarHtml(c, 48)}
+        <div class="msg-row-main">
+          <div class="msg-row-top"><span class="msg-row-title">${escapeHtml(c ? c.name : 'Contato removido')}${t && t.kind === 'group' ? `<span class="msg-flag"> em ${escapeHtml(t.name || 'grupo')}</span>` : ''}</span><span class="msg-row-time">${escapeHtml(whenLabel(s.send_day, s.send_clock))}</span></div>
+          <div class="msg-row-preview">${escapeHtml(s.body || '📷 Foto')}</div>
+          <div class="msg-row-preview" style="color:var(--accent-1);">🕒 ${escapeHtml(formatDateShort(s.send_day))} · ${escapeHtml(s.send_clock)}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ----- formulário (Agendar / Editar) ----- */
+const SVG_CLOCK_BTN = '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></svg>';
+
+function openScheduleSheet(opts = {}){
+  closeMsgMenu(); closeMsgSheet();
+  const existing = opts.schedId ? msgScheduled.find(s => s.id === opts.schedId) : null;
+  const t = existing ? threadById(existing.thread_id) : (opts.threadId ? threadById(opts.threadId) : null);
+  const sp = t ? currentSpeaker(t) : null;
+  const fromComposer = !!opts.fromComposer && !!t;
+  schedForm = {
+    id: existing ? existing.id : null,
+    threadId: t ? t.id : null,
+    contactId: existing ? existing.contact_id : (sp ? sp.id : null),
+    targetKey: '',
+    body: existing ? (existing.body || '') : (fromComposer ? (($id('msgInput') || {}).value || '') : ''),
+    images: existing
+      ? (existing.image_url ? [{ url: existing.image_url, w: existing.image_w, h: existing.image_h, previewUrl: existing.image_url }] : [])
+      : (fromComposer ? (msgAttach[t.id] || []).filter(a => a.status === 'ready').map(a => ({ url: a.url, w: a.w, h: a.h, previewUrl: a.previewUrl })) : []),
+    day: existing ? existing.send_day : state.day + 1,
+    clock: existing ? existing.send_clock : '09:00',
+    fromComposer
+  };
+  renderScheduleSheet();
+}
+function closeSchedule(){
+  schedForm = null;
+  const el = $id('msgSchedule');
+  if(el) el.remove();
+}
+
+function schedTargetOptions(){
+  const contacts = contactsVisibleToMe();
+  const groups = msgThreads.filter(t => t.kind === 'group').sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR'));
+  return `<option value="">Escolha…</option>
+    ${contacts.length ? `<optgroup label="Contatos">${contacts.map(c => `<option value="c:${c.id}" ${schedForm.targetKey === 'c:' + c.id ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}</optgroup>` : ''}
+    ${groups.length ? `<optgroup label="Grupos">${groups.map(g => `<option value="t:${g.id}" ${schedForm.targetKey === 't:' + g.id ? 'selected' : ''}>${escapeHtml(g.name || 'Grupo')}</option>`).join('')}</optgroup>` : ''}`;
+}
+
+function renderScheduleSheet(){
+  const f = schedForm;
+  if(!f) return;
+  const shell = document.querySelector('#messagesOverlay .app-shell');
+  if(!shell) return;
+  let el = $id('msgSchedule');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'msgSchedule';
+    el.className = 'msg-sheet sched-sheet';
+    shell.appendChild(el);
+  }
+  const t = f.threadId ? threadById(f.threadId) : null;
+  const members = t ? membersOf(t.id) : [];
+  const editing = !!f.id;
+  el.innerHTML = `
+    <div class="sched-card">
+      <div class="sched-title">${editing ? 'Editar mensagem agendada' : 'Agendar mensagem'}</div>
+      ${t ? `<div class="sched-to">Para <b>${escapeHtml(threadTitle(t))}</b></div>`
+          : `<div class="field"><label>Para quem</label><select id="schedTarget" style="font-size:16px;">${schedTargetOptions()}</select></div>`}
+      ${t && t.kind === 'group' ? `<div class="msg-section" style="margin-top:4px;">Quem manda</div>
+        <div class="msg-speakers">${members.map(m => `<div class="msg-speaker-chip ${f.contactId === m.id ? 'active' : ''}" data-sched-speaker="${m.id}">${avatarHtml(m, 24)}${escapeHtml(m.name.split(' ')[0])}</div>`).join('')}</div>` : ''}
+      <div class="field"><label>Mensagem</label><textarea id="schedBody" rows="3" placeholder="O que o contato vai dizer…" style="font-size:16px;">${escapeHtml(f.body)}</textarea></div>
+      <div class="sched-photos" id="schedPhotos">${schedPhotosHtml()}</div>
+      <div class="field"><label>Dia (do RPG)</label>
+        <div class="sched-stepper">
+          <button type="button" class="msg-icon-btn" data-sched-day="-1" aria-label="Um dia antes">−</button>
+          <div class="sched-day" id="schedDayLbl"></div>
+          <button type="button" class="msg-icon-btn" data-sched-day="1" aria-label="Um dia depois">+</button>
+        </div>
+        <div class="sched-chips">
+          <span data-sched-setday="0">Hoje</span><span data-sched-setday="1">Amanhã</span><span data-sched-setday="3">+3 dias</span><span data-sched-setday="7">+1 semana</span>
+        </div>
+      </div>
+      <div class="field"><label>Hora</label>
+        <input type="time" id="schedTime" value="${escapeHtml(f.clock)}" style="font-size:16px;">
+        <div class="sched-chips">
+          ${['03:00', '08:00', '12:00', '18:00', '22:00'].map(h => `<span data-sched-clock="${h}">${h}</span>`).join('')}
+        </div>
+      </div>
+      <div class="sched-summary" id="schedSummary"></div>
+      <div class="sched-actions">
+        <button class="btn btn-ghost" id="schedCancel">Fechar</button>
+        <button class="btn btn-accent" id="schedSave">Agendar</button>
+      </div>
+      ${editing ? `<button class="btn btn-danger btn-block" id="schedDelete" style="margin-top:10px;">Cancelar este agendamento</button>` : ''}
+      <input type="file" id="schedFile" accept="image/*" multiple hidden>
+    </div>`;
+  el.onclick = (e)=>{ if(e.target === el) closeSchedule(); };
+  const card = el.querySelector('.sched-card');
+  $id('schedBody').oninput = (e)=>{ f.body = e.target.value; updateSchedSummary(); };
+  $id('schedTime').oninput = (e)=>{ if(e.target.value) f.clock = e.target.value; updateSchedSummary(); };
+  const target = $id('schedTarget');
+  if(target) target.onchange = ()=>{
+    f.targetKey = target.value;
+    f.contactId = null;
+    if(f.targetKey.startsWith('c:')) f.contactId = f.targetKey.slice(2);
+    else if(f.targetKey.startsWith('t:')){
+      f.threadId = f.targetKey.slice(2);
+      const gt = threadById(f.threadId);
+      f.contactId = gt ? (currentSpeaker(gt) || {}).id || null : null;
+      f.targetKey = '';
+      f.body = $id('schedBody').value;
+      renderScheduleSheet();
+      return;
+    }
+    updateSchedSummary();
+  };
+  card.onclick = (e)=>{
+    const sp = e.target.closest('[data-sched-speaker]');
+    if(sp){ f.contactId = sp.dataset.schedSpeaker; card.querySelectorAll('[data-sched-speaker]').forEach(x => x.classList.toggle('active', x === sp)); updateSchedSummary(); return; }
+    const dd = e.target.closest('[data-sched-day]');
+    if(dd){ f.day = Math.max(state.day, f.day + Number(dd.dataset.schedDay)); updateSchedSummary(); return; }
+    const sd = e.target.closest('[data-sched-setday]');
+    if(sd){ f.day = state.day + Number(sd.dataset.schedSetday); updateSchedSummary(); return; }
+    const sc = e.target.closest('[data-sched-clock]');
+    if(sc){ f.clock = sc.dataset.schedClock; $id('schedTime').value = f.clock; updateSchedSummary(); return; }
+    const rm = e.target.closest('[data-sched-rmimg]');
+    if(rm){ f.images.splice(Number(rm.dataset.schedRmimg), 1); $id('schedPhotos').innerHTML = schedPhotosHtml(); return; }
+    if(e.target.closest('#schedAddPhoto')) $id('schedFile').click();
+  };
+  $id('schedFile').onchange = (e)=>{ schedAddFiles(e.target.files); e.target.value = ''; };
+  $id('schedCancel').onclick = closeSchedule;
+  $id('schedSave').onclick = saveSchedule;
+  const del = $id('schedDelete');
+  if(del) del.onclick = deleteSchedule;
+  updateSchedSummary();
+}
+
+function schedPhotosHtml(){
+  const f = schedForm;
+  return `${f.images.map((im, i) => `
+      <div class="msg-thumb" style="background-image:url('${cssUrl(im.previewUrl)}')">
+        ${im.uploading ? '<div class="msg-spin"></div>' : ''}
+        <div class="msg-thumb-x" data-sched-rmimg="${i}" aria-label="Remover">✕</div>
+      </div>`).join('')}
+    <button type="button" class="msg-attach" id="schedAddPhoto" aria-label="Adicionar foto" title="Adicionar foto">${SVG_PLUS}</button>`;
+}
+
+async function schedAddFiles(files){
+  const f = schedForm;
+  if(!f) return;
+  const list = [...files].filter(x => (x.type || '').startsWith('image/'));
+  if(!list.length){ showToast('Só dá pra usar imagens.'); return; }
+  for(const file of list){
+    if(f.id && f.images.length >= 1){ showToast('Ao editar, só cabe uma foto por agendamento.'); break; }
+    const im = { previewUrl: URL.createObjectURL(file), uploading: true };
+    f.images.push(im);
+    $id('schedPhotos').innerHTML = schedPhotosHtml();
+    try{
+      const prep = await prepareImage(file);
+      im.w = prep.w; im.h = prep.h;
+      im.url = await uploadImageBlob(prep);
+      im.uploading = false;
+    } catch(e){
+      console.error(e);
+      f.images = f.images.filter(x => x !== im);
+      showToast(e && e.message && !/^(TypeError|Failed|StorageApiError)/.test(e.message) ? e.message : 'Não consegui enviar a foto.');
+    }
+    if(schedForm === f) $id('schedPhotos').innerHTML = schedPhotosHtml();
+  }
+}
+
+function updateSchedSummary(){
+  const f = schedForm;
+  if(!f) return;
+  const lbl = $id('schedDayLbl'), sum = $id('schedSummary'), btn = $id('schedSave');
+  if(!lbl || !sum) return;
+  lbl.textContent = formatDate(f.day);
+  const due = isDueNow(f.day, f.clock);
+  sum.classList.toggle('now', due);
+  sum.innerHTML = due
+    ? `⚡ Esse horário já passou no relógio do RPG (agora é ${escapeHtml(formatDateShort(state.day))} · ${escapeHtml(state.clock)}): a mensagem vai <b>sair na hora</b>.`
+    : `🕒 Chega em <b>${escapeHtml(formatDate(f.day))}</b> às <b>${escapeHtml(f.clock)}</b> (${escapeHtml(whenLabel(f.day, f.clock))}), assim que o relógio do jogo chegar lá.`;
+  if(btn) btn.textContent = due ? 'Enviar agora' : (f.id ? 'Salvar' : 'Agendar');
+}
+
+async function saveSchedule(){
+  const f = schedForm;
+  if(!f) return;
+  const body = f.body.trim();
+  if(!body && !f.images.length){ showToast('Escreva a mensagem ou adicione uma foto.'); return; }
+  if(f.images.some(i => i.uploading)){ showToast('Aguarde a foto terminar de subir…'); return; }
+  if(!f.threadId && !f.contactId){ showToast('Escolha pra quem é a mensagem.'); return; }
+  const btn = $id('schedSave');
+  if(btn) btn.disabled = true;
+  try{
+    let threadId = f.threadId;
+    let contactId = f.contactId;
+    if(!threadId){                                   // alvo é um contato: usa (ou cria) a conversa direta
+      threadId = await msgRpc('msg_get_or_create_direct', { p_contact_id: contactId });
+      if(!threadById(threadId) || !membersOf(threadId).length) await loadMessagingData();
+    }
+    const t = threadById(threadId);
+    if(t && t.kind === 'group' && !contactId){ showToast('Escolha quem manda.'); if(btn) btn.disabled = false; return; }
+    if(t && t.kind === 'direct') contactId = (membersOf(t.id)[0] || {}).id;
+    if(!contactId){ showToast('Não achei o contato dessa conversa.'); if(btn) btn.disabled = false; return; }
+    const due = isDueNow(f.day, f.clock);
+    if(f.id){
+      const im = f.images[0] || null;
+      await msgRpc('msg_update_scheduled', { p_id: f.id, p_contact_id: contactId, p_body: body, p_image_url: im ? im.url : null, p_send_day: f.day, p_send_clock: f.clock, p_image_w: im ? im.w : null, p_image_h: im ? im.h : null }, true);
+    } else {
+      const entries = f.images.length
+        ? f.images.map((im, i) => ({ body: i === f.images.length - 1 ? body : '', im }))     // legenda na última foto, como no envio normal
+        : [{ body, im: null }];
+      for(const e of entries){
+        await msgRpc('msg_schedule_message', { p_thread_id: threadId, p_contact_id: contactId, p_body: e.body, p_image_url: e.im ? e.im.url : null, p_send_day: f.day, p_send_clock: f.clock, p_image_w: e.im ? e.im.w : null, p_image_h: e.im ? e.im.h : null }, true);
+      }
+    }
+    if(f.fromComposer && threadId === msgThreadId){                 // o que estava no campo virou agendamento
+      msgDrafts[threadId] = ''; msgAttach[threadId] = [];
+      const inp = $id('msgInput'); if(inp){ inp.value = ''; inp.style.height = 'auto'; }
+      renderAttachTray(); updateSendState();
+    }
+    const summary = due ? 'Mensagem enviada agora.' : `Agendada pra ${formatDateShort(f.day)} às ${f.clock}.`;
+    closeSchedule();
+    await loadScheduled();
+    showToast(summary);
+  } catch(e){
+    msgFail(e, 'Não consegui agendar. Tenta de novo.');
+    if(btn) btn.disabled = false;
+  }
+}
+
+async function deleteSchedule(){
+  const f = schedForm;
+  if(!f || !f.id) return;
+  if(!confirm('Cancelar esta mensagem agendada?')) return;
+  try{
+    await msgRpc('msg_delete_scheduled', { p_id: f.id }, true);
+    schedRemovedLocally.add(f.id);
+    msgScheduled = msgScheduled.filter(s => s.id !== f.id);
+    closeSchedule();
+    refreshSchedUI();
+    showToast('Agendamento cancelado.');
+  } catch(e){ msgFail(e, 'Não consegui cancelar.'); }
 }
 
 /* ---------- app CONTATOS ---------- */
