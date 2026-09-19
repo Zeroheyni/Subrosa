@@ -1092,31 +1092,104 @@
   .msg-head-info{flex:1;min-width:0;display:flex;align-items:center;gap:10px;cursor:pointer;}
   .msg-head-title{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .msg-head-sub{font-size:11px;color:var(--text-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
+  .typing-sub{color:var(--accent-1) !important;font-style:italic;}
+  .msg-scroll-wrap{position:relative;flex:1;min-height:0;display:flex;border-top:1px solid var(--border-soft);}
   .msg-messages{
     flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
-    padding:10px 14px;display:flex;flex-direction:column;gap:3px;
-    border-top:1px solid var(--border-soft);
+    padding:6px 12px 12px;display:flex;flex-direction:column;
+    background:
+      radial-gradient(120% 60% at 100% 0%, color-mix(in srgb, var(--accent-1) 7%, transparent), transparent 60%),
+      radial-gradient(90% 50% at 0% 100%, color-mix(in srgb, var(--accent-2) 5%, transparent), transparent 60%);
   }
-  .msg-day{align-self:center;margin:10px 0 6px;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint);font-family:'JetBrains Mono',monospace;}
-  .msg-sender{font-size:11px;font-weight:700;margin:6px 0 1px 8px;}
+  .msg-piece{display:contents;}
+  .msg-day{align-self:center;margin:14px 0 8px;padding:4px 12px;border-radius:99px;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);background:var(--bg-panel-3);font-family:'JetBrains Mono',monospace;}
+  .msg-unread-div{display:flex;align-items:center;gap:10px;margin:14px 0 8px;color:var(--accent-1);font-size:10.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;font-family:'JetBrains Mono',monospace;}
+  .msg-unread-div::before, .msg-unread-div::after{content:'';flex:1;height:1px;background:color-mix(in srgb, var(--accent-1) 45%, transparent);}
+
+  .msg-line{display:flex;align-items:flex-end;gap:6px;margin-top:2px;}
+  .msg-line.mine{justify-content:flex-end;}
+  .msg-line.first, .msg-line.single{margin-top:9px;}
+  .msg-av-slot{width:28px;flex-shrink:0;}
+  .msg-sender{font-size:11.5px;font-weight:700;margin:0 0 2px;}
   .msg-b{
-    max-width:80%;padding:8px 11px 6px;border-radius:17px;font-size:14.5px;line-height:1.4;
-    white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;-webkit-user-select:text;user-select:text;
+    position:relative;max-width:78%;padding:7px 11px 5px;border-radius:18px;font-size:15px;line-height:1.38;
+    overflow-wrap:anywhere;word-break:break-word;-webkit-user-select:text;user-select:text;
+    animation:msgPop .18s ease-out;
   }
-  .msg-b.theirs{align-self:flex-start;background:var(--bg-panel-3);border-bottom-left-radius:5px;}
-  .msg-b.mine{align-self:flex-end;background:linear-gradient(140deg,var(--accent-1),var(--accent-2));color:#04140f;border-bottom-right-radius:5px;}
-  .msg-b.undelivered{opacity:.6;border:1px dashed var(--danger);}
-  .msg-b.tap{cursor:pointer;}
-  .msg-meta{font-size:10px;opacity:.6;text-align:right;margin-top:2px;font-family:'JetBrains Mono',monospace;white-space:nowrap;line-height:1.2;}
-  .msg-tick{letter-spacing:-2px;margin-left:4px;}
+  @keyframes msgPop{from{opacity:0;transform:translateY(6px) scale(.97);}to{opacity:1;transform:none;}}
+  .msg-text{white-space:pre-wrap;}
+  .msg-text a{color:inherit;text-decoration:underline;text-underline-offset:2px;}
+  .msg-b.theirs{background:var(--bg-panel-3);border-bottom-left-radius:18px;}
+  .msg-b.mine{background:linear-gradient(140deg,var(--accent-1),var(--accent-2));color:#04140f;}
+  /* balões da mesma pessoa em sequência: cantos de dentro mais retos, "rabinho" só no último */
+  .msg-b.theirs.mid, .msg-b.theirs.last{border-top-left-radius:6px;}
+  .msg-b.theirs.first, .msg-b.theirs.mid{border-bottom-left-radius:6px;}
+  .msg-b.theirs.last, .msg-b.theirs.single{border-bottom-left-radius:4px;}
+  .msg-b.mine.mid, .msg-b.mine.last{border-top-right-radius:6px;}
+  .msg-b.mine.first, .msg-b.mine.mid{border-bottom-right-radius:6px;}
+  .msg-b.mine.last, .msg-b.mine.single{border-bottom-right-radius:4px;}
+  .msg-b.undelivered{opacity:.62;border:1px dashed var(--danger);}
+  .msg-b.pending{opacity:.82;}
+  .msg-b.pending.failed{opacity:1;border:1px solid var(--danger);}
+  .msg-b.emoji-only{background:none !important;padding:0 2px;font-size:44px;line-height:1.15;box-shadow:none;}
+  .msg-b.emoji-only .msg-meta{color:var(--text-faint);}
+  .msg-meta{display:flex;align-items:center;justify-content:flex-end;gap:3px;font-size:10px;opacity:.62;margin-top:1px;font-family:'JetBrains Mono',monospace;white-space:nowrap;line-height:1.2;}
+  .msg-tick{letter-spacing:-2.5px;margin-left:2px;font-size:11px;}
   .msg-tick.read{color:#0a4fff;opacity:1;}
   .msg-b.theirs .msg-tick.read{color:var(--accent-1);}
+  .msg-clock{opacity:.85;}
+  .msg-fail-dot{width:14px;height:14px;border-radius:50%;background:var(--danger);color:#fff;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;}
+  .msg-retry{font-size:11px;color:var(--danger);font-weight:600;margin-top:3px;}
+  .msg-retry span{cursor:pointer;text-decoration:underline;}
   .msg-warn{font-size:10.5px;color:var(--danger);margin-top:3px;font-weight:600;white-space:normal;line-height:1.3;}
   .msg-b.mine .msg-warn{color:#7a0d24;}
-  .msg-img{display:block;max-width:100%;max-height:260px;border-radius:12px;margin:2px 0 4px;cursor:pointer;}
+  .msg-b.tap{cursor:pointer;}
   .msg-empty-thread{margin:auto;text-align:center;color:var(--text-faint);font-size:13px;line-height:1.6;padding:30px;}
 
-  .msg-composer{flex-shrink:0;border-top:1px solid var(--border-soft);padding:8px 12px 6px;background:var(--bg-panel);}
+  /* fotos nos balões */
+  .msg-b.has-img{padding:3px;}
+  .msg-b.has-img.has-caption{padding:3px 3px 5px;}
+  .msg-b.has-img .msg-text{padding:4px 8px 0;}
+  .msg-b.has-img.has-caption > .msg-meta{padding:0 8px;}
+  .msg-b.has-img .msg-sender{padding:3px 8px 2px;margin:0;}
+  .msg-imgwrap{position:relative;border-radius:15px;overflow:hidden;background:rgba(255,255,255,0.08);cursor:pointer;max-width:100%;}
+  .msg-imgwrap img{display:block;width:100%;height:100%;object-fit:cover;-webkit-touch-callout:none;-webkit-user-drag:none;}
+  .msg-meta.on-img{position:absolute;right:7px;bottom:6px;padding:2px 7px;border-radius:99px;background:rgba(0,0,0,0.5);color:#fff;opacity:1;margin:0;}
+  .msg-spin{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.32);
+  }
+  .msg-spin::after{content:'';width:26px;height:26px;border-radius:50%;border:3px solid rgba(255,255,255,0.35);border-top-color:#fff;animation:msgSpin .8s linear infinite;}
+  @keyframes msgSpin{to{transform:rotate(360deg);}}
+
+  /* digitando… */
+  .msg-b.typing-b{padding:11px 14px;}
+  .dots{display:inline-flex;gap:4px;align-items:center;height:12px;}
+  .dots i{width:6px;height:6px;border-radius:50%;background:var(--text-dim);animation:dotBounce 1.1s infinite ease-in-out;}
+  .dots i:nth-child(2){animation-delay:.16s;}
+  .dots i:nth-child(3){animation-delay:.32s;}
+  .msg-b.mine.typing-b .dots i{background:#04140f;}
+  @keyframes dotBounce{0%,60%,100%{transform:translateY(0);opacity:.5;}30%{transform:translateY(-4px);opacity:1;}}
+
+  /* botão "ir pro fim" e arrastar arquivo */
+  .msg-fab{
+    position:absolute;right:14px;bottom:12px;width:38px;height:38px;border-radius:50%;border:1px solid var(--border);cursor:pointer;
+    background:var(--bg-panel-3);color:var(--text);font-size:18px;box-shadow:0 6px 18px rgba(0,0,0,0.45);
+    display:flex;align-items:center;justify-content:center;opacity:0;transform:translateY(10px) scale(.8);pointer-events:none;
+    transition:opacity .18s ease, transform .18s ease;
+  }
+  .msg-fab.show{opacity:1;transform:none;pointer-events:auto;}
+  .msg-fab-count:not(:empty){
+    position:absolute;top:-7px;right:-4px;min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:var(--accent-1);color:#04140f;
+    font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;
+  }
+  .msg-drop{
+    position:absolute;inset:8px;border-radius:18px;border:2px dashed var(--accent-1);background:color-mix(in srgb, var(--bg-panel) 88%, transparent);
+    display:none;align-items:center;justify-content:center;font-weight:700;color:var(--accent-1);z-index:15;pointer-events:none;
+  }
+  .msg-drop.show{display:flex;}
+
+  /* campo de escrever (estilo app de mensagem) */
+  .msg-composer{flex-shrink:0;border-top:1px solid var(--border-soft);padding:8px 10px 6px;background:var(--bg-panel);}
   .msg-notice{
     font-size:11.5px;line-height:1.45;padding:8px 12px;border-radius:12px;margin-bottom:8px;
     background:color-mix(in srgb, var(--danger) 12%, transparent);border:1px solid color-mix(in srgb, var(--danger) 45%, transparent);color:var(--text);
@@ -1132,18 +1205,38 @@
   .msg-speaker-chip.active{border-color:var(--accent-1);color:var(--accent-1);background:color-mix(in srgb, var(--accent-1) 14%, transparent);}
   .msg-speaking{font-size:11px;color:var(--text-faint);margin:0 4px 6px;font-family:'JetBrains Mono',monospace;}
   .msg-speaking b{color:var(--accent-1);}
-  .msg-pending{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
-  .msg-pending img{height:54px;border-radius:10px;}
+  .msg-tray{gap:8px;overflow-x:auto;padding:2px 2px 10px;scrollbar-width:none;}
+  .msg-tray::-webkit-scrollbar{display:none;}
+  .msg-thumb{
+    position:relative;width:64px;height:64px;border-radius:14px;flex-shrink:0;background-size:cover;background-position:center;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,0.12);overflow:hidden;
+  }
+  .msg-thumb .msg-spin::after{width:20px;height:20px;border-width:2.5px;}
+  .msg-thumb-x{
+    position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,0.65);color:#fff;
+    font-size:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;
+  }
   .msg-input-row{display:flex;align-items:flex-end;gap:8px;}
-  .msg-input-row textarea{
-    flex:1;resize:none;max-height:110px;min-height:40px;background:var(--bg-panel-3);border:1px solid var(--border);border-radius:20px;
-    padding:9px 14px;color:var(--text);font-size:16px;line-height:1.35;font-family:'Inter',sans-serif;
+  .msg-attach{
+    width:38px;height:38px;border-radius:50%;flex-shrink:0;border:none;cursor:pointer;background:var(--bg-panel-3);color:var(--accent-1);
+    display:flex;align-items:center;justify-content:center;padding:0;transition:transform .12s ease;
   }
+  .msg-attach:active{transform:scale(.9);}
+  .msg-input-wrap{flex:1;min-width:0;}
+  .msg-input-wrap textarea{
+    display:block;width:100%;resize:none;max-height:110px;min-height:38px;background:var(--bg-panel-3);border:1px solid var(--border);border-radius:20px;
+    padding:8px 14px;color:var(--text);font-size:16px;line-height:1.35;font-family:'Inter',sans-serif;
+    scrollbar-width:none;
+  }
+  .msg-input-wrap textarea::-webkit-scrollbar{display:none;}
   .msg-send{
-    width:40px;height:40px;border-radius:50%;flex-shrink:0;border:none;cursor:pointer;font-size:17px;color:#04140f;
+    width:38px;height:38px;border-radius:50%;flex-shrink:0;border:none;cursor:pointer;color:#04140f;padding:0;
     background:linear-gradient(140deg,var(--accent-1),var(--accent-2));display:flex;align-items:center;justify-content:center;
+    width:0;margin-left:-8px;opacity:0;transform:scale(.4);pointer-events:none;overflow:hidden;
+    transition:width .18s ease, margin .18s ease, opacity .15s ease, transform .18s ease;
   }
-  .msg-send:disabled{opacity:.35;}
+  .msg-send.show{width:38px;margin-left:0;opacity:1;transform:none;pointer-events:auto;}
+  .msg-send:active{transform:scale(.9);}
   .msg-menu{
     position:absolute;right:14px;top:96px;z-index:30;min-width:190px;padding:6px;border-radius:14px;
     background:var(--bg-panel-3);border:1px solid var(--border);box-shadow:0 14px 34px rgba(0,0,0,0.55);
@@ -1151,6 +1244,25 @@
   .msg-menu-item{padding:11px 12px;border-radius:9px;font-size:13.5px;cursor:pointer;}
   .msg-menu-item:active{background:rgba(255,255,255,0.08);}
   .msg-menu-item.danger{color:var(--danger);}
+  /* menu da mensagem (sobe de baixo) */
+  .msg-sheet{position:absolute;inset:0;z-index:40;background:rgba(0,0,0,0.5);display:flex;align-items:flex-end;justify-content:center;border-radius:inherit;animation:fadeIn .15s ease;}
+  .msg-sheet-card{width:100%;margin:10px;padding:6px;border-radius:18px;background:var(--bg-panel-3);border:1px solid var(--border);animation:sheetUp .2s cubic-bezier(.2,.9,.25,1);}
+  @keyframes sheetUp{from{transform:translateY(40px);opacity:0;}to{transform:none;opacity:1;}}
+  .msg-sheet-item{padding:14px;text-align:center;font-size:15px;font-weight:600;cursor:pointer;border-radius:12px;}
+  .msg-sheet-item:active{background:rgba(255,255,255,0.08);}
+  .msg-sheet-item.danger{color:var(--danger);}
+  .msg-sheet-item.cancel{color:var(--text-dim);border-top:1px solid var(--border-soft);border-radius:0 0 12px 12px;}
+
+  /* visualizador de fotos */
+  .img-viewer{position:fixed;inset:0;z-index:700;background:rgba(0,0,0,0.96);display:flex;align-items:center;justify-content:center;animation:fadeIn .18s ease;touch-action:pan-y;}
+  .iv-img{max-width:100%;max-height:100%;object-fit:contain;-webkit-user-select:none;user-select:none;animation:ivIn .2s ease;}
+  @keyframes ivIn{from{opacity:.4;transform:scale(.97);}to{opacity:1;transform:none;}}
+  .iv-top{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top,0px) + 12px) 14px 12px;background:linear-gradient(180deg,rgba(0,0,0,0.6),transparent);z-index:2;}
+  .iv-count{color:#fff;font-family:'JetBrains Mono',monospace;font-size:12px;}
+  .iv-btn{width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,0.14);color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;text-decoration:none;}
+  .iv-nav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:64px;border:none;background:rgba(255,255,255,0.1);color:#fff;font-size:30px;cursor:pointer;z-index:2;}
+  .iv-nav.prev{left:0;border-radius:0 14px 14px 0;}
+  .iv-nav.next{right:0;border-radius:14px 0 0 14px;}
 
   /* páginas internas (novo, grupo, contato) */
   .msg-page{padding:0 16px 20px;overflow-y:auto;flex:1;min-height:0;}
@@ -2156,7 +2268,8 @@ window.addEventListener('popstate', ()=>{
     // dentro de um app com telas internas (pasta do Codex, formulário do Depósito),
     // o "voltar" sobe um nível antes de fechar o app; a entrada do histórico
     // consumida pelo voltar é reposta pra ele continuar valendo
-    if(messagesOpen && msgView !== 'list'){ msgGoBack(); pushAppHistory(); }
+    if(viewerState){ closeImageViewer(); pushAppHistory(); }
+    else if(messagesOpen && msgView !== 'list'){ msgGoBack(); pushAppHistory(); }
     else if(contactsOpen && ctView !== 'list'){ ctGoBack(); pushAppHistory(); }
     else if(codexOpen && !codexIsAtRoot()){ codexGoBack(); pushAppHistory(); }
     else if(inventoryOpen && invView !== 'list'){ invView = 'list'; renderInventoryOverlay(); pushAppHistory(); }
@@ -4556,7 +4669,7 @@ let msgSearch = '', msgNewSearch = '';
 let msgGroupDraft = { name: '', ids: [] };
 let msgGroupEdit = null;         // {name, ids} enquanto o mestre edita um grupo
 let msgJustOpened = false;
-let msgDrafts = {}, msgPendingImages = {}, msgSpeakers = {};
+let msgDrafts = {}, msgSpeakers = {};
 let ctView = 'list';             // 'list' | 'card' | 'form'
 let ctId = null, ctSearch = '', ctJustOpened = false;
 let ctFormPhoto, ctFormDraft = null;
@@ -4575,6 +4688,7 @@ async function initMessaging(){
     return;
   }
   subscribeMessaging();
+  initTyping();
   refreshMessagingUI();
 }
 
@@ -4715,7 +4829,8 @@ let bannerTimer = null;
 const msgSoundOn = ()=> { try{ return localStorage.getItem('subrosa_sound') !== '0'; } catch(e){ return true; } };
 let audioCtx = null;
 function playPing(){
-  if(navigator.vibrate){ try{ navigator.vibrate([18, 40, 18]); } catch(e){} }
+  // (o navegador só deixa vibrar depois do primeiro toque na página)
+  if(navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive)){ try{ navigator.vibrate([18, 40, 18]); } catch(e){} }
   if(!msgSoundOn()) return;
   try{
     audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
@@ -4903,7 +5018,7 @@ function closeMessagesApp(opts = {}){
   unlockBodyScroll();
   if(!opts.keepHistory) popAppHistory();
   messagesOpen = false; msgView = 'list'; msgThreadId = null; msgGroupEdit = null;
-  closeMsgMenu();
+  closeMsgMenu(); closeMsgSheet(); closeImageViewer();
   watchViewport('messagesOverlay', false);
   const overlay = document.getElementById('messagesOverlay');
   const shell = overlay.querySelector('.app-shell');
@@ -4921,7 +5036,8 @@ function closeMessagesApp(opts = {}){
 }
 
 function msgGoBack(){
-  if(msgView === 'thread' || msgView === 'new'){ msgView = 'list'; msgThreadId = null; }
+  closeMsgSheet();
+  if(msgView === 'thread' || msgView === 'new'){ if(msgThreadId) delete msgUnreadFrom[msgThreadId]; msgView = 'list'; msgThreadId = null; }
   else if(msgView === 'groupNew'){ msgView = 'new'; }
   else if(msgView === 'groupInfo'){ msgView = 'thread'; msgGroupEdit = null; }
   closeMsgMenu();
@@ -4983,7 +5099,7 @@ function msgRowsHtml(){
         ${threadAvatar(t, 48)}
         <div class="msg-row-main">
           <div class="msg-row-top"><span class="msg-row-title">${escapeHtml(threadTitle(t))}${flags}</span><span class="msg-row-time">${escapeHtml(msgTimeLabel(last))}</span></div>
-          <div class="msg-row-bottom"><span class="msg-row-preview">${escapeHtml(msgPreview(t))}</span>${unread && !muted ? `<span class="msg-count">${unread}</span>` : ''}</div>
+          <div class="msg-row-bottom"><span class="msg-row-preview ${typingSubtitle(t) ? 'typing-sub' : ''}">${escapeHtml(typingSubtitle(t) || msgPreview(t))}</span>${unread && !muted ? `<span class="msg-count">${unread}</span>` : ''}</div>
         </div>
       </div>`;
   }).join('');
@@ -5037,7 +5153,11 @@ function refreshMsgList(){
 }
 
 function msgOpenThread(threadId){
-  if(!threadById(threadId)) return;
+  const t = threadById(threadId);
+  if(!t) return;
+  // guarda até onde você tinha lido: vira o divisor "Mensagens não lidas" dentro da conversa
+  if(threadUnread(t) > 0) msgUnreadFrom[threadId] = tsOf(isMaster ? t.master_last_read_at : t.player_last_read_at);
+  else delete msgUnreadFrom[threadId];
   msgThreadId = threadId;
   msgView = 'thread';
   renderMessagesOverlay();
@@ -5079,34 +5199,273 @@ function canSend(t){
   return !(c && c.blocked_by_player);
 }
 
-function bubblesHtml(t){
-  const list = messagesOf(t.id);
-  if(!list.length){
-    return `<div class="msg-empty-thread">${t.kind === 'group' ? 'Grupo criado.<br>Mande a primeira mensagem!' : 'Nenhuma mensagem ainda.<br>Diga oi 👋'}</div>`;
+/* ---------- texto, emoji e tamanhos dos balões ---------- */
+const IMG_MAX_W = 250, IMG_MAX_H = 330;
+function fitImage(w, h){
+  if(!w || !h) return { w: 220, h: 165 };
+  const s = Math.min(1, IMG_MAX_W / w, IMG_MAX_H / h);
+  return { w: Math.max(120, Math.round(w * s)), h: Math.max(90, Math.round(h * s)) };
+}
+// escapa o texto e transforma links em <a> (sem nunca injetar HTML de quem escreve)
+function messageTextHtml(body){
+  const re = /https?:\/\/[^\s<>"']+[^\s<>"'.,;:!?)\]]/g;
+  let out = '', last = 0, m;
+  while((m = re.exec(body))){
+    out += escapeHtml(body.slice(last, m.index)) +
+      `<a href="${escapeHtml(m[0])}" target="_blank" rel="noopener noreferrer">${escapeHtml(m[0])}</a>`;
+    last = m.index + m[0].length;
+  }
+  return out + escapeHtml(body.slice(last));
+}
+// 1 a 3 emojis sozinhos viram figurinha grande, sem balão (como nos apps de verdade)
+function isEmojiOnly(body){
+  if(!body) return false;
+  const s = body.trim();
+  if(!/^(?:\p{Extended_Pictographic}|\p{Emoji_Modifier}|[‍️\s])+$/u.test(s)) return false;
+  return (s.match(/\p{Extended_Pictographic}/gu) || []).length <= 3;
+}
+
+/* ---------- envio otimista (a mensagem aparece na hora, com relógio -> tique) ---------- */
+let msgOutbox = [];
+const outboxOf = (tid)=> msgOutbox.filter(o => o.thread_id === tid);
+let msgAttach = {};            // threadId -> [{id, previewUrl, status, url, w, h, promise}]
+let msgUnreadFrom = {};        // threadId -> instante da última leitura (pro divisor "não lidas")
+let msgPieceCache = {};        // threadId -> html de cada peça já desenhada (pra só mexer no que mudou)
+let msgTyping = {};            // threadId -> {who, contact, until}
+let msgFabNew = 0;
+let msgIncomingSeen = {};      // threadId -> quantas mensagens recebidas já estavam na tela
+
+/* ---------- "digitando…" (broadcast efêmero, não grava nada) ---------- */
+let typingChannel = null, typingLastSent = 0;
+function initTyping(){
+  if(typingChannel) return;
+  typingChannel = sb.channel('msg_typing', { config: { broadcast: { self: false } } })
+    .on('broadcast', { event: 'typing' }, ({ payload }) => onTypingEvent(payload))
+    .subscribe();
+}
+function sendTyping(t){
+  if(!typingChannel) return;
+  const now = Date.now();
+  if(now - typingLastSent < 2500) return;
+  typingLastSent = now;
+  const sp = isMaster ? currentSpeaker(t) : null;
+  typingChannel.send({ type: 'broadcast', event: 'typing', payload: { thread: t.id, from: isMaster ? 'contact' : 'player', contact: sp ? sp.id : null } });
+}
+function typingInfo(t){
+  const ty = msgTyping[t.id];
+  return ty && ty.until > Date.now() ? ty : null;
+}
+function onTypingEvent(p){
+  if(!p || (p.from === 'contact') === isMaster) return;        // eco do mesmo lado
+  const t = threadById(p.thread);
+  if(!t) return;
+  if(!isMaster){ const c = contactById(p.contact); if(c && c.blocked_by_player) return; }
+  msgTyping[p.thread] = { who: p.from, contact: p.contact, until: Date.now() + 4200 };
+  const refresh = ()=>{
+    if(!messagesOpen) return;
+    if(msgView === 'thread' && msgThreadId === p.thread) refreshTypingUI();
+    else if(msgView === 'list') refreshMsgList();
+  };
+  refresh();
+  setTimeout(refresh, 4300);
+}
+function typingBubbleHtml(t){
+  const ty = typingInfo(t);
+  if(!ty) return '';
+  const mine = ty.who === 'player';
+  const c = mine ? null : contactById(ty.contact);
+  const slot = (t.kind === 'group' && !mine) ? `<div class="msg-av-slot">${avatarHtml(c, 28)}</div>` : '';
+  return `<div class="msg-line ${mine ? 'mine' : 'theirs'} single typing">${slot}<div class="msg-b ${mine ? 'mine' : 'theirs'} single typing-b"><span class="dots"><i></i><i></i><i></i></span></div></div>`;
+}
+function typingSubtitle(t){
+  const ty = typingInfo(t);
+  if(!ty) return '';
+  if(ty.who === 'player') return 'jogador digitando…';
+  return t.kind === 'group' ? `${contactShort(contactById(ty.contact))} digitando…` : 'digitando…';
+}
+function refreshTypingUI(){
+  const t = threadById(msgThreadId);
+  const slot = $id('msgTypingSlot');
+  if(!t || !slot) return;
+  const box = $id('msgMessages');
+  const near = box.scrollHeight - box.scrollTop - box.clientHeight < 140;
+  slot.innerHTML = typingBubbleHtml(t);
+  const sub = $id('msgHeadSub');
+  if(sub){ sub.textContent = typingSubtitle(t) || threadSubtitle(t); sub.classList.toggle('typing-sub', !!typingSubtitle(t)); }
+  if(near) box.scrollTop = box.scrollHeight;
+}
+
+/* ---------- fotos: preparar (redimensionar), enviar pro storage, anexar ---------- */
+async function loadBitmap(file){
+  if(window.createImageBitmap){ try{ return await createImageBitmap(file); } catch(e){} }
+  return await new Promise((res, rej)=>{
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = ()=>{ URL.revokeObjectURL(url); res(img); };
+    img.onerror = ()=>{ URL.revokeObjectURL(url); rej(new Error('Não consegui abrir essa imagem.')); };
+    img.src = url;
+  });
+}
+// fotos de celular pesam vários MB: reduz pra no máximo 1600px em JPEG (chat rápido, storage barato)
+async function prepareImage(file){
+  if(!(file.type || '').startsWith('image/')) throw new Error('Esse arquivo não é uma imagem.');
+  const bmp = await loadBitmap(file);
+  const w0 = bmp.width || bmp.naturalWidth, h0 = bmp.height || bmp.naturalHeight;
+  if(file.type === 'image/gif'){
+    if(file.size > 5 * 1024 * 1024) throw new Error('GIF grande demais (máximo 5 MB).');
+    return { blob: file, w: w0, h: h0, ext: 'gif', type: 'image/gif' };
+  }
+  const scale = Math.min(1, 1600 / Math.max(w0, h0));
+  const w = Math.max(1, Math.round(w0 * scale)), h = Math.max(1, Math.round(h0 * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';                       // PNG transparente não vira preto no JPEG
+  ctx.fillRect(0, 0, w, h);
+  ctx.drawImage(bmp, 0, 0, w, h);
+  if(bmp.close) bmp.close();
+  const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.85));
+  if(!blob) throw new Error('Não consegui processar a foto.');
+  return { blob, w, h, ext: 'jpg', type: 'image/jpeg' };
+}
+async function uploadImageBlob(prep){
+  const path = `msg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${prep.ext}`;
+  const { error } = await sb.storage.from('game-images').upload(path, prep.blob, { contentType: prep.type });
+  if(error) throw error;
+  return sb.storage.from('game-images').getPublicUrl(path).data.publicUrl;
+}
+
+function addAttachments(files){
+  const t = threadById(msgThreadId);
+  if(!t) return;
+  const list = [...files].filter(f => f && (f.type || '').startsWith('image/'));
+  if(!list.length){ showToast('Só dá pra enviar imagens.'); return; }
+  const arr = (msgAttach[t.id] = msgAttach[t.id] || []);
+  if(arr.length + list.length > 10){
+    showToast('No máximo 10 fotos por vez.');
+    list.splice(Math.max(0, 10 - arr.length));
+    if(!list.length) return;
+  }
+  list.forEach(file=>{
+    const att = { id: 'att_' + Math.random().toString(36).slice(2, 8), previewUrl: URL.createObjectURL(file), status: 'uploading' };
+    att.promise = (async ()=>{
+      try{
+        const prep = await prepareImage(file);
+        att.w = prep.w; att.h = prep.h;
+        att.url = await uploadImageBlob(prep);
+        att.status = 'ready';
+      } catch(e){
+        console.error('Falha ao preparar foto', e);
+        att.status = 'error';
+        msgAttach[t.id] = (msgAttach[t.id] || []).filter(a => a !== att);
+        URL.revokeObjectURL(att.previewUrl);
+        showToast(e && e.message && !/^(TypeError|Failed|StorageApiError)/.test(e.message) ? e.message : 'Não consegui enviar uma das fotos.');
+      }
+      renderAttachTray(); updateSendState();
+    })();
+    arr.push(att);
+  });
+  renderAttachTray(); updateSendState();
+}
+
+function renderAttachTray(){
+  const el = $id('msgTray');
+  if(!el) return;
+  const arr = msgAttach[msgThreadId] || [];
+  if(!arr.length){ el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = 'flex';
+  el.innerHTML = arr.map(a => `
+    <div class="msg-thumb" style="background-image:url('${cssUrl(a.previewUrl)}')">
+      ${a.status === 'uploading' ? '<div class="msg-spin"></div>' : ''}
+      <div class="msg-thumb-x" data-att-rm="${a.id}" aria-label="Remover">✕</div>
+    </div>`).join('');
+}
+
+function updateSendState(){
+  const btn = $id('msgSend'), input = $id('msgInput');
+  if(!btn || !input) return;
+  const has = !!input.value.trim() || (msgAttach[msgThreadId] || []).length > 0;
+  btn.classList.toggle('show', has);
+}
+
+/* ---------- balões ---------- */
+const CLOCK_ICON_SVG = '<svg class="msg-clock" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+
+function messageHtml(t, m, pos, isRunStart, readAt){
+  const mine = m.sender === 'player';
+  const c = mine ? null : contactById(m.contact_id);
+  const groupTheirs = t.kind === 'group' && !mine;
+  const showName = groupTheirs && isRunStart;
+  const showAvatar = groupTheirs && (pos === 'last' || pos === 'single');
+  const undelivered = !m.pending && !m.delivered;
+  const read = mine && !m.pending && m.delivered && readAt >= tsOf(m.created_at);
+  const hasImg = !!m.image_url;
+  const hasCaption = hasImg && !!m.body;
+  const emojiOnly = !hasImg && isEmojiOnly(m.body);
+
+  let status = '';
+  if(m.pending) status = m.status === 'failed' ? '<span class="msg-fail-dot">!</span>' : CLOCK_ICON_SVG;
+  else if(mine) status = `<span class="msg-tick ${read ? 'read' : ''}">${m.delivered ? '✓✓' : '✓'}</span>`;
+  const meta = `<span class="msg-meta ${hasImg && !hasCaption ? 'on-img' : ''}">${escapeHtml(m.game_clock || '')}${status}</span>`;
+
+  let inner = '';
+  if(showName) inner += `<div class="msg-sender" style="color:hsl(${hueOf(m.contact_id || 'x')} 70% 68%)">${escapeHtml(contactLabel(c))}</div>`;
+  if(hasImg){
+    const fit = fitImage(m.image_w, m.image_h);
+    inner += `<div class="msg-imgwrap" data-msg-img="${escapeHtml(m.image_url)}" style="width:${fit.w}px;height:${fit.h}px;"><img src="${escapeHtml(m.image_url)}" alt="foto" draggable="false" decoding="async">${m.pending && m.status === 'sending' ? '<div class="msg-spin"></div>' : ''}${!hasCaption ? meta : ''}</div>`;
+  }
+  if(m.body) inner += `<div class="msg-text">${messageTextHtml(m.body)}</div>`;
+  if(!hasImg || hasCaption) inner += meta;
+  if(m.pending && m.status === 'failed') inner += `<div class="msg-retry"><span data-retry="${m.id}">Não enviada · Tentar de novo</span> · <span data-discard="${m.id}">Descartar</span></div>`;
+  if(undelivered && isMaster) inner += `<div class="msg-warn">🚫 Não entregue: ${mine ? 'o contato bloqueou o jogador' : 'o jogador bloqueou este contato'}</div>`;
+
+  const cls = `${mine ? 'mine' : 'theirs'} ${pos}${hasImg ? ' has-img' : ''}${hasCaption ? ' has-caption' : ''}${emojiOnly ? ' emoji-only' : ''}${undelivered ? ' undelivered' : ''}${m.pending ? ' pending ' + m.status : ''}`;
+  const slot = groupTheirs ? `<div class="msg-av-slot">${showAvatar ? avatarHtml(c, 28) : ''}</div>` : '';
+  return `<div class="msg-line ${mine ? 'mine' : 'theirs'} ${pos}">${slot}<div class="msg-b ${cls}" data-msg-id="${m.id}">${inner}</div></div>`;
+}
+
+// cada "peça" = separador de dia/divisor + balão; o diff só refaz o que mudou
+function bubblePieces(t){
+  const items = [...messagesOf(t.id), ...outboxOf(t.id)];
+  if(!items.length){
+    return [`<div class="msg-empty-thread">${t.kind === 'group' ? 'Grupo criado.<br>Mande a primeira mensagem!' : 'Nenhuma mensagem ainda.<br>Diga oi 👋'}</div>`];
   }
   const readAt = tsOf(t.master_last_read_at);
-  let lastDay = null, lastKey = null;
-  return list.map(m=>{
-    let out = '';
-    if(m.game_day != null && m.game_day !== lastDay){ out += `<div class="msg-day">${escapeHtml(formatDate(m.game_day))}</div>`; lastDay = m.game_day; lastKey = null; }
-    const mine = m.sender === 'player';
-    const key = mine ? 'p' : 'c' + m.contact_id;
-    const c = mine ? null : contactById(m.contact_id);
-    if(t.kind === 'group' && !mine && key !== lastKey){
-      out += `<div class="msg-sender" style="color:hsl(${hueOf(m.contact_id || 'x')} 70% 68%)">${escapeHtml(contactLabel(c))}</div>`;
+  const boundary = msgUnreadFrom[t.id];
+  const key = (x)=> x ? (x.sender === 'player' ? 'p' : 'c' + x.contact_id) : null;
+  let lastDay = null, dividerDone = false;
+  return items.map((m, i)=>{
+    let piece = '';
+    if(m.game_day != null && m.game_day !== lastDay){ piece += `<div class="msg-day">${escapeHtml(formatDate(m.game_day))}</div>`; lastDay = m.game_day; }
+    const incomingForMe = isMaster ? m.sender === 'player' : m.sender === 'contact';
+    if(boundary != null && !dividerDone && !m.pending && incomingForMe && tsOf(m.created_at) > boundary){
+      piece += '<div class="msg-unread-div" id="msgUnreadDiv"><span>Mensagens não lidas</span></div>';
+      dividerDone = true;
     }
-    lastKey = key;
-    const undelivered = !m.delivered;
-    const read = mine && m.delivered && readAt >= tsOf(m.created_at);
-    const tick = mine ? `<span class="msg-tick ${read ? 'read' : ''}">${m.delivered ? '✓✓' : '✓'}</span>` : '';
-    let warn = '';
-    if(undelivered && isMaster) warn = mine ? '<div class="msg-warn">🚫 Não entregue: o contato bloqueou o jogador</div>'
-      : '<div class="msg-warn">🚫 Não entregue: o jogador bloqueou este contato</div>';
-    // sem quebras de linha soltas aqui: o balão usa white-space:pre-wrap (respeita o Enter de quem escreve)
-    const img = m.image_url ? `<img class="msg-img" src="${escapeHtml(m.image_url)}" alt="foto" data-msg-img="${escapeHtml(m.image_url)}">` : '';
-    out += `<div class="msg-b ${mine ? 'mine' : 'theirs'} ${undelivered ? 'undelivered' : ''} ${isMaster ? 'tap' : ''}" data-msg-id="${m.id}">${img}${m.body ? escapeHtml(m.body) : ''}<div class="msg-meta">${escapeHtml(m.game_clock || '')}${tick}</div>${warn}</div>`;
-    return out;
-  }).join('');
+    const prev = items[i - 1], next = items[i + 1];
+    const gPrev = prev && prev.game_day === m.game_day && key(prev) === key(m) && !piece.includes('msg-unread-div');
+    const gNext = next && next.game_day === m.game_day && key(next) === key(m);
+    const pos = (!gPrev && !gNext) ? 'single' : !gPrev ? 'first' : !gNext ? 'last' : 'mid';
+    return piece + messageHtml(t, m, pos, !gPrev, readAt);
+  });
+}
+const piecesToHtml = (pieces, from = 0)=> pieces.slice(from).map((p, i) => `<div class="msg-piece" data-p="${from + i}">${p}</div>`).join('');
+function bubblesHtml(t){
+  const pieces = bubblePieces(t);
+  msgPieceCache[t.id] = pieces;
+  return piecesToHtml(pieces);
+}
+function updateBubbles(t){
+  const box = $id('msgBubbles');
+  if(!box) return;
+  const pieces = bubblePieces(t);
+  const old = msgPieceCache[t.id] || [];
+  let k = 0;
+  while(k < old.length && k < pieces.length && old[k] === pieces[k]) k++;
+  if(k === old.length && k === pieces.length) return;
+  [...box.children].slice(k).forEach(n => n.remove());
+  box.insertAdjacentHTML('beforeend', piecesToHtml(pieces, k));
+  msgPieceCache[t.id] = pieces;
 }
 
 function composerTopHtml(t){
@@ -5131,9 +5490,13 @@ function composerTopHtml(t){
   return out;
 }
 
+const SVG_PLUS = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+const SVG_SEND = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>';
+
 function viewMsgThread(){
   const t = threadById(msgThreadId);
-  const c = directContactOf(t);
+  msgFabNew = 0;
+  msgIncomingSeen[t.id] = messagesOf(t.id).filter(m => isMaster ? m.sender === 'player' : m.sender === 'contact').length;
   return {
     head: `
       <div class="msg-head">
@@ -5142,21 +5505,29 @@ function viewMsgThread(){
           ${threadAvatar(t, 38)}
           <div style="min-width:0;">
             <div class="msg-head-title">${escapeHtml(threadTitle(t))}</div>
-            <div class="msg-head-sub" id="msgHeadSub">${escapeHtml(threadSubtitle(t))}</div>
+            <div class="msg-head-sub ${typingSubtitle(t) ? 'typing-sub' : ''}" id="msgHeadSub">${escapeHtml(typingSubtitle(t) || threadSubtitle(t))}</div>
           </div>
         </div>
         <button class="msg-icon-btn" id="msgMenuBtn" aria-label="Mais opções">⋯</button>
       </div>`,
     body: `
-      <div class="msg-messages" id="msgMessages">${bubblesHtml(t)}</div>
+      <div class="msg-scroll-wrap">
+        <div class="msg-messages" id="msgMessages">
+          <div id="msgBubbles">${bubblesHtml(t)}</div>
+          <div id="msgTypingSlot">${typingBubbleHtml(t)}</div>
+        </div>
+        <button class="msg-fab" id="msgFab" aria-label="Ir pro fim">↓<span class="msg-fab-count" id="msgFabCount"></span></button>
+        <div class="msg-drop" id="msgDrop"><div>Solte as fotos aqui</div></div>
+      </div>
       <div class="msg-composer">
         <div id="msgComposerTop">${composerTopHtml(t)}</div>
-        <div class="msg-pending" id="msgPending" style="display:none;"></div>
+        <div class="msg-tray" id="msgTray" style="display:none;"></div>
         <div class="msg-input-row" id="msgInputRow" style="${canSend(t) ? '' : 'display:none;'}">
-          <button class="msg-icon-btn" id="msgAttach" title="Enviar foto">📷</button>
-          <textarea id="msgInput" rows="1" placeholder="${escapeHtml(isMaster ? 'Mensagem como ' + ((currentSpeaker(t) || {}).name || '…').split(' ')[0] : 'Mensagem')}" enterkeyhint="send"></textarea>
-          <button class="msg-send" id="msgSend" aria-label="Enviar">➤</button>
+          <button class="msg-attach" id="msgAttach" aria-label="Anexar foto">${SVG_PLUS}</button>
+          <div class="msg-input-wrap"><textarea id="msgInput" rows="1" placeholder="${escapeHtml(isMaster ? 'Mensagem como ' + ((currentSpeaker(t) || {}).name || '…').split(' ')[0] : 'Mensagem')}" enterkeyhint="send"></textarea></div>
+          <button class="msg-send" id="msgSend" aria-label="Enviar">${SVG_SEND}</button>
         </div>
+        <input type="file" id="msgFile" accept="image/*" multiple hidden>
       </div>`,
     attach: ()=> attachThreadHandlers(t)
   };
@@ -5175,15 +5546,28 @@ function attachThreadHandlers(t){
   input.value = msgDrafts[t.id] || '';
   const autosize = ()=>{ input.style.height = 'auto'; input.style.height = Math.min(110, input.scrollHeight) + 'px'; };
   autosize();
-  input.oninput = ()=>{ msgDrafts[t.id] = input.value; autosize(); };
+  input.oninput = ()=>{
+    msgDrafts[t.id] = input.value; autosize(); updateSendState();
+    if(input.value.trim()) sendTyping(t);
+  };
   input.onkeydown = (e)=>{
     // no computador Enter envia (Shift+Enter quebra linha); no celular Enter quebra linha
     if(e.key === 'Enter' && !e.shiftKey && window.matchMedia('(pointer:fine)').matches){ e.preventDefault(); msgSendCurrent(); }
   };
   input.onfocus = ()=> setTimeout(()=> scrollMsgBottom(), 250);
-  $id('msgSend').onclick = msgSendCurrent;
-  $id('msgAttach').onclick = msgPickImage;
-  renderPending();
+  $id('msgSend').onclick = ()=>{ msgSendCurrent(); };
+  $id('msgAttach').onclick = ()=> $id('msgFile').click();
+  $id('msgFile').onchange = (e)=>{ addAttachments(e.target.files); e.target.value = ''; };
+  renderAttachTray(); updateSendState();
+  $id('msgTray').onclick = (e)=>{
+    const rm = e.target.closest('[data-att-rm]');
+    if(!rm) return;
+    const arr = msgAttach[t.id] || [];
+    const a = arr.find(x => x.id === rm.dataset.attRm);
+    if(a) URL.revokeObjectURL(a.previewUrl);
+    msgAttach[t.id] = arr.filter(x => x.id !== rm.dataset.attRm);
+    renderAttachTray(); updateSendState();
+  };
 
   $id('msgComposerTop').onclick = (e)=>{
     const sp = e.target.closest('[data-speaker]');
@@ -5193,11 +5577,39 @@ function attachThreadHandlers(t){
     const ubp = e.target.closest('[data-unblock-player]');
     if(ubp){ ctPatchContact(contactById(ubp.dataset.unblockPlayer), { blocked_player: false }, 'O jogador foi desbloqueado.'); }
   };
-  $id('msgMessages').onclick = (e)=>{
+
+  // toque nas mensagens: foto abre o visualizador, "tentar de novo", ou menu da mensagem
+  const box = $id('msgMessages');
+  box.onclick = (e)=>{
+    if(e.target.closest('a')) return;                                   // link: deixa abrir
+    const retry = e.target.closest('[data-retry]');
+    if(retry){ const o = msgOutbox.find(x => x.id === retry.dataset.retry); if(o) deliverOutbox(o); return; }
+    const disc = e.target.closest('[data-discard]');
+    if(disc){ msgOutbox = msgOutbox.filter(x => x.id !== disc.dataset.discard); updateBubbles(t); return; }
     const img = e.target.closest('[data-msg-img]');
-    if(img){ window.open(img.dataset.msgImg, '_blank'); return; }
+    if(img){ openImageViewer(img.dataset.msgImg); return; }
     const b = e.target.closest('[data-msg-id]');
-    if(b && isMaster) msgDeleteMessage(b.dataset.msgId);
+    if(b) showMessageSheet(b.dataset.msgId);
+  };
+  // botão "ir pro fim" + contagem de novas enquanto você lê o histórico
+  const fab = $id('msgFab');
+  box.onscroll = ()=>{
+    const far = box.scrollHeight - box.scrollTop - box.clientHeight > 220;
+    fab.classList.toggle('show', far);
+    if(!far){ msgFabNew = 0; $id('msgFabCount').textContent = ''; }
+  };
+  fab.onclick = ()=>{ box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' }); };
+
+  // arrastar arquivos de imagem pra cima da conversa (computador)
+  const shell = document.querySelector('#messagesOverlay .app-shell');
+  const drop = $id('msgDrop');
+  let dragDepth = 0;
+  shell.ondragenter = (e)=>{ if(e.dataTransfer && [...e.dataTransfer.types].includes('Files')){ dragDepth++; drop.classList.add('show'); } };
+  shell.ondragover = (e)=>{ if(e.dataTransfer && [...e.dataTransfer.types].includes('Files')) e.preventDefault(); };
+  shell.ondragleave = ()=>{ dragDepth = Math.max(0, dragDepth - 1); if(!dragDepth) drop.classList.remove('show'); };
+  shell.ondrop = (e)=>{
+    e.preventDefault(); dragDepth = 0; drop.classList.remove('show');
+    if(e.dataTransfer && e.dataTransfer.files.length) addAttachments(e.dataTransfer.files);
   };
 }
 
@@ -5206,78 +5618,118 @@ function refreshThread(){
   if(!t){ msgView = 'list'; msgThreadId = null; renderMessagesOverlay(); showToast('Essa conversa foi apagada.'); return; }
   const box = $id('msgMessages');
   if(!box) return;
-  const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 140;
-  box.innerHTML = bubblesHtml(t);
-  if(nearBottom) box.scrollTop = box.scrollHeight;
-  $id('msgHeadSub').textContent = threadSubtitle(t);
+  const near = box.scrollHeight - box.scrollTop - box.clientHeight < 140;
+  const incoming = ()=> messagesOf(t.id).filter(m => isMaster ? m.sender === 'player' : m.sender === 'contact').length;
+  const prevN = msgIncomingSeen[t.id] ?? incoming();
+  updateBubbles(t);
+  const nowN = incoming();
+  if(near) box.scrollTop = box.scrollHeight;
+  else if(nowN > prevN){
+    msgFabNew += nowN - prevN;                     // "3 novas" no botão ↓ enquanto você lê o histórico
+    const fc = $id('msgFabCount'); if(fc) fc.textContent = String(msgFabNew);
+  }
+  msgIncomingSeen[t.id] = nowN;
+  const ts = typingSubtitle(t);
+  const sub = $id('msgHeadSub');
+  sub.textContent = ts || threadSubtitle(t);
+  sub.classList.toggle('typing-sub', !!ts);
+  $id('msgTypingSlot').innerHTML = typingBubbleHtml(t);
   $id('msgComposerTop').innerHTML = composerTopHtml(t);
   $id('msgInputRow').style.display = canSend(t) ? '' : 'none';
   if(threadUnread(t) > 0 && document.visibilityState === 'visible') markThreadRead(t.id);
 }
 
-function renderPending(){
-  const el = $id('msgPending');
-  if(!el) return;
-  const url = msgPendingImages[msgThreadId];
-  if(!url){ el.style.display = 'none'; el.innerHTML = ''; return; }
-  el.style.display = 'flex';
-  el.innerHTML = `<img src="${escapeHtml(url)}" alt="foto anexada"><button class="btn btn-ghost btn-sm" id="msgPendingRemove">Remover</button>`;
-  $id('msgPendingRemove').onclick = ()=>{ delete msgPendingImages[msgThreadId]; renderPending(); };
-}
-
-function msgPickImage(){
-  const t = threadById(msgThreadId);
-  if(!t) return;
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/png,image/jpeg,image/gif,image/webp';
-  input.onchange = async ()=>{
-    const file = input.files[0];
-    if(!file) return;
-    showToast('Enviando foto…');
-    try{
-      msgPendingImages[t.id] = await uploadGameImage(file);
-      renderPending();
-    } catch(e){ msgFail(e, 'Não consegui enviar a foto.'); }
+/* ---------- enviar ---------- */
+function makeOutbox(t, speaker, { body, image }){
+  return {
+    id: 'out_' + Math.random().toString(36).slice(2, 9), thread_id: t.id, pending: true, status: 'sending',
+    sender: isMaster ? 'contact' : 'player', contact_id: speaker ? speaker.id : null,
+    body: body || null, image_url: image ? image.previewUrl : null, remote_url: image ? image.url : null,
+    image_w: image ? image.w : null, image_h: image ? image.h : null,
+    game_day: state.day, game_clock: state.clock, created_at: new Date().toISOString()
   };
-  input.click();
 }
 
-let msgSending = false;
 async function msgSendCurrent(){
   const t = threadById(msgThreadId);
   const input = $id('msgInput');
-  if(!t || !input || msgSending) return;
+  if(!t || !input) return;
   const body = (input.value || '').trim();
-  const image = msgPendingImages[t.id] || null;
-  if(!body && !image) return;
+  let atts = msgAttach[t.id] || [];
+  if(!body && !atts.length) return;
   const speaker = isMaster ? currentSpeaker(t) : null;
   if(isMaster && !speaker){ showToast('Escolha quem está falando.'); return; }
-  msgSending = true;
-  const sendBtn = $id('msgSend');
-  if(sendBtn) sendBtn.disabled = true;
+  if(atts.some(a => a.status === 'uploading')){
+    showToast('Terminando de enviar as fotos…');
+    await Promise.all(atts.map(a => a.promise));
+    atts = msgAttach[t.id] || [];
+  }
+  atts = atts.filter(a => a.status === 'ready');
+  if(!body && !atts.length) return;
+
+  // limpa o campo na hora e mostra as mensagens "enviando…"
+  msgAttach[t.id] = []; msgDrafts[t.id] = '';
+  input.value = ''; input.style.height = 'auto';
+  renderAttachTray(); updateSendState();
+  const entries = atts.length
+    ? atts.map((a, i) => makeOutbox(t, speaker, { body: i === atts.length - 1 ? body : '', image: a }))   // legenda vai na última foto
+    : [makeOutbox(t, speaker, { body })];
+  msgOutbox.push(...entries);
+  updateBubbles(t);
+  scrollMsgBottom(true);
+  input.focus();
+  for(const e of entries) await deliverOutbox(e);
+}
+
+async function deliverOutbox(e){
+  e.status = 'sending';
+  const t = threadById(e.thread_id);
+  if(t && msgView === 'thread' && msgThreadId === t.id) updateBubbles(t);
   try{
-    const args = { p_thread_id: t.id, p_body: body, p_image_url: image, p_game_day: state.day, p_game_clock: state.clock };
+    const args = { p_thread_id: e.thread_id, p_body: e.body || '', p_image_url: e.remote_url, p_game_day: e.game_day, p_game_clock: e.game_clock, p_image_w: e.image_w, p_image_h: e.image_h };
     let row;
     if(isMaster){
-      row = await msgRpc('msg_send_as_contact', { ...args, p_contact_id: speaker.id }, true);
-      msgSpeakers[t.id] = speaker.id;
-      t.master_last_read_at = row.created_at;
+      row = await msgRpc('msg_send_as_contact', { ...args, p_contact_id: e.contact_id }, true);
+      msgSpeakers[e.thread_id] = e.contact_id;
+      if(t) t.master_last_read_at = row.created_at;
     } else {
       row = await msgRpc('msg_send_as_player', args);
-      t.player_last_read_at = row.created_at;
+      if(t) t.player_last_read_at = row.created_at;
     }
     upsertLocal(msgMessages, row);
-    t.last_message_at = row.created_at;
-    msgDrafts[t.id] = '';
-    delete msgPendingImages[t.id];
-    input.value = ''; input.style.height = 'auto';
-    renderPending();
-    refreshThread();
-    scrollMsgBottom(true);
-    input.focus();
-  } catch(e){ msgFail(e, 'Não consegui enviar. Tenta de novo.'); }
-  finally{ msgSending = false; const b = $id('msgSend'); if(b) b.disabled = false; }
+    if(t) t.last_message_at = row.created_at;
+    msgOutbox = msgOutbox.filter(x => x !== e);
+  } catch(err){
+    console.error('Falha ao enviar mensagem', err);
+    e.status = 'failed';
+  }
+  if(t && msgView === 'thread' && msgThreadId === t.id){ updateBubbles(t); scrollMsgBottom(); }
+  refreshAppBadges();
+}
+
+/* ---------- menu da mensagem (copiar / apagar) ---------- */
+function closeMsgSheet(){ const s = $id('msgSheet'); if(s) s.remove(); }
+function showMessageSheet(id){
+  const m = msgMessages.find(x => x.id === id);
+  if(!m) return;                                  // mensagens "enviando" não têm menu
+  const items = [];
+  if(m.body) items.push({ label: 'Copiar texto', fn: async ()=>{ try{ await navigator.clipboard.writeText(m.body); showToast('Texto copiado.'); } catch(e){ showToast('Não consegui copiar.'); } } });
+  if(m.image_url) items.push({ label: 'Abrir foto', fn: ()=> openImageViewer(m.image_url) });
+  if(isMaster) items.push({ label: 'Apagar mensagem', danger: true, fn: ()=> msgDeleteMessage(id) });
+  if(!items.length) return;
+  closeMsgSheet();
+  const shell = document.querySelector('#messagesOverlay .app-shell');
+  if(!shell) return;
+  const sheet = document.createElement('div');
+  sheet.id = 'msgSheet';
+  sheet.className = 'msg-sheet';
+  sheet.innerHTML = `<div class="msg-sheet-card">${items.map((it, i) => `<div class="msg-sheet-item ${it.danger ? 'danger' : ''}" data-si="${i}">${escapeHtml(it.label)}</div>`).join('')}<div class="msg-sheet-item cancel" data-si="x">Cancelar</div></div>`;
+  sheet.onclick = (e)=>{
+    const el = e.target.closest('[data-si]');
+    if(el && el.dataset.si !== 'x'){ closeMsgSheet(); items[Number(el.dataset.si)].fn(); return; }
+    if(el || e.target === sheet) closeMsgSheet();
+  };
+  shell.appendChild(sheet);
 }
 
 async function msgDeleteMessage(id){
@@ -5285,8 +5737,68 @@ async function msgDeleteMessage(id){
   try{
     await msgRpc('msg_delete_message', { p_id: id }, true);
     msgMessages = msgMessages.filter(m => m.id !== id);
-    refreshThread();
+    const t = threadById(msgThreadId);
+    if(t) updateBubbles(t);
   } catch(e){ msgFail(e, 'Não consegui apagar.'); }
+}
+
+/* ---------- visualizador de fotos (tela cheia, com galeria da conversa) ---------- */
+let viewerState = null;
+function openImageViewer(url){
+  const t = threadById(msgThreadId);
+  const urls = t ? messagesOf(t.id).filter(m => m.image_url).map(m => m.image_url) : [];
+  let i = urls.indexOf(url);
+  if(i < 0){ urls.push(url); i = urls.length - 1; }      // foto ainda "enviando" (endereço local)
+  viewerState = { urls, i };
+  renderViewer();
+  document.addEventListener('keydown', viewerKey);
+}
+function closeImageViewer(){
+  viewerState = null;
+  const el = $id('imgViewer');
+  if(el) el.remove();
+  document.removeEventListener('keydown', viewerKey);
+}
+function viewerKey(e){
+  if(e.key === 'Escape') closeImageViewer();
+  else if(e.key === 'ArrowRight') viewerStep(1);
+  else if(e.key === 'ArrowLeft') viewerStep(-1);
+}
+function viewerStep(d){
+  if(!viewerState) return;
+  const n = viewerState.urls.length;
+  viewerState.i = (viewerState.i + d + n) % n;
+  renderViewer();
+}
+function renderViewer(){
+  if(!viewerState) return;
+  let el = $id('imgViewer');
+  if(!el){ el = document.createElement('div'); el.id = 'imgViewer'; document.body.appendChild(el); }
+  const { urls, i } = viewerState;
+  const url = urls[i];
+  el.className = 'img-viewer';
+  el.innerHTML = `
+    <div class="iv-top">
+      <button class="iv-btn" id="ivClose" aria-label="Fechar">✕</button>
+      <div class="iv-count">${urls.length > 1 ? `${i + 1} / ${urls.length}` : ''}</div>
+      <a class="iv-btn" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir original" title="Abrir original">↗</a>
+    </div>
+    <img class="iv-img" src="${escapeHtml(url)}" alt="foto" draggable="false">
+    ${urls.length > 1 ? `<button class="iv-nav prev" id="ivPrev" aria-label="Anterior">‹</button><button class="iv-nav next" id="ivNext" aria-label="Próxima">›</button>` : ''}`;
+  $id('ivClose').onclick = closeImageViewer;
+  const prev = $id('ivPrev'), next = $id('ivNext');
+  if(prev) prev.onclick = (e)=>{ e.stopPropagation(); viewerStep(-1); };
+  if(next) next.onclick = (e)=>{ e.stopPropagation(); viewerStep(1); };
+  // deslizar pro lado troca de foto; tocar no fundo fecha
+  let sx = null;
+  el.onpointerdown = (e)=>{ sx = e.clientX; };
+  el.onpointerup = (e)=>{
+    if(sx == null) return;
+    const dx = e.clientX - sx;
+    sx = null;
+    if(Math.abs(dx) > 50 && urls.length > 1){ viewerStep(dx < 0 ? 1 : -1); return; }
+    if(Math.abs(dx) < 8 && !e.target.closest('.iv-btn, .iv-nav, .iv-img')) closeImageViewer();
+  };
 }
 
 /* ----- menu ⋯ e ações da conversa ----- */
@@ -7192,6 +7704,14 @@ document.getElementById('diaryTrigger').onclick = openDiary;
 // outro contexto (ex: diário, que já tem o próprio tratamento de colar
 // imagem no editor) o evento passa intocado.
 document.addEventListener('paste', async (e)=>{
+  // conversa aberta: Ctrl+V / colar com imagem vira anexo (texto colado segue normal no campo)
+  if(messagesOpen && msgView === 'thread'){
+    const cd = e.clipboardData;
+    let files = cd ? [...cd.files].filter(f => (f.type || '').startsWith('image/')) : [];
+    if(!files.length && cd && cd.items) files = [...cd.items].filter(i => (i.type || '').startsWith('image/')).map(i => i.getAsFile()).filter(Boolean);
+    if(files.length){ e.preventDefault(); addAttachments(files); }
+    return;
+  }
   const inCharacterForm = isMaster && (ui.modal === 'addCharacter' || ui.modal === 'characterDetail');
   const inCodexEntryForm = codexOpen && codexView === 'entryForm';
   if(!inCharacterForm && !inCodexEntryForm) return;
