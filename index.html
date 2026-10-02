@@ -520,12 +520,47 @@
     100%{transform:translate(0,0) skewX(0);filter:none;}
   }
 
-  /* ---------- TRANSIÇÃO SUAVE ENTRE ABAS ---------- */
-  main{animation:viewIn .28s cubic-bezier(.2,.8,.2,1);}
-  @keyframes viewIn{
-    from{opacity:0;transform:translateY(8px);filter:blur(2px);}
-    to{opacity:1;transform:translateY(0);filter:blur(0);}
+  /* ---------- SISTEMA DE MOVIMENTO ----------
+     Uma curva "desacelera no fim" (iOS-like) e uma "mola" com leve ultrapassagem.
+     Entradas só tocam quando a TELA muda (render() marca #root com .still quando só
+     os dados mudaram) — sem isso, cada toast/atualização em tempo real fazia a página
+     inteira "piscar" de novo. */
+  :root{
+    --ease-out:cubic-bezier(.16,1,.3,1);
+    --ease-spring:cubic-bezier(.34,1.45,.5,1);
+    --ease-in:cubic-bezier(.5,0,.75,0);
   }
+  @keyframes viewIn{
+    from{opacity:0;transform:translateY(10px);}
+    to{opacity:1;transform:translateY(0);}
+  }
+  @keyframes cardIn{
+    from{opacity:0;transform:translateY(16px) scale(.985);}
+    to{opacity:1;transform:none;}
+  }
+  @keyframes slideFromRight{from{opacity:0;transform:translateX(34px);}to{opacity:1;transform:none;}}
+  @keyframes slideFromLeft{from{opacity:0;transform:translateX(-34px);}to{opacity:1;transform:none;}}
+  @keyframes fillGrow{from{width:0;}}
+  @keyframes shimmer{from{background-position:-240px 0;}to{background-position:240px 0;}}
+  /* cada filho direto do <main> entra em cascata */
+  /* "backwards": o estado final é o natural, então hover/transform do próprio card seguem livres */
+  main > *{animation:cardIn .5s var(--ease-out) backwards;}
+  main > *:nth-child(2){animation-delay:.04s;}
+  main > *:nth-child(3){animation-delay:.08s;}
+  main > *:nth-child(4){animation-delay:.12s;}
+  main > *:nth-child(5){animation-delay:.16s;}
+  main > *:nth-child(6){animation-delay:.2s;}
+  main > *:nth-child(7){animation-delay:.24s;}
+  main > *:nth-child(n+8){animation-delay:.28s;}
+  .progress-fill{animation:fillGrow .9s var(--ease-out) .15s backwards;}
+  /* só os dados mudaram (toast, tempo real…): não repete nenhuma entrada */
+  #root.still main > *, #root.still .stagger-in, #root.still .progress-fill,
+  #root.still .home-enter .app-icon-tile, #root.still .home-enter .home-widget,
+  #root.still .home-enter .home-balance, #root.still .home-enter .home-master,
+  #root.still .login-card, #root.still .tab-pill{animation:none !important;}
+  #root.still-modal .overlay:not(.closing), #root.still-modal .overlay:not(.closing) .modal{animation:none !important;}
+  #root.still-toast .toast{animation:none !important;}
+  .no-view-anim, .no-view-anim .stagger-in, .no-view-anim .msg-row, .no-view-anim .msg-pick-row, .no-view-anim .progress-fill{animation:none !important;}
   .tabbar, .subtabs{position:relative;}
 
   /* ---------- ANIMAÇÕES DOS "APPS" (abrir/fechar/navegar/listas) ---------- */
@@ -547,8 +582,8 @@
   .app-shell-enter.from-icon{animation:appOpenFromIcon .4s cubic-bezier(.2,.9,.25,1);}
   .app-shell-exit{animation:appShellOut .26s cubic-bezier(.45,0,.75,.4) forwards;transform-origin:50% 92%;}
   .app-overlay-closing{animation:overlayFadeOut .26s ease forwards;}
-  .inv-wrap, .codex-wrap{animation:viewIn .26s cubic-bezier(.2,.8,.2,1);}
-  .stagger-in{animation:viewIn .35s cubic-bezier(.2,.8,.2,1) both;}
+  .inv-wrap, .codex-wrap{animation:viewIn .4s var(--ease-out) backwards;}
+  .stagger-in{animation:cardIn .5s var(--ease-out) backwards;}
 
   /* ---------- DIÁRIO (ponto escondido + visão CAT/DOG) ---------- */
   .diary-trigger{
@@ -1445,6 +1480,239 @@
     --bg-panel:var(--app-bg-2); --bg-panel-2:var(--app-bg-2); --bg-panel-3:var(--app-bg-3);
     --border:var(--app-border); --border-soft:var(--app-border); --text:var(--app-fg); --text-dim:#d99cc0; --text-faint:#8a5877;
   }
+
+  /* ============================================================
+     POLIMENTO DE MOVIMENTO E ACABAMENTO
+     (fica por último de propósito: ganha de regras anteriores)
+     ============================================================ */
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{
+      animation-duration:.01ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;
+      transition-duration:.01ms !important;
+    }
+  }
+
+  /* --- toque: tudo que é clicável "afunda" e volta com mola --- */
+  .btn, .icon-btn, .tab-btn, .subtab, .seg-opt, .msg-icon-btn, .msg-seg-opt, .msg-attach, .app-chrome-close,
+  .phone-home-btn, .mode-cat-btn, .hm-btn, .clock-chip, .msg-speaker-chip, .sched-chips span, .inv-mini-add,
+  .inv-chooser-option, .month-day-cell, .edit-link, .add-link, .msg-switch, .clock-preset{
+    transition:transform .35s var(--ease-spring), background-color .22s ease, border-color .22s ease,
+               color .22s ease, box-shadow .3s ease, filter .22s ease, opacity .22s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .btn:active, .icon-btn:active, .tab-btn:active, .subtab:active, .seg-opt:active, .msg-icon-btn:active,
+  .msg-seg-opt:active, .msg-attach:active, .app-chrome-close:active, .phone-home-btn:active, .mode-cat-btn:active,
+  .hm-btn:active, .clock-chip:active, .msg-speaker-chip:active, .sched-chips span:active, .inv-mini-add:active,
+  .inv-chooser-option:active, .month-day-cell:active{
+    transform:scale(.94);transition-duration:.09s;
+  }
+  .entity-card, .event-card, .msg-row, .msg-pick-row{-webkit-tap-highlight-color:transparent;}
+  .entity-card{transition:transform .35s var(--ease-spring), border-color .25s ease, box-shadow .3s ease, background-color .25s ease;}
+  .entity-card:active{transform:scale(.985);transition-duration:.09s;}
+  @media (hover:hover){
+    .entity-card:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(0,0,0,.38), 0 0 0 1px color-mix(in srgb, var(--accent-1) 30%, transparent);}
+    .btn:hover, .icon-btn:hover, .hm-btn:hover{transform:translateY(-1px);}
+    .month-day-cell:hover{transform:translateY(-1px) scale(1.04);}
+  }
+
+  /* --- botão principal: brilho que varre + profundidade --- */
+  .btn-accent{
+    position:relative;overflow:hidden;isolation:isolate;
+    box-shadow:0 6px 18px color-mix(in srgb, var(--accent-1) 38%, transparent), inset 0 1px 0 rgba(255,255,255,.32);
+  }
+  .btn-accent::after{
+    content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;
+    background:linear-gradient(110deg, transparent 35%, rgba(255,255,255,.4) 50%, transparent 65%);
+    transform:translateX(-130%);transition:transform .7s var(--ease-out);
+  }
+  @media (hover:hover){ .btn-accent:hover::after{transform:translateX(130%);} }
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+
+  /* --- cartões: acabamento de vidro --- */
+  .card{
+    box-shadow:0 10px 30px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.04);
+    transition:border-color .3s ease, box-shadow .3s ease;
+  }
+  @media (hover:hover){ .card:hover{border-color:color-mix(in srgb, var(--accent-1) 28%, var(--border));} }
+  .section-title{letter-spacing:.2px;}
+
+  /* --- campos: brilho suave no foco --- */
+  .field input, .field select, .field textarea, .search-input, .msg-search input, .msg-input-wrap textarea{
+    transition:border-color .22s ease, box-shadow .28s ease, background-color .22s ease;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus, .search-input:focus, .msg-search input:focus,
+  .msg-input-wrap textarea:focus{
+    outline:none;border-color:var(--accent-1);
+    box-shadow:0 0 0 3px color-mix(in srgb, var(--accent-1) 22%, transparent);
+  }
+
+  /* --- abas: pílula que desliza --- */
+  .tabbar .tab-btn{position:relative;z-index:1;background:transparent;}
+  .tabbar .tab-btn.active{background:transparent;box-shadow:none;border-color:transparent;}
+  .tab-pill{
+    position:absolute;top:0;bottom:10px;left:16px;z-index:0;pointer-events:none;
+    width:calc((100% - 32px - (var(--n) - 1) * 6px) / var(--n));border-radius:12px;
+    background:linear-gradient(120deg,var(--accent-1),var(--accent-2));
+    box-shadow:0 6px 20px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,.3);
+    transform:translateX(calc(var(--i) * (100% + 6px)));
+    animation:tabPill .5s var(--ease-spring);
+  }
+  @keyframes tabPill{from{transform:translateX(calc(var(--from) * (100% + 6px)));}}
+  .subtab{transition:border-color .22s ease, color .22s ease, background-color .22s ease, transform .3s var(--ease-spring);}
+  .subtab:active{transform:scale(.94);}
+
+  /* --- modal: sobe com mola, arrasta pra baixo pra fechar --- */
+  .overlay{animation:fadeIn .28s ease backwards;}
+  .modal{animation:sheetSpring .55s var(--ease-spring) backwards;touch-action:pan-y;will-change:transform;box-shadow:0 -20px 60px rgba(0,0,0,.5);}
+  .modal::before{content:'';display:block;width:40px;height:4px;border-radius:99px;background:var(--border);margin:-8px auto 14px;opacity:.9;}
+  .modal-head{touch-action:none;cursor:grab;}
+  .overlay.closing{animation:fadeOut .22s ease forwards;pointer-events:none;}
+  .overlay.closing .modal{animation:sheetOut .26s var(--ease-in) forwards;}
+  @keyframes sheetSpring{from{transform:translateY(70px) scale(.97);opacity:0;}to{transform:none;opacity:1;}}
+  @keyframes sheetOut{to{transform:translateY(105%);opacity:.6;}}
+  @keyframes fadeOut{to{opacity:0;}}
+  .modal.dragging{transition:none;}
+  .modal.snapback{transition:transform .4s var(--ease-spring);}
+
+  /* --- aviso: aparece por cima de TUDO (antes ficava atrás dos apps) e some suave --- */
+  .toast{
+    z-index:650;bottom:calc(env(safe-area-inset-bottom, 0px) + 78px);
+    background:color-mix(in srgb, var(--bg-panel-3) 90%, transparent);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    box-shadow:0 14px 36px rgba(0,0,0,.5), 0 0 0 1px color-mix(in srgb, var(--accent-1) 35%, transparent);
+    animation:toastIn .5s var(--ease-spring) backwards, toastOut .3s var(--ease-in) 1.9s forwards;
+  }
+  @keyframes toastIn{from{opacity:0;transform:translate(-50%,26px) scale(.9);}to{opacity:1;transform:translate(-50%,0) scale(1);}}
+  @keyframes toastOut{to{opacity:0;transform:translate(-50%,14px) scale(.96);}}
+
+  /* --- carregando: esqueleto com brilho em vez de texto parado --- */
+  .skel-shell .sk{
+    border-radius:16px;
+    background:linear-gradient(90deg, rgba(255,255,255,.04) 0, rgba(255,255,255,.11) 60px, rgba(255,255,255,.04) 120px);
+    background-size:240px 100%;animation:shimmer 1.25s linear infinite;
+  }
+  .skel-title{width:130px;height:24px;border-radius:10px;}
+  .skel-card{height:92px;margin-bottom:12px;}
+  .skel-row{height:56px;margin-bottom:10px;border-radius:14px;}
+  .skel-shell .app-body{overflow:hidden;}
+  .skel-shell .skel-close{width:30px;height:30px;border-radius:50%;}
+
+  /* --- login --- */
+  .login-card{animation:cardIn .7s var(--ease-out) backwards;box-shadow:0 24px 70px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.05);}
+  .login-screen{position:relative;}
+  .login-screen::before{
+    content:'';position:absolute;width:340px;height:340px;border-radius:50%;pointer-events:none;
+    background:radial-gradient(circle, color-mix(in srgb, var(--accent-1) 22%, transparent), transparent 68%);
+    filter:blur(30px);animation:orbFloat 14s ease-in-out infinite alternate;
+  }
+  .login-card{position:relative;}
+
+  /* --- números que contam e piscam verde/vermelho quando o saldo muda --- */
+  .balance-hero, .hb-value{font-variant-numeric:tabular-nums;}
+  .delta-up{animation:deltaUp 1.4s ease-out;}
+  .delta-down{animation:deltaDown 1.4s ease-out;}
+  @keyframes deltaUp{from{color:#4ff0a0;text-shadow:0 0 22px rgba(79,240,160,.6);}}
+  @keyframes deltaDown{from{color:#ff6b6b;text-shadow:0 0 22px rgba(255,107,107,.6);}}
+
+  /* --- tela inicial: profundidade (estrelas, ruído, brilho de vidro) --- */
+  .phone-home::before{animation:orbFloat 18s ease-in-out var(--orb-delay, 0s) infinite alternate;}
+  .phone-home > .home-sky{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;border-radius:inherit;}
+  .home-sky::before, .home-sky::after{content:'';position:absolute;inset:0;}
+  .home-sky::before{
+    background:
+      radial-gradient(2.4px 2.4px at 12% 9%, #fff 35%, transparent), radial-gradient(1.8px 1.8px at 27% 21%, #fff 35%, transparent),
+      radial-gradient(2.8px 2.8px at 44% 7%, #fff 35%, transparent), radial-gradient(1.8px 1.8px at 63% 16%, #fff 35%, transparent),
+      radial-gradient(2.4px 2.4px at 81% 8%, #fff 35%, transparent), radial-gradient(1.8px 1.8px at 92% 23%, #fff 35%, transparent),
+      radial-gradient(1.8px 1.8px at 7% 47%, #fff 35%, transparent), radial-gradient(2.4px 2.4px at 95% 52%, #fff 35%, transparent),
+      radial-gradient(5px 5px at 44% 7%, rgba(170,200,255,.55), transparent), radial-gradient(5px 5px at 81% 8%, rgba(170,200,255,.5), transparent);
+    animation:twinkle 4.5s ease-in-out infinite;
+  }
+  .home-sky::after{
+    background:
+      radial-gradient(1.8px 1.8px at 19% 14%, #fff 35%, transparent), radial-gradient(2.4px 2.4px at 36% 11%, #fff 35%, transparent),
+      radial-gradient(1.8px 1.8px at 55% 24%, #fff 35%, transparent), radial-gradient(2.8px 2.8px at 72% 12%, #fff 35%, transparent),
+      radial-gradient(1.8px 1.8px at 88% 40%, #fff 35%, transparent), radial-gradient(1.8px 1.8px at 4% 30%, #fff 35%, transparent),
+      radial-gradient(1.8px 1.8px at 33% 40%, #fff 35%, transparent), radial-gradient(2.4px 2.4px at 75% 36%, #fff 35%, transparent),
+      radial-gradient(5px 5px at 36% 11%, rgba(255,210,230,.45), transparent);
+    animation:twinkle 6s ease-in-out -2.2s infinite;
+  }
+  @keyframes twinkle{0%,100%{opacity:.25;}50%{opacity:.95;}}
+  .phone-home::after{
+    content:'';position:absolute;inset:0;z-index:0;pointer-events:none;border-radius:inherit;opacity:.5;mix-blend-mode:soft-light;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+  .home-widget, .home-balance, .home-master{position:relative;overflow:hidden;}
+  .home-widget{box-shadow:0 14px 36px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.18);}
+  .home-balance{box-shadow:0 8px 24px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.12);transition:transform .35s var(--ease-spring);}
+  .home-widget{transition:transform .35s var(--ease-spring);}
+  .home-widget:active, .home-balance:active{transform:scale(.97);}
+  .home-enter .home-widget::after, .home-enter .home-balance::after{
+    content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.2) 48%, transparent 66%);
+    transform:translateX(-120%);animation:sheen 1.5s var(--ease-out) .55s 1 both;
+  }
+  @keyframes sheen{to{transform:translateX(120%);}}
+  .home-enter .home-widget{animation:cardIn .6s var(--ease-out) backwards;}
+  .home-enter .home-balance{animation:cardIn .6s var(--ease-out) .08s backwards;}
+  .home-enter .home-master{animation:cardIn .6s var(--ease-out) .16s backwards;}
+  .home-enter .app-icon-tile{animation:iconPop .6s var(--ease-spring) backwards;}
+  @keyframes iconPop{from{opacity:0;transform:translateY(26px) scale(.55);}to{opacity:1;transform:none;}}
+  .app-icon-glyph{transition:transform .4s var(--ease-spring), box-shadow .3s ease;}
+  .app-icon-tile:active .app-icon-glyph{transform:scale(.86);transition-duration:.08s;}
+  @media (hover:hover){
+    .app-icon-tile:hover .app-icon-glyph{transform:translateY(-6px) scale(1.12);box-shadow:0 16px 28px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.3);}
+  }
+  .app-badge{animation:badgePop .55s var(--ease-spring) backwards;}
+  @keyframes badgePop{from{transform:scale(0);opacity:0;}}
+  #root.still .app-badge{animation:none;}
+  .home-dock{box-shadow:0 14px 40px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.14);}
+
+  /* --- calendário: os dias entram em onda; o de hoje pulsa de leve --- */
+  .month-day-cell{animation:cellIn .5s var(--ease-spring) backwards;animation-delay:calc(var(--d, 0) * 16ms + .1s);}
+  @keyframes cellIn{from{opacity:0;transform:scale(.55) translateY(6px);}}
+  #root.still .month-day-cell{animation:none !important;}
+  .month-day-cell.today{animation:cellIn .5s var(--ease-spring) backwards calc(var(--d, 0) * 16ms + .1s), todayGlow 3.2s ease-in-out 1s infinite;}
+  #root.still .month-day-cell.today{animation:todayGlow 3.2s ease-in-out infinite !important;}
+  @keyframes todayGlow{0%,100%{box-shadow:0 0 8px var(--accent-glow);}50%{box-shadow:0 0 18px var(--accent-glow), 0 0 0 1px color-mix(in srgb, var(--accent-1) 50%, transparent);}}
+
+  /* --- barra "home" dos apps: respira de leve pra chamar o gesto --- */
+  .phone-indicator-wrap .app-home-indicator, .app-shell .app-home-indicator{transition:background-color .25s ease, transform .3s var(--ease-spring);}
+  .app-home-indicator:active{transform:scaleX(.82);}
+
+  /* --- mensagens: transições entre telas, lista em cascata, balões com mola --- */
+  .msg-shell.go-forward .app-body, .msg-shell.go-forward .msg-head, .msg-shell.go-forward .app-chrome-head{animation:slideFromRight .42s var(--ease-out) backwards;}
+  .msg-shell.go-back .app-body, .msg-shell.go-back .msg-head, .msg-shell.go-back .app-chrome-head{animation:slideFromLeft .42s var(--ease-out) backwards;}
+  .rows-enter > *{animation:viewIn .5s var(--ease-out) backwards;}
+  .rows-enter > *:nth-child(2){animation-delay:.04s;} .rows-enter > *:nth-child(3){animation-delay:.08s;}
+  .rows-enter > *:nth-child(4){animation-delay:.12s;} .rows-enter > *:nth-child(5){animation-delay:.16s;}
+  .rows-enter > *:nth-child(6){animation-delay:.2s;} .rows-enter > *:nth-child(7){animation-delay:.24s;}
+  .rows-enter > *:nth-child(n+8){animation-delay:.28s;}
+  .msg-row, .msg-pick-row{transition:background-color .2s ease, transform .3s var(--ease-spring);}
+  .msg-row:active, .msg-pick-row:active{transform:scale(.985);}
+  .msg-b{animation:none;}
+  .msg-piece.fresh .msg-b, .msg-piece.fresh .msg-sched-head{animation:msgPop .42s var(--ease-spring) backwards;}
+  .msg-line.mine .msg-b{transform-origin:100% 100%;}
+  .msg-line.theirs .msg-b{transform-origin:0 100%;}
+  @keyframes msgPop{from{opacity:0;transform:translateY(12px) scale(.86);}to{opacity:1;transform:none;}}
+  .msg-line.typing .msg-b{animation:msgPop .35s var(--ease-spring) backwards;}
+  .msg-send{box-shadow:0 6px 16px color-mix(in srgb, var(--accent-1) 40%, transparent);}
+  .msg-send.show{transition:width .3s var(--ease-spring), margin .3s var(--ease-spring), opacity .2s ease, transform .35s var(--ease-spring);}
+  .msg-avatar{transition:transform .3s var(--ease-spring);}
+  .msg-head-info:active .msg-avatar{transform:scale(.92);}
+  .msg-sheet-card{animation:sheetSpring .45s var(--ease-spring) backwards;}
+  .sched-card{animation:sheetSpring .5s var(--ease-spring) backwards;}
+  .img-viewer{animation:fadeIn .25s ease backwards;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
+  .iv-img{animation:ivIn .35s var(--ease-spring) backwards;}
+  .notif-banner{animation:notifIn .5s var(--ease-spring);}
+  @keyframes notifIn{from{opacity:0;transform:translateY(-80px) scale(.94);}to{opacity:1;transform:none;}}
+
+  /* --- apps: abertura mais suave --- */
+  .app-shell-enter{animation:appShellIn .5s var(--ease-out) backwards;}
+  .app-shell-enter.from-icon{animation:appOpenFromIcon .5s var(--ease-out) backwards;}
+  /* sair sempre ganha de entrar (o elemento pode ter as duas classes) */
+  .app-shell-exit, .app-shell-enter.app-shell-exit, .app-shell-enter.from-icon.app-shell-exit{
+    animation:appShellOut .28s cubic-bezier(.45,0,.75,.4) forwards;
+  }
 </style>
 </head>
 <body>
@@ -1830,10 +2098,13 @@ function triggerPropertyEvent(prop, forcedType, automatic){
 // enter: anima a próxima tela renderizada ('home' | 'app').
 let ui = { modal: null, modalData: {}, toast: null, app: null, bankTab: 'saldo', enter: 'home' };
 
+let toastTimer = null;
 function showToast(msg){
   ui.toast = msg;
+  ui.toastSeq = (ui.toastSeq || 0) + 1;
   render();
-  setTimeout(()=>{ ui.toast = null; render(); }, 2200);
+  clearTimeout(toastTimer);          // um aviso novo reinicia a contagem (antes o antigo apagava o novo cedo demais)
+  toastTimer = setTimeout(()=>{ ui.toast = null; render(); }, 2200);
 }
 
 // trava o scroll da página por trás dos overlays (diário/inventário/codex/apps).
@@ -1891,13 +2162,67 @@ function toggleMode(btnEl){
 function openModal(type, data={}){
   ui.modal = type;
   ui.modalData = data;
+  ui.closingModal = false;
   render();
 }
+// fecha com animação (a folha desce e o fundo some); o modal só sai de verdade depois dela
 function closeModal(){
-  ui.modal = null;
-  ui.modalData = {};
+  if(!ui.modal){ ui.modalData = {}; render(); return; }
+  if(ui.closingModal) return;
+  const type = ui.modal;
+  ui.closingModal = true;
   render();
+  setTimeout(()=>{
+    // se nesse meio tempo abriram outro modal, deixa ele em paz
+    if(ui.modal === type && ui.closingModal){ ui.modal = null; ui.modalData = {}; ui.closingModal = false; render(); }
+  }, 240);
 }
+
+// arrastar o topo do modal pra baixo fecha (como uma folha de celular); soltar antes volta com mola
+let modalDrag = null;
+document.addEventListener('pointerdown', (e)=>{
+  const head = e.target.closest && e.target.closest('.modal-head');
+  if(!head || e.target.closest('.icon-btn') || ui.closingModal) return;
+  const modal = head.closest('.modal');
+  if(!modal) return;
+  modalDrag = { modal, y0: e.clientY, dy: 0, id: e.pointerId };
+});
+document.addEventListener('pointermove', (e)=>{
+  if(!modalDrag) return;
+  const dy = Math.max(0, e.clientY - modalDrag.y0);
+  modalDrag.dy = dy;
+  if(dy > 4){
+    modalDrag.modal.classList.add('dragging');
+    modalDrag.modal.classList.remove('snapback');
+    modalDrag.modal.style.transform = `translateY(${dy}px)`;
+    const ov = modalDrag.modal.closest('.overlay');
+    if(ov) ov.style.opacity = String(Math.max(0.35, 1 - dy / 420));
+  }
+});
+function endModalDrag(){
+  if(!modalDrag) return;
+  const { modal, dy } = modalDrag;
+  modalDrag = null;
+  modal.classList.remove('dragging');
+  const ov = modal.closest('.overlay');
+  if(dy > 110){
+    // fecha a partir de onde o dedo largou (sem re-renderizar, senão a folha "pularia" de volta pro topo)
+    const type = ui.modal;
+    ui.closingModal = true;
+    if(ov){ ov.style.opacity = ''; ov.classList.add('closing'); }
+    setTimeout(()=>{
+      if(ui.modal === type && ui.closingModal){ ui.modal = null; ui.modalData = {}; ui.closingModal = false; render(); }
+    }, 240);
+    return;
+  }
+  if(dy > 0){
+    modal.classList.add('snapback');
+    modal.style.transform = '';
+    if(ov) ov.style.opacity = '';
+  }
+}
+document.addEventListener('pointerup', endModalDrag);
+document.addEventListener('pointercancel', endModalDrag);
 
 /* ============================================================
    RENDER
@@ -1908,12 +2233,45 @@ function syncDiaryTrigger(){
   if(t) t.style.display = (state !== null && !diaryOpen) ? 'block' : 'none';
 }
 
+/* render() refaz o #root inteiro; sem cuidado, toda entrada (cascata de cards, barras, modal,
+   aviso) tocaria de novo a cada atualização de dados. Guardamos "qual tela / modal / aviso" foi
+   desenhado por último e marcamos o #root com .still* quando só os dados mudaram — o CSS apaga as
+   animações de entrada nesse caso. */
+let lastScreenKey = null, lastModalKey = null, lastToastKey = null;
+
+// números que "contam" até o valor novo (saldo) e piscam verde/vermelho
+const countState = {};
+function animateCounts(scope){
+  scope.querySelectorAll('[data-count]').forEach(el=>{
+    const key = el.dataset.countKey || 'x';
+    const to = parseFloat(el.dataset.count);
+    const from = countState[key];
+    countState[key] = to;
+    if(from === undefined || from === to || document.hidden) return;
+    const t0 = performance.now(), dur = 950;
+    el.classList.remove('delta-up', 'delta-down');
+    void el.offsetWidth;
+    el.classList.add(to > from ? 'delta-up' : 'delta-down');
+    const tick = (now)=>{
+      if(!el.isConnected) return;
+      const p = Math.min(1, (now - t0) / dur);
+      el.textContent = fmt(from + (to - from) * (1 - Math.pow(1 - p, 4)));
+      if(p < 1) requestAnimationFrame(tick);
+    };
+    el.textContent = fmt(from);
+    requestAnimationFrame(tick);
+  });
+}
+
 function render(){
   const root = document.getElementById('root');
 
   if(state === null){
     document.body.className = '';
     root.innerHTML = renderLoginScreen();
+    const lk = 'login|' + loginMode;
+    root.classList.toggle('still', lk === lastScreenKey);
+    lastScreenKey = lk;
     attachLoginHandlers();
     syncDiaryTrigger();
     return;
@@ -1931,8 +2289,18 @@ function render(){
     ${ui.modal ? renderModal() : ''}
     ${ui.toast ? `<div class="toast">${ui.toast}</div>` : ''}
   `;
+
+  const screenKey = [ui.app || 'home', ui.bankTab, state.investSubTab || '', ui.calYear, ui.calMonth, state.mode].join('|');
+  const modalKey = ui.modal ? ui.modal + ':' + ((ui.modalData && ui.modalData.id) || '') : '';
+  const toastKey = ui.toast ? ui.toastSeq + ':' + ui.toast : '';
+  root.classList.toggle('still', !enter && screenKey === lastScreenKey);
+  root.classList.toggle('still-modal', modalKey === lastModalKey);
+  root.classList.toggle('still-toast', toastKey === lastToastKey);
+  lastScreenKey = screenKey; lastModalKey = modalKey; lastToastKey = toastKey;
+
   attachHandlers();
   syncDiaryTrigger();
+  animateCounts(root);
   if(enter === 'app' && ui.app){
     const frame = root.querySelector('.phone-app');
     if(frame) animateOpenFromIcon(frame, ui.app);
@@ -2129,8 +2497,11 @@ function renderHome(enter){
   const apps = phoneAppsVisible();
   const dock = apps.filter(a => a.dock);
   const grid = apps.filter(a => !a.dock);
+  // fase do orbe de luz acompanha o relógio da página: re-renderizar a home não faz ele "pular"
+  const orbDelay = -((performance.now() / 1000) % 36).toFixed(2);
   return `
-  <div class="phone phone-home p-${p} ${enter === 'home' ? 'home-enter' : ''}">
+  <div class="phone phone-home p-${p} ${enter === 'home' ? 'home-enter' : ''}" style="--orb-delay:${orbDelay}s">
+    ${(p === 'noite' || p === 'madrugada') ? '<div class="home-sky"></div>' : ''}
     ${renderAppStatusBar(true)}
     <div class="home-widget" data-open-app="clock" title="Abrir o relógio">
       <div class="hw-time">${state.clock}</div>
@@ -2139,7 +2510,7 @@ function renderHome(enter){
     </div>
     <div class="home-balance" data-open-app="bank" title="Abrir o banco">
       <div class="hb-label">${state.mode === 'sujo' ? 'Saldo sujo' : 'Saldo em conta'}</div>
-      <div class="hb-value">${fmt(state.mode === 'sujo' ? state.dirty.balance : state.clean.balance)}</div>
+      <div class="hb-value" data-count="${state.mode === 'sujo' ? state.dirty.balance : state.clean.balance}" data-count-key="${state.mode === 'sujo' ? 'dirty' : 'clean'}">${fmt(state.mode === 'sujo' ? state.dirty.balance : state.clean.balance)}</div>
     </div>
     ${isMaster ? renderMasterWidget() : ''}
     <div class="home-grid">${grid.map((a, i) => renderAppTile(a, i)).join('')}</div>
@@ -2228,6 +2599,7 @@ function hideGhostHome(){
 
 // abre Banco/Calendário em tela cheia por cima da home
 function openScreenApp(id){
+  prevBankIdx = null;
   showGhostHome(APP_OPEN_MS + 80);
   ui.app = id;
   ui.enter = 'app';
@@ -2310,12 +2682,18 @@ window.addEventListener('popstate', ()=>{
 });
 try{ if(history.state && history.state.subrosaApp) history.replaceState(null, ''); } catch(e){}
 
+// índice da aba na renderização anterior: a pílula desliza dele até o novo
+let prevBankIdx = null;
 function renderTabbar(){
   const tabs = [
     {k:'saldo', l:'Saldo'},
     {k:'investimentos', l:'Investimentos'}
   ];
+  const idx = Math.max(0, tabs.findIndex(t => t.k === ui.bankTab));
+  const from = prevBankIdx == null ? idx : prevBankIdx;
+  prevBankIdx = idx;
   return `<div class="tabbar">
+    <div class="tab-pill" style="--n:${tabs.length};--i:${idx};--from:${from}"></div>
     ${tabs.map(t=>`<div class="tab-btn ${ui.bankTab===t.k?'active':''}" data-tab="${t.k}">${t.l}</div>`).join('')}
   </div>`;
 }
@@ -2337,7 +2715,7 @@ function renderSaldo(){
         <div class="card-label">Saldo em conta — legítimo</div>
         ${isMaster ? `<div class="edit-link" data-action="editBalance">✎ editar</div>` : ''}
       </div>
-      <div class="balance-hero">${fmt(acct.balance)}</div>
+      <div class="balance-hero" data-count="${acct.balance}" data-count-key="clean">${fmt(acct.balance)}</div>
       <div class="balance-sub">
         <div class="stat"><div class="stat-label">Crédito disponível</div><div class="stat-value">${fmt(acct.credit)}</div></div>
         <div class="stat"><div class="stat-label">Ganhos fixos / mês</div><div class="stat-value pos">${fmt(totalInc)}</div></div>
@@ -2401,7 +2779,7 @@ function renderSaldo(){
         <div class="card-label">Saldo sujo — não declarado</div>
         ${isMaster ? `<div class="edit-link" data-action="editBalance">✎ editar</div>` : ''}
       </div>
-      <div class="balance-hero">${fmt(acct.balance)}</div>
+      <div class="balance-hero" data-count="${acct.balance}" data-count-key="dirty">${fmt(acct.balance)}</div>
       <div class="balance-sub">
         <div class="stat"><div class="stat-label">Lavagem estimada / dia</div><div class="stat-value pos">${fmt(dailyLaundering)}</div></div>
         <div class="stat"><div class="stat-label">Total já lavado</div><div class="stat-value">${fmt(totalLaunderedLifetime)}</div></div>
@@ -2823,7 +3201,7 @@ function renderCalendario(){
     const dayOfMonth = i + 1;
     const hasEvent = state.events.some(e=> e.day===dayNum || (e.recurring && dayNum>=e.day && (!e.recurEndDay||dayNum<=e.recurEndDay)));
     const isToday = dayNum === state.day;
-    cells.push(`<div class="month-day-cell ${isToday?'today':''}" data-goto-day="${dayNum}">
+    cells.push(`<div class="month-day-cell ${isToday?'today':''}" data-goto-day="${dayNum}" style="--d:${i}">
       <div class="n">${dayOfMonth}</div>
       ${hasEvent?'<div class="dot"></div>':''}
     </div>`);
@@ -3201,7 +3579,7 @@ function renderModal(){
   }
 
   return `
-  <div class="overlay" id="overlay">
+  <div class="overlay${ui.closingModal ? ' closing' : ''}" id="overlay">
     <div class="modal">
       <div class="modal-head">
         <div class="modal-title">${title}</div>
@@ -4146,6 +4524,38 @@ function applyRealtimeUpsert(arr, payload){
   }
 }
 
+/* ---------- movimento dentro dos apps ----------
+   Os apps redesenham o conteúdo (innerHTML) a cada mudança. Pra animar só quando a TELA troca
+   (e não a cada tecla da busca / atualização em tempo real), guardamos qual tela foi desenhada. */
+const viewKeys = {};
+function viewChanged(name, overlay, key){
+  const had = !!overlay.querySelector('.app-shell:not(.skel-shell)');
+  const changed = !had || viewKeys[name] !== key;
+  viewKeys[name] = key;
+  return { had, changed };
+}
+// listas entram em cascata; o marcador sai logo depois (senão cada refresh da lista animaria de novo)
+function enterRows(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.classList.add('rows-enter');
+  clearTimeout(el._rowsT);
+  el._rowsT = setTimeout(()=> el.classList.remove('rows-enter'), 900);
+}
+// "carregando": esqueleto brilhando no lugar do texto parado
+function skeletonShell(themeClass, title){
+  return `
+    <div class="app-shell ${themeClass} skel-shell">
+      ${renderAppStatusBar()}
+      <div class="app-chrome-head"><div class="app-chrome-title">${title}</div><div class="sk skel-close"></div></div>
+      <div class="app-body">
+        <div class="sk skel-card"></div><div class="sk skel-row"></div><div class="sk skel-row"></div>
+        <div class="sk skel-row"></div><div class="sk skel-row"></div>
+      </div>
+      <div class="app-home-indicator"></div>
+    </div>`;
+}
+
 function fmtCarga(n){
   const v = Math.round((n||0)*100)/100;
   return v % 1 === 0 ? v.toFixed(0) : v.toFixed(2);
@@ -5079,6 +5489,13 @@ function msgGoBack(){
   renderMessagesOverlay();
 }
 
+// "profundidade" de cada tela: entrar numa mais funda desliza da direita, voltar desliza da esquerda
+const MSG_DEPTH = { list: 0, new: 1, thread: 1, groupNew: 2, groupInfo: 2 };
+let msgLastRender = null;
+function slideDirection(prev, depth, key){
+  if(!prev || prev.key === key) return '';
+  return depth < prev.depth ? ' go-back' : ' go-forward';
+}
 function renderMessagesOverlay(){
   const overlay = document.getElementById('messagesOverlay');
   const enter = msgJustOpened;
@@ -5088,8 +5505,12 @@ function renderMessagesOverlay(){
     : msgView === 'groupNew' ? viewMsgGroupNew()
     : msgView === 'groupInfo' ? viewMsgGroupInfo()
     : viewMsgList();
+  const key = msgView + ':' + (msgThreadId || '');
+  const had = !!overlay.querySelector('.app-shell');
+  const dir = had ? slideDirection(msgLastRender, MSG_DEPTH[msgView], key) : '';
+  msgLastRender = { key, depth: MSG_DEPTH[msgView] };
   overlay.innerHTML = `
-    <div class="app-shell app-theme-messages msg-shell${enter ? ' app-shell-enter' : ''}" style="position:relative;">
+    <div class="app-shell app-theme-messages msg-shell${enter ? ' app-shell-enter' : ''}${dir}" style="position:relative;">
       ${renderAppStatusBar()}
       ${v.head}
       <div class="app-body">${v.body}</div>
@@ -5097,10 +5518,17 @@ function renderMessagesOverlay(){
     </div>`;
   if(enter) animateOpenFromIcon(overlay.querySelector('.app-shell'), 'messages');
   v.attach();
+  if(!dir){ if(msgView === 'list') enterRows('msgRows'); else if(msgView === 'new') enterRows('msgNewRows'); }
   if(msgView === 'thread') scrollMsgBottom(true);
 }
 
 const $id = (id)=> document.getElementById(id);
+// trocar o innerHTML por igual reinicia as animações do que está dentro (ex.: bolinhas de "digitando")
+function setHtmlIfChanged(el, html){
+  if(!el || el._h === html) return;
+  el._h = html;
+  el.innerHTML = html;
+}
 function scrollMsgBottom(force){
   const box = $id('msgMessages');
   if(!box) return;
@@ -5331,7 +5759,7 @@ function refreshTypingUI(){
   if(!t || !slot) return;
   const box = $id('msgMessages');
   const near = box.scrollHeight - box.scrollTop - box.clientHeight < 140;
-  slot.innerHTML = typingBubbleHtml(t);
+  setHtmlIfChanged(slot, typingBubbleHtml(t));
   const sub = $id('msgHeadSub');
   if(sub){ sub.textContent = typingSubtitle(t) || threadSubtitle(t); sub.classList.toggle('typing-sub', !!typingSubtitle(t)); }
   if(near) box.scrollTop = box.scrollHeight;
@@ -5498,7 +5926,9 @@ function bubblePieces(t){
   });
   return mainPieces.concat(schedPieces);
 }
-const piecesToHtml = (pieces, from = 0)=> pieces.slice(from).map((p, i) => `<div class="msg-piece" data-p="${from + i}">${p}</div>`).join('');
+// freshFrom: peças a partir desse índice são REALMENTE novas e entram com "pop" (as que só foram
+// refeitas — ex.: relógio virando tique — não "pulam" de novo)
+const piecesToHtml = (pieces, from = 0, freshFrom = Infinity)=> pieces.slice(from).map((p, i) => `<div class="msg-piece${from + i >= freshFrom ? ' fresh' : ''}" data-p="${from + i}">${p}</div>`).join('');
 function bubblesHtml(t){
   const pieces = bubblePieces(t);
   msgPieceCache[t.id] = pieces;
@@ -5513,7 +5943,7 @@ function updateBubbles(t){
   while(k < old.length && k < pieces.length && old[k] === pieces[k]) k++;
   if(k === old.length && k === pieces.length) return;
   [...box.children].slice(k).forEach(n => n.remove());
-  box.insertAdjacentHTML('beforeend', piecesToHtml(pieces, k));
+  box.insertAdjacentHTML('beforeend', piecesToHtml(pieces, k, old.length));
   msgPieceCache[t.id] = pieces;
 }
 
@@ -5687,7 +6117,7 @@ function refreshThread(){
   const sub = $id('msgHeadSub');
   sub.textContent = ts || threadSubtitle(t);
   sub.classList.toggle('typing-sub', !!ts);
-  $id('msgTypingSlot').innerHTML = typingBubbleHtml(t);
+  setHtmlIfChanged($id('msgTypingSlot'), typingBubbleHtml(t));
   $id('msgComposerTop').innerHTML = composerTopHtml(t);
   $id('msgInputRow').style.display = canSend(t) ? '' : 'none';
   if(threadUnread(t) > 0 && document.visibilityState === 'visible') markThreadRead(t.id);
@@ -6453,8 +6883,12 @@ function renderContactsOverlay(){
   const enter = ctJustOpened;
   ctJustOpened = false;
   const v = ctView === 'card' ? viewCtCard() : ctView === 'form' ? viewCtForm() : viewCtList();
+  const ctKey = ctView + ':' + (ctId || '');
+  const ctDepth = { list: 0, card: 1, form: 2 }[ctView];
+  const ctDir = overlay.querySelector('.app-shell') ? slideDirection(ctLastRender, ctDepth, ctKey) : '';
+  ctLastRender = { key: ctKey, depth: ctDepth };
   overlay.innerHTML = `
-    <div class="app-shell app-theme-contacts msg-shell${enter ? ' app-shell-enter' : ''}">
+    <div class="app-shell app-theme-contacts msg-shell${enter ? ' app-shell-enter' : ''}${ctDir}">
       ${renderAppStatusBar()}
       ${v.head}
       <div class="app-body">${v.body}</div>
@@ -6462,7 +6896,9 @@ function renderContactsOverlay(){
     </div>`;
   if(enter) animateOpenFromIcon(overlay.querySelector('.app-shell'), 'contacts');
   v.attach();
+  if(!ctDir && ctView === 'list') enterRows('ctRows');
 }
+let ctLastRender = null;
 
 /* ----- lista ----- */
 function ctRowsHtml(){
@@ -6748,11 +7184,13 @@ async function openInventory(){
   invRecFormPhoto = undefined;
   invRecFormDraft = null;
   invSearchQuery = '';
-  inventoryJustOpened = true;
   const overlay = document.getElementById('inventoryOverlay');
   overlay.classList.remove('app-overlay-closing');
   overlay.style.display = 'flex';
-  overlay.innerHTML = `<div class="diary-empty" style="margin-top:60px;">Carregando inventário…</div>`;
+  // o app abre na hora (crescendo do ícone) já com um esqueleto; o conteúdo entra quando carrega
+  overlay.innerHTML = skeletonShell('app-theme-inventory app-shell-enter', 'Depósito');
+  animateOpenFromIcon(overlay.querySelector('.app-shell'), 'inventory');
+  inventoryJustOpened = false;
   render();
   try{
     await loadInventoryData();
@@ -6825,6 +7263,8 @@ function renderInventoryOverlay(){
   const overlay = document.getElementById('inventoryOverlay');
   const enterClass = inventoryJustOpened ? ' app-shell-enter' : '';
   inventoryJustOpened = false;
+  // só anima o conteúdo quando a TELA muda (lista ↔ formulário…), não a cada tecla da busca
+  const { changed } = viewChanged('inv', overlay, invView);
   overlay.innerHTML = `
     <div class="app-shell app-theme-inventory${enterClass}">
       ${renderAppStatusBar()}
@@ -6832,7 +7272,7 @@ function renderInventoryOverlay(){
         <div class="app-chrome-title">Depósito</div>
         <div class="app-chrome-close" id="invClose">✕</div>
       </div>
-      <div class="app-body"><div class="inv-wrap">${renderInventoryBody()}</div></div>
+      <div class="app-body"><div class="inv-wrap${changed ? '' : ' no-view-anim'}">${renderInventoryBody()}</div></div>
       <div class="app-home-indicator"></div>
     </div>
   `;
@@ -7511,11 +7951,12 @@ async function openCodex(){
   codexEditingId = null;
   codexFolderColor = undefined;
   codexSearchQuery = '';
-  codexJustOpened = true;
   const overlay = document.getElementById('codexOverlay');
   overlay.classList.remove('app-overlay-closing');
   overlay.style.display = 'flex';
-  overlay.innerHTML = `<div class="diary-empty" style="margin-top:60px;">Carregando codex…</div>`;
+  overlay.innerHTML = skeletonShell('app-theme-codex app-shell-enter', 'Memórias');
+  animateOpenFromIcon(overlay.querySelector('.app-shell'), 'codex');
+  codexJustOpened = false;
   render();
   try{
     await loadCodexData();
@@ -7600,6 +8041,7 @@ function renderCodexOverlay(){
   const atRoot = codexIsAtRoot();
   const enterClass = codexJustOpened ? ' app-shell-enter' : '';
   codexJustOpened = false;
+  const { changed: codexChanged } = viewChanged('codex', overlay, codexView + ':' + (codexCurrentFolder || ''));
   let backDrop = '';
   if(codexView === 'grid' && codexCurrentFolder){
     const folder = codexFolders.find(f=>f.id===codexCurrentFolder);
@@ -7613,7 +8055,7 @@ function renderCodexOverlay(){
         <div class="app-chrome-title">Memórias</div>
         <div class="app-chrome-close" id="codexTopBtn"${backDrop} title="${atRoot?'Fechar':'Voltar'}">${atRoot?'✕':'←'}</div>
       </div>
-      <div class="app-body"><div class="codex-wrap">${renderCodexBody()}</div></div>
+      <div class="app-body"><div class="codex-wrap${codexChanged ? '' : ' no-view-anim'}">${renderCodexBody()}</div></div>
       <div class="app-home-indicator"></div>
     </div>
   `;
