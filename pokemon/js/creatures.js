@@ -106,12 +106,11 @@ window.Creatures = (function(){
 
   // ---------- navegação interna (Criaturas | Bestiário) ----------
   function seg(active){
-    if(!App.isMaster) return '';
     return `
       <nav class="seg" aria-label="Seção">
         <a href="#criaturas" class="${active === 'list' ? 'on' : ''}">Criaturas</a>
         <a href="#bestiario" class="${active === 'bestiary' ? 'on' : ''}">Bestiário</a>
-        <a href="#tecnicas" class="${active === 'techniques' ? 'on' : ''}">Técnicas</a>
+        ${App.isMaster ? `<a href="#tecnicas" class="${active === 'techniques' ? 'on' : ''}">Técnicas</a>` : ''}
       </nav>`;
   }
 
@@ -170,37 +169,41 @@ window.Creatures = (function(){
            </div>`}`;
   }
 
-  // ---------- bestiário (só o mestre) ----------
+  // ---------- bestiário: o mestre vê tudo; o jogador só as espécies registradas (Pokédex) ----------
+  const canSee = s => App.isMaster || !!s.registered;
+  const rarityChip = s => { const r = R.rarityOf(s.rarity); return `<span class="chip rar rar-${r.key}">${r.label}</span>`; };
+
   function speciesCard(s, i){
     const n = App.creatures.filter(c => c.species_id === s.id).length;
     return `
       <a class="tcard" href="#especie/${s.id}" style="--i:${i}">
         ${avatar(s.image_url, 78)}
         <div class="tcard-body">
-          <span class="dexno">${n} ${n === 1 ? 'criatura' : 'criaturas'}</span>
+          <span class="dexno">${App.isMaster ? `${n} ${n === 1 ? 'criatura' : 'criaturas'}` : 'Registrada'}</span>
           <strong class="tcard-name">${esc(s.name)}</strong>
-          ${typeChips(s.types)}
+          <span class="chips">${s.types.map(t => typeChip(t)).join('')}${rarityChip(s)}${App.isMaster && s.registered ? '<span class="chip reg">Registrada</span>' : ''}</span>
         </div>
       </a>`;
   }
 
   function renderBestiary(root){
     view = root; mode = 'bestiary'; currentId = null;
-    if(!App.isMaster){ root.innerHTML = ''; App.go('#criaturas'); return; }
-    const list = App.species.slice().sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+    const list = App.species.filter(canSee).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
     root.innerHTML = `
       <header class="view-head enter">
-        <div><span class="eyebrow">Espécies</span><h1>Bestiário</h1></div>
-        <button class="btn primary" type="button" data-act="s-new">${I.plus}<span>Nova espécie</span></button>
+        <div><span class="eyebrow">${App.isMaster ? 'Espécies' : 'Pokédex'}</span><h1>Bestiário</h1></div>
+        ${App.isMaster ? `<button class="btn primary" type="button" data-act="s-new">${I.plus}<span>Nova espécie</span></button>` : ''}
       </header>
       ${seg('bestiary')}
       ${list.length
         ? `<div class="tgrid">${list.map(speciesCard).join('')}</div>`
         : `<div class="empty enter">
              <div class="empty-ball"></div>
-             <h3>Nenhuma espécie ainda</h3>
-             <p>Uma espécie guarda os tipos e o Potencial (1 a 10) de cada atributo. Cada criatura criada depois sorteia os próprios IVs.</p>
-             <button class="btn primary" type="button" data-act="s-new">${I.plus}<span>Nova espécie</span></button>
+             <h3>${App.isMaster ? 'Nenhuma espécie ainda' : 'Nenhuma espécie registrada'}</h3>
+             <p>${App.isMaster
+               ? 'Uma espécie guarda os tipos, a raridade e o Potencial de cada atributo. Cada criatura criada depois sorteia os próprios IVs. O jogador só vê as espécies que você registrar.'
+               : 'As espécies que o mestre registrar aparecem aqui, como numa Pokédex.'}</p>
+             ${App.isMaster ? `<button class="btn primary" type="button" data-act="s-new">${I.plus}<span>Nova espécie</span></button>` : ''}
            </div>`}`;
   }
 
@@ -208,17 +211,19 @@ window.Creatures = (function(){
   function renderSpecies(root, id, opts){
     view = root; mode = 'species'; currentId = id;
     const s = species(id);
-    if(!App.isMaster || !s){
+    if(!s || !canSee(s)){
       root.innerHTML = `
         <div class="empty enter">
           <div class="empty-ball"></div>
           <h3>Espécie não encontrada</h3>
-          <p>Ela não existe mais ou só o mestre pode vê-la.</p>
+          <p>Ela não existe mais ou ainda não foi registrada pelo mestre.</p>
           <a class="btn" href="#bestiario">${I.back}<span>Voltar</span></a>
         </div>`;
       return;
     }
+    const M = App.isMaster;
     const still = opts && opts.still;
+    const rar = R.rarityOf(s.rarity), spent = R.potSpent(s), over = spent > rar.points;
     const mine = App.creatures.filter(c => c.species_id === s.id);
     const previewLevel = (opts && opts.previewLevel) || 50;
     const stats = R.STATS.map(st => ({ st, pot: s['pot_' + st.key], val: R.statFinal(previewLevel, s['pot_' + st.key], 10) }));
@@ -229,30 +234,36 @@ window.Creatures = (function(){
       <div class="sheet ${still ? 'still' : ''}">
         <section class="card id-card">
           <div class="id-top">
-            <button class="avatar-btn" type="button" data-act="s-photo" aria-label="Alterar foto de ${esc(s.name)}">
-              ${avatar(s.image_url, 132)}
-              <span class="avatar-cam">${I.camera}</span>
-            </button>
+            ${M
+              ? `<button class="avatar-btn" type="button" data-act="s-photo" aria-label="Alterar foto de ${esc(s.name)}">
+                  ${avatar(s.image_url, 132)}
+                  <span class="avatar-cam">${I.camera}</span>
+                </button>`
+              : avatar(s.image_url, 132)}
             <div class="id-main">
-              <span class="dexno">Espécie</span>
+              <span class="dexno">${M ? 'Espécie' : 'Pokédex'}</span>
               <h1 class="id-name">${esc(s.name)}</h1>
-              ${typeChips(s.types)}
+              <span class="chips">${s.types.map(t => typeChip(t)).join('')}${rarityChip(s)}</span>
             </div>
           </div>
           ${s.description ? `<p class="concept">${esc(s.description)}</p>` : ''}
+          ${M ? `
           <div class="id-actions col">
+            <button class="btn ${s.registered ? '' : 'primary'}" type="button" data-act="s-register" aria-pressed="${s.registered ? 'true' : 'false'}">${I.ball}<span>${s.registered ? 'Registrada na Pokédex · tirar' : 'Registrar na Pokédex do jogador'}</span></button>
             <button class="btn primary" type="button" data-act="c-new" data-species="${s.id}">${I.plus}<span>Nova criatura desta espécie</span></button>
             <div class="id-actions">
               <button class="btn" type="button" data-act="s-edit">${I.edit}<span>Editar espécie</span></button>
               <button class="btn ghost danger-text" type="button" data-act="s-delete">${I.trash}<span>Apagar</span></button>
             </div>
-          </div>
+          </div>` : ''}
         </section>
 
         <div class="sheet-col">
+          ${M ? `
           <section class="card">
             <div class="card-head">
               <h3>Potencial</h3>
+              <span class="pts ${over ? 'over' : ''}" title="Pontos de Potencial usados / limite da raridade">${spent}/${rar.points}</span>
               <label class="prev-lv">prévia no nível
                 <input id="prevLv" type="number" inputmode="numeric" min="1" max="100" value="${previewLevel}"></label>
             </div>
@@ -265,20 +276,21 @@ window.Creatures = (function(){
                   <span class="meta">Pot ${x.pot}</span>
                 </li>`).join('')}
             </ul>
-            <p class="hint">A barra mostra o atributo no nível ${previewLevel} com IV 10 (o valor-base). O IV de cada criatura muda isso de −50% a +50%.</p>
-          </section>
+            <p class="hint">A barra mostra o atributo no nível ${previewLevel} com IV 10 (o valor-base). O IV de cada criatura muda isso de −50% a +50%.${over ? ` Esta espécie passa ${spent - rar.points} ponto(s) do limite de ${rar.label}.` : ''}</p>
+          </section>` : ''}
 
           <section class="card">
             <div class="card-head"><h3>Fraquezas e resistências</h3></div>
             ${chartHtml(s.types)}
           </section>
 
+          ${M ? `
           <section class="card">
             <div class="card-head"><h3>Criaturas desta espécie</h3><span class="pts">${mine.length}</span></div>
             ${mine.length
               ? `<div class="pc-list">${mine.map(rowLink).join('')}</div>`
               : '<p class="hint" style="margin:0">Ainda não existe nenhuma.</p>'}
-          </section>
+          </section>` : ''}
         </div>
       </div>`;
     animateBars(root, 'sp' + id);
@@ -538,6 +550,14 @@ window.Creatures = (function(){
     }catch(e){ UI.toast(e.message, 'bad'); }
   }
 
+  async function toggleRegistered(s){
+    try{
+      const row = await API.saveSpecies(s.id, { registered: !s.registered });
+      applySpecies(row);
+      UI.toast(row.registered ? `${row.name} registrada: o jogador já vê na Pokédex` : `${row.name} escondida do jogador`, 'good');
+    }catch(e){ UI.toast(e.message, 'bad'); }
+  }
+
   async function removeSpecies(s){
     const n = App.creatures.filter(c => c.species_id === s.id).length;
     if(n){
@@ -561,7 +581,7 @@ window.Creatures = (function(){
   // ---------- formulário da espécie ----------
   function openSpeciesForm(s){
     const isNew = !s;
-    const d = s || { name:'', description:'', types:[] };
+    const d = s || { name:'', description:'', types:[], rarity:'comum' };
     const chosen = new Set(d.types);
     const m = UI.openModal({
       title: isNew ? 'Nova espécie' : 'Editar espécie',
@@ -577,14 +597,22 @@ window.Creatures = (function(){
             <div class="type-pick">${R.TYPES.map(t => `<button type="button" class="tp" data-type="${t}">${typeChip(t)}</button>`).join('')}</div>
           </fieldset>
           <fieldset class="attr-edit">
-            <legend>Potencial (1 a 10)</legend>
+            <legend>Raridade</legend>
+            <div class="rar-pick" role="radiogroup" aria-label="Raridade">
+              ${R.RARITIES.map(r => `
+                <label class="rar-opt rar-${r.key}"><input type="radio" name="rarity" value="${r.key}" ${r.key === d.rarity ? 'checked' : ''}>
+                  <span><b>${r.label}</b><small>${r.points} pontos</small></span></label>`).join('')}
+            </div>
+          </fieldset>
+          <fieldset class="attr-edit">
+            <legend>Potencial (1 a 10) <b data-psum></b></legend>
             <div class="pot-grid">
               ${R.STATS.map(st => `
                 <label class="pot-row"><span>${st.label}</span>
-                  <input type="range" name="pot_${st.key}" min="${R.POT_MIN}" max="${R.POT_MAX}" step="1" value="${s ? s['pot_' + st.key] : 5}">
-                  <b data-pot="${st.key}">${s ? s['pot_' + st.key] : 5}</b></label>`).join('')}
+                  <input type="range" name="pot_${st.key}" min="${R.POT_MIN}" max="${R.POT_MAX}" step="1" value="${s ? s['pot_' + st.key] : 4}">
+                  <b data-pot="${st.key}">${s ? s['pot_' + st.key] : 4}</b></label>`).join('')}
             </div>
-            <p class="attr-info">Potencial 5 = atributo igual à curva-base do nível; 10 = o dobro.</p>
+            <p class="attr-info">A soma dos 9 Potenciais não pode passar do limite da raridade. Potencial 5 = atributo igual à curva-base do nível; 10 = o dobro.</p>
           </fieldset>
           <div class="modal-actions">
             <button class="btn" type="button" data-modal-close>Cancelar</button>
@@ -613,9 +641,23 @@ window.Creatures = (function(){
       else chosen.add(t);
       paintTypes();
     });
+    const psum = form.querySelector('[data-psum]');
+    const rarityNow = () => R.rarityOf(form.elements.rarity.value);
+    const potTotal = () => R.STATS.reduce((n, st) => n + Number(form.elements['pot_' + st.key].value), 0);
+    function paintPoints(){
+      const lim = rarityNow().points, tot = potTotal();
+      psum.textContent = `${tot}/${lim} pontos`;
+      psum.classList.toggle('over', tot > lim);
+    }
+    paintPoints();
     form.addEventListener('input', e => {
+      if(e.target.name === 'rarity'){ paintPoints(); return; }
       if(e.target.name && e.target.name.startsWith('pot_')){
+        // não deixa passar do limite: o controle para no último valor que cabe
+        const room = rarityNow().points - (potTotal() - Number(e.target.value));
+        if(Number(e.target.value) > room) e.target.value = Math.max(R.POT_MIN, room);
         form.querySelector(`[data-pot="${e.target.name.slice(4)}"]`).textContent = e.target.value;
+        paintPoints();
       }
     });
 
@@ -624,7 +666,11 @@ window.Creatures = (function(){
       const name = form.elements.name.value.trim();
       if(!name){ UI.toast('Dê um nome à espécie', 'bad'); return; }
       if(!chosen.size){ UI.toast('Escolha pelo menos um tipo', 'bad'); return; }
-      const data = { name, description: form.elements.description.value.trim(), types: R.TYPES.filter(t => chosen.has(t)) };
+      if(potTotal() > rarityNow().points){
+        UI.toast(`O Potencial soma ${potTotal()} pontos; o limite de ${rarityNow().label} é ${rarityNow().points}. Diminua algum atributo.`, 'bad');
+        return;
+      }
+      const data = { name, description: form.elements.description.value.trim(), types: R.TYPES.filter(t => chosen.has(t)), rarity: rarityNow().key };
       R.STATS.forEach(st => { data['pot_' + st.key] = Number(form.elements['pot_' + st.key].value); });
       await UI.busy(form.querySelector('[type=submit]'), async () => {
         try{
@@ -859,6 +905,7 @@ window.Creatures = (function(){
         case 'c-xp': if(c && M) giveXp(c, b); break;
         case 's-new': if(M) openSpeciesForm(null); break;
         case 's-edit': if(s && M) openSpeciesForm(s); break;
+        case 's-register': if(s && M) toggleRegistered(s); break;
         case 's-delete': if(s && M) removeSpecies(s); break;
         case 's-photo': if(s && M) changePhoto('species', s, s.name); break;
       }

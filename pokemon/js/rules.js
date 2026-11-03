@@ -76,6 +76,16 @@
   const MAX_LEVEL = 100;
   const IV_MIN = 1, IV_MAX = 20, POT_MIN = 1, POT_MAX = 10;
 
+  // raridade da espécie: limite de pontos de Potencial (soma dos 9 atributos)
+  const RARITIES = [
+    { key:'comum',    label:'Comum',    points:40 },
+    { key:'raro',     label:'Raro',     points:50 },
+    { key:'mitico',   label:'Mítico',   points:60 },
+    { key:'lendario', label:'Lendário', points:70 }
+  ];
+  const rarityOf = key => RARITIES.find(r => r.key === key) || RARITIES[0];
+  const potSpent = sp => STATS.reduce((s, st) => s + (Number(sp['pot_' + st.key]) || 0), 0);
+
   // B(nível): curva-base, interpolada linearmente entre estes pontos
   const B_CURVE = [[1,15],[10,30],[20,50],[30,75],[40,100],[50,150],[60,300],[70,400],[80,500],[90,750],[100,1000]];
 
@@ -314,7 +324,7 @@
     TRAINER_ATTRS, TRAINER_BASE_HP, TRAINER_START_POINTS, POINTS_PER_LEVEL, TEAM_SIZE,
     trainerMaxHp, xpToNext, pointsBudget, pointsSpent, pointsLeft,
     trainerShareOfCreatureXp, applyTrainerXp, fmtXp,
-    STATS, MAX_LEVEL, IV_MIN, IV_MAX, POT_MIN, POT_MAX, B_CURVE,
+    STATS, MAX_LEVEL, IV_MIN, IV_MAX, POT_MIN, POT_MAX, B_CURVE, RARITIES, rarityOf, potSpent,
     baseCurve, ivMultiplier, statFinal, creatureStats, creatureMaxHp, creatureHp, applyCreatureXp,
     movementPerAction, perceptionBonus,
     TYPE_DATA, TYPES, MAX_TYPES, typeVs, typeMultiplier, typeChart

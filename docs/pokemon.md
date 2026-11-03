@@ -24,7 +24,7 @@ Sem build: HTML/CSS/JS puros, vários arquivos pequenos carregados por `<script 
 | `pokemon/js/ui.js` | ajudantes de tela: modal, confirmação, toast, escape de HTML |
 | `pokemon/js/cropper.js` | **enquadrador de foto** estilo Discord (arrastar, zoom, recorte) |
 | `pokemon/js/trainers.js` | lista de treinadores e a ficha |
-| `pokemon/js/creatures.js` | bestiário (espécies), lista e ficha de criaturas, formulários, mover entre equipe e PC, trecho "equipe e PC" da ficha do treinador |
+| `pokemon/js/creatures.js` | bestiário (espécies, raridade e Pokédex do jogador), lista e ficha de criaturas, formulários, mover entre equipe e PC, trecho "equipe e PC" da ficha do treinador |
 | `pokemon/js/bag.js` | a bolsa: bolsos, itens com quantidade (+/−), formulário, foto do item |
 | `pokemon/js/techniques.js` | lista e formulário de técnicas, escolha das (até 4) técnicas de cada criatura |
 | `pokemon/js/battle.js` | o combate: montagem, tabuleiro (peças, movimento, fundo), ordem da rodada, PA, ataques com rolagem e alcance, troca, nocaute, XP no fim |
@@ -66,13 +66,14 @@ Toda foto (treinador, criatura e espécie) guarda **três coisas**: o recorte pr
 - **Storage:** bucket público `pokemon-images` (5 MB; png/jpeg/webp). Pastas: `trainers/`, `creatures/`, `species/`, `items/`
 - **Tempo real:** `pkm_trainers`, `pkm_species`, `pkm_creatures`, `pkm_items`, `pkm_techniques`, `pkm_creature_techniques` e `pkm_battles` estão na publicação do Realtime; o app recarrega ao vivo
 - **Chaves do navegador:** prefixo `pokemon.`
-- **Quem pode o quê:** leitura pública; escrita só por RPC. O **jogador** muda anotações de RP e fotos (do treinador e das criaturas); HP, XP, nível, atributos, IVs, equipe/PC e tudo do bestiário só o mestre. (O PIN do jogador é só a porta da frente, como no resto do site.)
+- **Quem pode o quê:** leitura pública; escrita só por RPC. O **jogador** muda anotações de RP e fotos (do treinador e das criaturas); HP, XP, nível, atributos, IVs, equipe/PC e tudo do bestiário (inclusive registrar espécie) só o mestre. (O PIN do jogador é só a porta da frente, como no resto do site.)
 
 ### Migrations (`supabase/pokemon/`)
 
 | Arquivo | O que faz |
 |---|---|
 | `01_trainers.sql` | bucket de fotos, tabela e funções dos treinadores |
+| `06_dex_rarity.sql` | espécie ganha `registered` (Pokédex do jogador) e `rarity` (comum 40 / raro 50 / mítico 60 / lendário 70 pontos de Potencial); função `pkm_rarity_points`; recria `pkm_save_species` conferindo o limite |
 | `05_board.sql` | gasto de pontos pelo jogador, alcance das técnicas (`reach`) e o movimento no tabuleiro (`pkm_battle_move`); recria `pkm_save_technique` aceitando o alcance |
 | `04_combat.sql` | técnicas (tipo, categoria, Poder, PA), vínculo criatura–técnica (máx. 4), combates e as funções do mestre |
 | `03_bag.sql` | tabela de itens da bolsa (bolsos, quantidade, foto) e as funções de criar, mudar quantidade, apagar e foto |
@@ -92,7 +93,7 @@ Toda foto (treinador, criatura e espécie) guarda **três coisas**: o recorte pr
 - **HP da criatura nulo = vida cheia** (`hp_current` nulo). Dano/cura calculam o valor absoluto no app; curar até o máximo volta para nulo. Assim a vida cheia acompanha o nível. Ao subir de nível, HP parcial fica igual (não cura).
 - **IVs:** o formulário de nova criatura já vem com IVs sorteados (1 a 20), editáveis, com a prévia dos valores finais; "Sortear todos" sorteia de novo. Se o app não mandar IV, o banco sorteia.
 - **Equipe e PC:** vaga 0 a 2 = equipe carregada; sem vaga = PC; sem dono = solta. Criar com dono ocupa a primeira vaga livre (ou o PC se a equipe estiver cheia). "Mover" numa vaga ocupada troca as duas criaturas (a outra assume a vaga que ficou livre, ou vai pro PC). Apagar o treinador **não** apaga as criaturas: elas ficam soltas.
-- **O que o jogador vê:** só criaturas dos treinadores "jogador" (as soltas e as de NPC ficam escondidas na tela, não no banco), atributos finais sem IV nem Potencial, sem Bestiário (`#bestiario` volta para `#criaturas`). Pode trocar foto e escrever anotações.
+- **O que o jogador vê:** só criaturas dos treinadores "jogador" (as soltas e as de NPC ficam escondidas na tela, não no banco), atributos finais sem IV nem Potencial, e um **Bestiário em modo Pokédex**: só as espécies que o mestre **registrar** (nome, foto, tipos, raridade, descrição, fraquezas e resistências; sem Potencial, sem criaturas de outros). Espécie não registrada aparece como "não encontrada" até pela URL. Pode trocar foto e escrever anotações.
 - **Foto da criatura:** se a criatura não tem foto própria, usa a da espécie.
 - **Espécie com criaturas não pode ser apagada** (o banco recusa); primeiro apague ou troque a espécie delas.
 - Quando outra pessoa muda algo e a tela está com um campo em foco (anotações, dano, XP, prévia), o app espera para não atropelar a digitação; a tela atualiza na próxima mudança.
@@ -144,7 +145,11 @@ Para testar a interface sem digitar o PIN: criar uma sessão temporária (com um
 | 2026-11-03 | **Fase 4 — bolsa.** Cinco bolsos, itens com quantidade (+/−), descrição e foto, bolsa por treinador, mestre e jogador editam; tempo real. Migration `03_bag.sql` testada (transação desfeita) e aplicada |
 | 2026-11-03 | **Fase 5 — técnicas e combate.** Técnicas (tipo, categoria, Poder, PA) com até 4 por criatura; combate de controle com ordem por Velocidade, 5 PA, ataque com rolagem e conta visível, dano com tipos, cura de PA, troca voluntária e por nocaute, duplas, XP no fim, histórico e visão ao vivo para o jogador. Migration `04_combat.sql` testada (transação desfeita) e aplicada. Fecha o plano das 5 fases |
 | 2026-11-03 | **Depois das 5 fases — pontos do jogador e tabuleiro.** O jogador gasta os próprios pontos de atributo (marca, confirma, não desfaz). Combate com tabuleiro quadriculado: tamanho e foto de fundo escolhidos pelo mestre, peças movidas por mestre e jogador (1 PA, limite pela Velocidade), alcance das técnicas em blocos, troca e substituição na casa certa. Migration `05_board.sql` testada (transação desfeita) e aplicada |
+| 2026-11-03 | **Pokédex e raridade.** O jogador só vê no Bestiário as espécies que o mestre registra (ficha sem Potencial). Espécie ganha raridade (Comum 40, Raro 50, Mítico 60, Lendário 70 pontos de Potencial no máximo), com contador e trava no formulário e conferência no banco. Migration `06_dex_rarity.sql` testada (transação desfeita; 8 casos) e aplicada |
+
+- **Pokédex (registrar espécies):** cada espécie tem `registered` (padrão: não). Na ficha da espécie o mestre usa **"Registrar na Pokédex do jogador"** (e "tirar" para esconder de novo); o cartão da lista mostra o selo "Registrada". O filtro é do app, como o resto do jogador: o banco continua legível com a chave pública. Ter uma criatura da espécie **não** registra sozinho (decisão em aberto).
+- **Raridade e limite de pontos:** Comum 40, Raro 50, Mítico 60, Lendário 70 = **máximo** da soma dos 9 Potenciais (cada um 1 a 10). Novo padrão ao criar: 4 em cada (36). No formulário o contador "36/40 pontos" fica vermelho se passar, o controle para no último valor que cabe e o botão recusa salvar acima do limite; o banco também recusa (`pkm_save_species`) quando a raridade ou algum Potencial é enviado. Trocar só a raridade de uma espécie existente para uma menor que a soma atual é recusado. Espécies criadas antes disso ficaram "Comum"; se alguma passar de 40, a ficha avisa e só salva depois de ajustar.
 
 ## Ideias paradas (não construir sem pedir)
 
-Obstáculos e linha de visão no tabuleiro, Pokédex da campanha (vistos/capturados), banner (capa) além do avatar, mais de um jogador, jogador reorganizar a própria equipe/PC, dar o mesmo XP a várias criaturas de uma vez (vem junto com o combate: "todas que participaram recebem o XP inteiro").
+Obstáculos e linha de visão no tabuleiro, Pokédex com "vistos/capturados" por jogador (hoje só registrado/não), banner (capa) além do avatar, mais de um jogador, jogador reorganizar a própria equipe/PC, dar o mesmo XP a várias criaturas de uma vez (vem junto com o combate: "todas que participaram recebem o XP inteiro").

@@ -742,3 +742,21 @@ a.fchip{display:inline-block}
 @media (prefers-reduced-motion:reduce){
   *, *::before, *::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}
 }
+
+/* raridade e Pokédex */
+.chip.rar{background:rgba(141,151,173,.12);border-color:rgba(141,151,173,.4);color:var(--muted)}
+.chip.rar-raro{background:rgba(54,170,255,.12);border-color:rgba(54,170,255,.45);color:var(--blue)}
+.chip.rar-mitico{background:rgba(169,139,255,.14);border-color:rgba(169,139,255,.5);color:var(--purple)}
+.chip.rar-lendario{background:rgba(255,203,5,.14);border-color:rgba(255,203,5,.55);color:var(--yellow)}
+.chip.reg{background:rgba(61,220,132,.12);border-color:rgba(61,220,132,.45);color:var(--green)}
+legend b.over{color:#ff8a8a}
+.rar-pick{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+.rar-opt{position:relative;cursor:pointer}
+.rar-opt input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.rar-opt span{display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 4px;border-radius:12px;
+  border:2px solid var(--line);background:var(--surface2);transition:border-color .15s, background .15s}
+.rar-opt b{font-size:13px;color:var(--text)}
+.rar-opt small{font-size:11px;color:var(--muted);font-weight:800}
+.rar-opt input:checked + span{border-color:var(--yellow);background:rgba(255,203,5,.1)}
+.rar-opt input:focus-visible + span{outline:2px solid var(--blue);outline-offset:2px}
+@media (max-width:420px){ .rar-opt b{font-size:12px} .rar-pick{gap:4px} }
