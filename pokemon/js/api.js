@@ -88,6 +88,11 @@ window.API = (function(){
     rpc('pkm_creature_set_techniques', { p_token: token(), p_creature_id: creatureId, p_technique_ids: ids });
   const saveBattle = (id, status, state) => rpc('pkm_battle_save', { p_token: token(), p_id: id || null, p_status: status || null, p_state: state });
   const deleteBattle = id => rpc('pkm_delete_battle', { p_token: token(), p_id: id });
+  /** Mover a peça de quem está agindo (sem token: o jogador move a própria criatura). */
+  const battleMove = (id, creatureId, x, y, text) =>
+    rpc('pkm_battle_move', { p_id: id, p_creature: creatureId, p_x: x, p_y: y, p_text: text || null });
+  /** O jogador soma pontos nos atributos: { fisico: 2, mental: 1 }. Só o que sobra; nunca tira. */
+  const spendPoints = (id, add) => rpc('pkm_trainer_spend_points', { p_id: id, p_add: add });
 
   // ---------- imagens ----------
   const extFor = type => (type === 'image/webp' ? 'webp' : type === 'image/png' ? 'png' : 'jpg');
@@ -117,7 +122,7 @@ window.API = (function(){
     listSpecies, listCreatures, saveSpecies, deleteSpecies, setSpeciesPhoto,
     saveCreature, moveCreature, creatureHp, creatureAddXp, deleteCreature, setCreatureNotes, setCreaturePhoto,
     listTechniques, listBattles, listCreatureTechniques, saveTechnique, deleteTechnique,
-    setCreatureTechniques, saveBattle, deleteBattle,
+    setCreatureTechniques, saveBattle, deleteBattle, battleMove, spendPoints,
     listItems, saveItem, itemQty, deleteItem, setItemPhoto,
     uploadImage, subscribe
   };

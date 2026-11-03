@@ -21,6 +21,8 @@ window.Battle = (function(){
   let view = null;
   let viewId = null;        // combate aberto por #combate/<id>
   let working = false;      // uma ação do mestre em andamento
+  let sel = null;           // peça selecionada no tabuleiro (o mestre pode ajustar qualquer uma)
+  let boardScroll = { x: 0, y: 0, key: '' };   // rolagem do tabuleiro (celular) e de quem já foi centralizado
 
   // ---------- acesso rápido ----------
   const cr = id => App.creatures.find(c => c.id === id) || null;
@@ -57,13 +59,55 @@ window.Battle = (function(){
     log(st, `Rodada ${st.round} — ordem: ${st.queue.map(nm).join(' › ') || '—'}`);
   }
 
-  function newState(sidesDef, perSide){
+  // ---------- tabuleiro: as peças ficam em state.board.pos = { idDaCriatura: [x, y] } ----------
+  function spawnCell(st, si, idx, n){
+    const b = st.board;
+    const x = si === 0 ? Math.min(1, b.cols - 1) : Math.max(b.cols - 2, 0);
+    const y = Math.min(b.rows - 1, Math.max(0, Math.round((idx + 1) * b.rows / (n + 1)) - 1));
+    return [x, y];
+  }
+  const cellFree = (st, x, y, exceptId) =>
+    !Object.keys(st.board.pos).some(id => id !== exceptId && st.board.pos[id][0] === x && st.board.pos[id][1] === y);
+
+  /** Casa livre mais próxima de (x, y), procurando em anéis cada vez maiores. */
+  function placeNear(st, id, x, y){
+    const b = st.board;
+    const max = Math.max(b.cols, b.rows);
+    for(let r = 0; r <= max; r++){
+      for(let dy = -r; dy <= r; dy++){
+        for(let dx = -r; dx <= r; dx++){
+          if(Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          const nx = x + dx, ny = y + dy;
+          if(nx < 0 || ny < 0 || nx >= b.cols || ny >= b.rows) continue;
+          if(cellFree(st, nx, ny, id)){ b.pos[id] = [nx, ny]; return; }
+        }
+      }
+    }
+  }
+
+  /** Quem entra em campo ocupa o lugar de quem saiu (ou da última vaga aberta do lado). */
+  function enterBoard(st, si, id, replacedId){
+    if(!st.board) return;
+    let at = replacedId && st.board.pos[replacedId];
+    if(replacedId) delete st.board.pos[replacedId];
+    at = at || st.board.vacated[si].shift() || spawnCell(st, si, st.sides[si].active.length - 1, Math.max(1, st.perSide));
+    placeNear(st, id, at[0], at[1]);
+  }
+
+  const posOf = (st, id) => (st.board && st.board.pos[id]) || null;
+  const distBetween = (st, a, b) => (posOf(st, a) && posOf(st, b)) ? R.gridDistance(posOf(st, a), posOf(st, b)) : null;
+
+  function newState(sidesDef, perSide, boardCfg){
     const st = {
       v: 1, round: 0, perSide,
       sides: sidesDef.map(s => ({ name: s.name, trainerId: s.trainerId, roster: s.roster.slice(), active: s.roster.slice(0, perSide) })),
       participated: [], defeated: [], queue: [], pa: R.PA_PER_TURN, pending: [], winner: null, xpGiven: false, log: []
     };
     st.sides.forEach(s => s.active.forEach(id => st.participated.push(id)));
+    if(boardCfg){
+      st.board = { cols: boardCfg.cols, rows: boardCfg.rows, bg: boardCfg.bg || null, pos: {}, vacated: [[], []] };
+      st.sides.forEach((s, si) => s.active.forEach((id, i) => { st.board.pos[id] = spawnCell(st, si, i, s.active.length); }));
+    }
     log(st, `Combate: ${st.sides[0].name} × ${st.sides[1].name}`);
     startRound(st);
     return st;
@@ -99,6 +143,7 @@ window.Battle = (function(){
     const side = st.sides[si];
     side.active = side.active.filter(x => x !== id);
     st.queue = st.queue.filter(x => x !== id);
+    if(st.board && st.board.pos[id]){ st.board.vacated[si].push(st.board.pos[id]); delete st.board.pos[id]; }
     st.defeated.push({ id, level: (cr(id) || {}).level || 1, side: si });
     log(st, `${nm(id)} ficou fora de combate!`);
     afterRemoval(st, si);
@@ -137,6 +182,18 @@ window.Battle = (function(){
     const row = await API.creatureHp(id, v >= max ? null : v);
     const i = App.creatures.findIndex(c => c.id === row.id);
     if(i >= 0) App.creatures[i] = row;
+  }
+
+  /** Quantos blocos a criatura anda por ação de movimento (regra do guia). */
+  const moveLimit = id => R.movementPerAction((statsOf(id) || {}).velocidade);
+
+  function doMove(st, id, x, y){
+    const from = posOf(st, id);
+    const d = from ? R.gridDistance(from, [x, y]) : 0;
+    st.pa -= 1;
+    st.board.pos[id] = [x, y];
+    log(st, `${nm(id)} se moveu ${d} ${d === 1 ? 'bloco' : 'blocos'}`);
+    return settle(st);
   }
 
   // ---------- ataque ----------
@@ -260,13 +317,13 @@ window.Battle = (function(){
               <button class="tech-btn" type="button" data-act="b-tech" data-id="${t.id}" ${st.pa < t.pa_cost ? 'disabled' : ''}>
                 ${Creatures.typeChip(t.type)}
                 <strong>${esc(t.name)}</strong>
-                <small>${Techniques.catLabel(t.category)} · Poder ${t.power}</small>
+                <small>${Techniques.catLabel(t.category)} · Poder ${t.power} · alcance ${t.reach || 1}</small>
                 ${Techniques.paDots(t.pa_cost)}
               </button>`).join('')}
           </div>`
         : '<p class="hint" style="margin:0 0 10px">Essa criatura não sabe técnicas. Escolha no perfil dela (aba Criaturas).</p>'}
         <div class="act-row">
-          <button class="btn" type="button" data-act="b-move" ${st.pa < 1 ? 'disabled' : ''} title="Gasta 1 PA; até ${mv} blocos por ação">Mover · 1 PA</button>
+          ${st.board ? '' : `<button class="btn" type="button" data-act="b-move" ${st.pa < 1 ? 'disabled' : ''} title="Gasta 1 PA; até ${mv} blocos por ação">Mover · 1 PA</button>`}
           <button class="btn" type="button" data-act="b-swap" ${canSwap ? '' : 'disabled'} title="Gasta os 5 PA de quem sai">Trocar · 5 PA</button>
           <button class="btn good" type="button" data-act="b-end">Encerrar turno${heal > 0 ? ` · +${heal} HP` : ''}</button>
         </div>
@@ -332,6 +389,105 @@ window.Battle = (function(){
       </a>`;
   }
 
+  // ---------- tabuleiro: desenho ----------
+  const isPlayerOwned = id => { const c = cr(id), t = c && c.trainer_id && App.trainers.find(x => x.id === c.trainer_id); return !!t && t.kind === 'player'; };
+
+  /** Quem pode mover a peça de quem está agindo agora. */
+  function canMoveActor(st, live){
+    if(!live || st.winner != null || st.pending.length || st.pa < 1 || !st.queue.length) return false;
+    return App.isMaster || isPlayerOwned(st.queue[0]);
+  }
+
+  function boardHtml(st, live){
+    const b = st.board;
+    const actor = st.winner == null ? st.queue[0] : null;
+    if(!sel || !b.pos[sel] || !App.isMaster) sel = actor;
+    const can = canMoveActor(st, live);
+    const ids = Object.keys(b.pos).filter(cr);
+    let reach = '';
+    if(can && sel && sel === actor && b.pos[sel]){
+      const n = moveLimit(sel), [x, y] = b.pos[sel];
+      const x0 = Math.max(0, x - n), x1 = Math.min(b.cols - 1, x + n), y0 = Math.max(0, y - n), y1 = Math.min(b.rows - 1, y + n);
+      reach = `<div class="reach" style="left:${x0 / b.cols * 100}%;top:${y0 / b.rows * 100}%;width:${(x1 - x0 + 1) / b.cols * 100}%;height:${(y1 - y0 + 1) / b.rows * 100}%"></div>`;
+    }
+    const pieces = ids.map(id => {
+      const c = cr(id), sp = spOf(c), [x, y] = b.pos[id];
+      const si = sideOf(st, id);
+      const max = R.creatureMaxHp(sp, c), cur = R.creatureHp(sp, c);
+      const photo = Creatures.photoOf(c);
+      return `
+        <div class="piece side${si} ${id === actor ? 'now' : ''} ${id === sel ? 'sel' : ''}" data-piece="${id}"
+             style="left:${(x + 0.5) / b.cols * 100}%;top:${(y + 0.5) / b.rows * 100}%;width:${100 / b.cols}%" title="${esc(nm(id))} · ${cur}/${max} HP">
+          <div class="piece-face">${photo ? `<img src="${esc(photo)}" alt="" draggable="false">` : '<span class="piece-ball"></span>'}</div>
+          <div class="piece-hp"><i class="${hpClass(cur, max)}" style="width:${pct(cur, max).toFixed(0)}%"></i></div>
+        </div>`;
+    }).join('');
+    const hint = !live ? '' : can
+      ? (sel === actor
+          ? `Toque numa casa para mover ${esc(nm(actor))} (1 PA, até ${moveLimit(actor)} blocos).${App.isMaster ? ' Toque em outra peça para ajustá-la sem gastar PA.' : ''}`
+          : `Toque numa casa para ajustar ${esc(nm(sel))} (sem gastar PA). Toque na peça de quem está agindo para voltar.`)
+      : '';
+    return `
+      <section class="card board-card">
+        <div class="card-head"><h3>Tabuleiro</h3><span class="pts">${b.cols}×${b.rows}</span></div>
+        <div class="board-scroll">
+          <div class="board" data-board style="--cols:${b.cols};--rows:${b.rows};aspect-ratio:${b.cols} / ${b.rows};width:max(100%, ${b.cols * 30}px);max-width:${b.cols * 56}px${b.bg ? `;background-image:url('${esc(b.bg)}')` : ''}">
+            <div class="board-grid"></div>
+            ${reach}
+            ${pieces}
+          </div>
+        </div>
+        ${hint ? `<p class="hint">${hint}</p>` : ''}
+      </section>`;
+  }
+
+  /** Clique numa casa do tabuleiro. */
+  async function boardClick(e){
+    const board = e.target.closest('[data-board]');
+    if(!board) return;
+    const row = currentRow();
+    if(!row || row.status !== 'active' || working) return;
+    const st = row.state;
+    if(!st.board) return;
+    const piece = e.target.closest('[data-piece]');
+    if(piece && App.isMaster){
+      sel = piece.dataset.piece === sel ? st.queue[0] : piece.dataset.piece;
+      draw();
+      return;
+    }
+    const b = st.board;
+    const rect = board.getBoundingClientRect();
+    const x = Math.floor((e.clientX - rect.left) / rect.width * b.cols);
+    const y = Math.floor((e.clientY - rect.top) / rect.height * b.rows);
+    if(x < 0 || y < 0 || x >= b.cols || y >= b.rows) return;
+    const actor = st.queue[0];
+    const target = sel || actor;
+
+    if(target !== actor){                       // ajuste do mestre: sem PA, sem limite
+      if(!App.isMaster) return;
+      if(!cellFree(st, x, y, target)){ UI.toast('Essa casa está ocupada', 'bad'); return; }
+      act(async st2 => { st2.board.pos[target] = [x, y]; });
+      return;
+    }
+    if(!canMoveActor(st, true)) return;
+    const from = b.pos[actor];
+    if(from && from[0] === x && from[1] === y) return;
+    if(!cellFree(st, x, y, actor)){ UI.toast('Essa casa está ocupada', 'bad'); return; }
+    const d = from ? R.gridDistance(from, [x, y]) : 0;
+    const lim = moveLimit(actor);
+    if(d > lim){ UI.toast(`Longe demais: ${nm(actor)} anda até ${lim} blocos por ação`, 'bad'); return; }
+
+    if(App.isMaster){ act(st2 => doMove(st2, actor, x, y)); return; }
+    // jogador: a mudança vai por uma função própria, sem token
+    working = true;
+    try{
+      const saved = await API.battleMove(row.id, actor, x, y, `${nm(actor)} se moveu ${d} ${d === 1 ? 'bloco' : 'blocos'}`);
+      const i = App.battles.findIndex(x2 => x2.id === saved.id);
+      if(i >= 0) App.battles[i] = saved;
+    }catch(err){ UI.toast(err.message, 'bad'); }
+    finally{ working = false; draw(); }
+  }
+
   function draw(){
     if(!view) return;
     const row = currentRow();
@@ -361,6 +517,8 @@ window.Battle = (function(){
 
     const st = row.state;
     const live = row.status === 'active';
+    const oldBs = view.querySelector('.board-scroll');
+    if(oldBs){ boardScroll.x = oldBs.scrollLeft; boardScroll.y = oldBs.scrollTop; }
     view.innerHTML = `
       ${viewId ? `<a class="back" href="#combate">${I.back}<span>Combate</span></a>` : ''}
       <header class="view-head enter">
@@ -377,6 +535,8 @@ window.Battle = (function(){
           <div class="queue">${st.queue.map((id, i) => `<span class="q ${i === 0 ? 'now' : ''}">${esc(nm(id))}</span>`).join('') || '<span class="q">—</span>'}</div>
         </div>` : ''}
 
+      ${st.board ? boardHtml(st, live) : ''}
+
       <div class="battle">
         ${sidePanel(st, 0)}
         ${sidePanel(st, 1)}
@@ -389,6 +549,41 @@ window.Battle = (function(){
         : resultPanel(st, row)}
 
       ${logPanel(st)}`;
+    placeBoardScroll(st);
+  }
+
+  /** Mantém a rolagem do tabuleiro e, quando muda quem age, centraliza nessa peça (útil no celular). */
+  function placeBoardScroll(st){
+    const bs = view.querySelector('.board-scroll');
+    if(!bs) return;
+    const key = (viewId || 'live') + ':' + st.round + ':' + (st.queue[0] || '');
+    const now = bs.querySelector('.piece.now');
+    if(now && key !== boardScroll.key && (bs.scrollWidth > bs.clientWidth || bs.scrollHeight > bs.clientHeight)){
+      boardScroll.key = key;
+      bs.scrollLeft = now.offsetLeft - bs.clientWidth / 2;
+      bs.scrollTop = now.offsetTop - bs.clientHeight / 2;
+    }else{
+      bs.scrollLeft = boardScroll.x;
+      bs.scrollTop = boardScroll.y;
+    }
+  }
+
+  /** Reduz a foto de fundo (até 1600 px no lado maior) e devolve um Blob webp ou jpeg abaixo do limite do bucket. */
+  async function prepareBackground(file){
+    const url = URL.createObjectURL(file);
+    try{
+      const img = await new Promise((ok, fail) => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => fail(new Error('Não consegui abrir essa imagem')); im.src = url; });
+      const k = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+      const cv = document.createElement('canvas');
+      cv.width = Math.max(1, Math.round(img.naturalWidth * k));
+      cv.height = Math.max(1, Math.round(img.naturalHeight * k));
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      for(const [type, q] of [['image/webp', 0.85], ['image/jpeg', 0.85], ['image/jpeg', 0.6]]){
+        const blob = await new Promise(r => cv.toBlob(r, type, q));
+        if(blob && blob.type === type && blob.size <= 4.6 * 1024 * 1024) return blob;
+      }
+      throw new Error('A imagem de fundo ficou grande demais');
+    }finally{ URL.revokeObjectURL(url); }
   }
 
   // ---------- novo combate ----------
@@ -431,6 +626,14 @@ window.Battle = (function(){
         <form class="form" data-form>
           <label class="field"><span>Criaturas em campo por lado</span>
             <select name="per"><option value="1">1 contra 1</option><option value="2">2 contra 2 (duplas)</option></select></label>
+          <div class="row3">
+            <label class="field"><span>Colunas (${R.BOARD_MIN} a ${R.BOARD_MAX})</span>
+              <input type="number" name="cols" inputmode="numeric" min="${R.BOARD_MIN}" max="${R.BOARD_MAX}" value="${R.BOARD_DEFAULT}"></label>
+            <label class="field"><span>Linhas (${R.BOARD_MIN} a ${R.BOARD_MAX})</span>
+              <input type="number" name="rows" inputmode="numeric" min="${R.BOARD_MIN}" max="${R.BOARD_MAX}" value="${R.BOARD_DEFAULT}"></label>
+            <label class="field"><span>Foto de fundo (opcional)</span>
+              <input type="file" name="bg" accept="image/png,image/jpeg,image/webp"></label>
+          </div>
           <p class="attr-info">Marque as criaturas de cada lado. As primeiras da lista entram em campo; as outras ficam no banco. Escolher um treinador marca a equipe dele.</p>
           <div class="setup-sides">${sideBox(0)}${sideBox(1)}</div>
           <div class="modal-actions">
@@ -474,9 +677,16 @@ window.Battle = (function(){
         roster: boxes(i).filter(b => b.checked).map(b => b.value)
       }));
       if(!defs[0].roster.length || !defs[1].roster.length){ UI.toast('Cada lado precisa de pelo menos uma criatura', 'bad'); return; }
+      const clamp = n => Math.min(R.BOARD_MAX, Math.max(R.BOARD_MIN, Math.floor(Number(form.elements[n].value)) || R.BOARD_DEFAULT));
+      const boardCfg = { cols: clamp('cols'), rows: clamp('rows'), bg: null };
+      const bgFile = form.elements.bg.files && form.elements.bg.files[0];
       await UI.busy(form.querySelector('[type=submit]'), async () => {
         try{
-          const st = newState(defs, per);
+          if(bgFile){
+            UI.toast('Enviando o fundo…');
+            boardCfg.bg = await API.uploadImage(await prepareBackground(bgFile), 'boards', 'bg');
+          }
+          const st = newState(defs, per, boardCfg);
           const row = await API.saveBattle(null, 'active', st);
           App.battles.push(row);
           m.close(true);
@@ -500,14 +710,18 @@ window.Battle = (function(){
       .sort((a, b) => (sideOf(st, a) === aSide ? 1 : 0) - (sideOf(st, b) === aSide ? 1 : 0));
     if(!targets.length){ UI.toast('Não há alvo em campo', 'bad'); return; }
 
+    const reach = t.reach || 1;
+    const inReach = id => { const d = distBetween(st, aId, id); return d == null || d <= reach; };
+    const hasBoard = !!st.board;
     const m = UI.openModal({
       title: `${nm(aId)} usa ${t.name}`,
       wide: true,
       html: `
         <form class="form" data-form>
-          <div class="atk-head">${Creatures.typeChip(t.type)}<span>${Techniques.catLabel(t.category)} · Poder ${t.power} · ${t.pa_cost} PA</span></div>
+          <div class="atk-head">${Creatures.typeChip(t.type)}<span>${Techniques.catLabel(t.category)} · Poder ${t.power} · ${t.pa_cost} PA · alcance ${reach}</span></div>
           <label class="field"><span>Alvo</span>
-            <select name="target">${targets.map(id => `<option value="${id}">${esc(nm(id))} (${esc(st.sides[sideOf(st, id)].name)}${sideOf(st, id) === aSide ? ' — aliado' : ''}) · ${hpOf(id)}/${maxHpOf(id)}</option>`).join('')}</select></label>
+            <select name="target">${targets.map(id => { const d = distBetween(st, aId, id); return `<option value="${id}" data-out="${inReach(id) ? 0 : 1}">${esc(nm(id))} (${esc(st.sides[sideOf(st, id)].name)}${sideOf(st, id) === aSide ? ' — aliado' : ''}) · ${hpOf(id)}/${maxHpOf(id)}${d != null ? ` · a ${d} ${d === 1 ? 'bloco' : 'blocos'}` : ''}${inReach(id) ? '' : ' — fora de alcance'}</option>`; }).join('')}</select></label>
+          ${hasBoard ? '<label class="check"><input type="checkbox" name="ignore"> <span>Ignorar o alcance (decisão do mestre)</span></label>' : ''}
           <div class="row2">
             <label class="field"><span>d20 do atacante</span>
               <input type="number" name="da" inputmode="numeric" min="1" max="20" value="${d20()}"></label>
@@ -526,7 +740,23 @@ window.Battle = (function(){
     const out = form.querySelector('[data-result]');
     const die = n => Math.min(20, Math.max(1, Math.floor(Number(form.elements[n].value)) || 1));
 
+    const submitBtn = form.querySelector('[type=submit]');
+    /** Alvos fora de alcance ficam desabilitados, a menos que o mestre marque "ignorar". */
+    function applyReach(){
+      const ignore = !!(form.elements.ignore && form.elements.ignore.checked);
+      const opts = [...form.elements.target.options];
+      opts.forEach(o => { o.disabled = o.dataset.out === '1' && !ignore; });
+      if(form.elements.target.selectedOptions[0] && form.elements.target.selectedOptions[0].disabled){
+        const first = opts.find(o => !o.disabled);
+        if(first) form.elements.target.value = first.value;
+      }
+      const none = !opts.some(o => !o.disabled);
+      submitBtn.disabled = none;
+      return none;
+    }
+
     function preview(){
+      if(applyReach()){ out.innerHTML = '<div class="res-line miss"><b>Ninguém ao alcance</b><span>Mova a peça para perto, ou marque "ignorar o alcance".</span></div>'; return; }
       const tId = form.elements.target.value;
       const r = resolveAttack(aId, t, tId, die('da'), die('dd'));
       const statLabel = key => (R.STATS.find(s => s.key === key) || {}).label;
@@ -576,6 +806,7 @@ window.Battle = (function(){
         s2.active = s2.active.filter(x => x !== out);
         st2.queue.shift();
         s2.active.push(inId);
+        enterBoard(st2, sideOf(st2, out), inId, out);
         if(!st2.participated.includes(inId)) st2.participated.push(inId);
         log(st2, `${s2.name} trocou ${nm(out)} por ${nm(inId)}`);
         insertIntoQueue(st2, inId, outSpeed, 0);
@@ -588,6 +819,7 @@ window.Battle = (function(){
   function init(root){
     view = root;
     root.addEventListener('click', e => {
+      if(e.target.closest('[data-board]')){ boardClick(e); return; }
       const b = e.target.closest('[data-act]');
       if(!b || !root.contains(b) || !b.dataset.act.startsWith('b-') || !App.isMaster) return;
       const row = currentRow();
@@ -607,6 +839,7 @@ window.Battle = (function(){
           const p = st.pending.findIndex(x => x.side === si);
           if(p < 0) return;
           st.sides[si].active.push(id);
+          enterBoard(st, si, id, null);
           if(!st.participated.includes(id)) st.participated.push(id);
           log(st, `${st.sides[si].name} mandou ${nm(id)} para o campo`);
           const ref = st.queue.length ? speedOf(st.queue[0]) : -1;
@@ -672,6 +905,11 @@ window.Battle = (function(){
     const a = document.activeElement;
     if(a && a.id === 'bXp') return;
     draw();
+    // o jogador pode ter gastado o último PA movendo a peça: quem fecha o turno é o mestre
+    const row = App.isMaster && currentRow();
+    if(row && row.status === 'active' && row.state.winner == null && !row.state.pending.length && row.state.queue.length && row.state.pa <= 0){
+      act(st => endTurn(st, false));
+    }
   }
 
   return { init, render, refresh };

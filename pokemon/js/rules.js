@@ -294,6 +294,14 @@
       .reduce((acc, k) => acc.concat(resolveTies(groups.get(k), rng)), []);
   }
 
+  /** Distância no tabuleiro em blocos: a diagonal custa 1, então vale o maior dos dois eixos. */
+  function gridDistance(a, b){
+    return Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]));
+  }
+
+  const REACH_MIN = 1, REACH_MAX = 30;
+  const BOARD_MIN = 8, BOARD_MAX = 30, BOARD_DEFAULT = 20;
+
   /** XP de uma batalha: cada criatura derrotada vale o próprio nível; quem participou recebe o total inteiro. */
   function battleXp(defeatedLevels){
     return defeatedLevels.reduce((s, l) => s + Math.max(0, Math.floor(Number(l) || 0)), 0);
@@ -302,6 +310,7 @@
   return {
     PA_PER_TURN, MAX_TECHNIQUES, POWER_MIN, POWER_MAX, CATEGORIES, POWER_BANDS,
     powerBand, techniqueDamage, hitTest, paHeal, resolveTies, initiativeOrder, battleXp,
+    gridDistance, REACH_MIN, REACH_MAX, BOARD_MIN, BOARD_MAX, BOARD_DEFAULT,
     TRAINER_ATTRS, TRAINER_BASE_HP, TRAINER_START_POINTS, POINTS_PER_LEVEL, TEAM_SIZE,
     trainerMaxHp, xpToNext, pointsBudget, pointsSpent, pointsLeft,
     trainerShareOfCreatureXp, applyTrainerXp, fmtXp,

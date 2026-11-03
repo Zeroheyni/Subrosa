@@ -15,6 +15,9 @@ window.Trainers = (function(){
   let currentId = null;     // ficha aberta (null = lista)
   let pending = null;       // anotação ainda não enviada: { id, text }
   const lastBars = {};      // largura anterior das barras, pra animar a mudança
+  const stage = {};         // pontos que o jogador marcou mas ainda não confirmou: { idDoTreinador: { fisico: 1 } }
+  const staged = id => stage[id] || (stage[id] = {});
+  const stagedTotal = id => Object.values(staged(id)).reduce((a, b) => a + b, 0);
 
   const byId = id => App.trainers.find(t => t.id === id);
   const visible = () => App.isMaster ? App.trainers : App.trainers.filter(t => t.kind === 'player');
@@ -107,6 +110,10 @@ window.Trainers = (function(){
     const maxHp = R.trainerMaxHp(t.fisico);
     const need = R.xpToNext(t.level);
     const left = R.pointsLeft(t);
+    if(stagedTotal(t.id) > Math.max(0, left)) stage[t.id] = {};      // o mestre mexeu nos pontos: recomeça
+    const mine = staged(t.id);
+    const free = left - stagedTotal(t.id);                           // o que ainda dá pra marcar
+    const canSpend = !App.isMaster && t.kind === 'player' && left > 0;
     const top = Math.max(10, ...R.TRAINER_ATTRS.map(a => t[a.key]));
     const m = App.isMaster;
     const canBack = App.isMaster || visible().length > 1;
@@ -162,17 +169,23 @@ window.Trainers = (function(){
             <div class="card-head">
               <h3>Atributos</h3>
               <span class="pts ${left < 0 ? 'over' : left > 0 ? 'has' : ''}" title="10 pontos na criação + 2 por nível">
-                ${left < 0 ? `${-left} pontos a mais` : left > 0 ? `${left} para distribuir` : 'tudo distribuído'}
+                ${left < 0 ? `${-left} pontos a mais` : free > 0 ? `${free} para distribuir` : left > 0 ? 'confirme abaixo' : 'tudo distribuído'}
               </span>
             </div>
             <ul class="attr-list">
               ${R.TRAINER_ATTRS.map(a => `
-                <li>
+                <li class="${canSpend ? 'can' : ''}">
                   <span class="attr-name">${a.label}</span>
-                  <div class="bar slim"><div class="bar-fill attr" data-bar="a-${a.key}" data-w="${pct(t[a.key], top).toFixed(2)}"></div></div>
-                  <span class="attr-val">${t[a.key]}</span>
+                  <div class="bar slim"><div class="bar-fill attr" data-bar="a-${a.key}" data-w="${pct(t[a.key] + (mine[a.key] || 0), top).toFixed(2)}"></div></div>
+                  <span class="attr-val">${t[a.key] + (mine[a.key] || 0)}${mine[a.key] ? `<em class="plus">+${mine[a.key]}</em>` : ''}</span>
+                  ${canSpend ? `<button class="mini-plus" type="button" data-act="spend" data-attr="${a.key}" aria-label="Pôr 1 ponto em ${a.label}" ${free <= 0 ? 'disabled' : ''}>+</button>` : ''}
                 </li>`).join('')}
             </ul>
+            ${canSpend ? `
+              <div class="spend-bar">
+                <p class="hint" style="margin:0">${stagedTotal(t.id) ? `Marcados: <b>${stagedTotal(t.id)}</b>. Depois de confirmar, não dá para desfazer.` : 'Toque no + para gastar seus pontos de atributo. Só dá para somar.'}</p>
+                ${stagedTotal(t.id) ? `<div class="act-row"><button class="btn ghost" type="button" data-act="spend-reset">Limpar</button><button class="btn primary" type="button" data-act="spend-confirm">Confirmar +${stagedTotal(t.id)}</button></div>` : ''}
+              </div>` : ''}
           </section>
 
           <section class="card xpmon">
@@ -242,6 +255,27 @@ window.Trainers = (function(){
         }else{
           UI.toast(`+${R.fmtXp(n)} XP`, 'good');
         }
+      }catch(e){ UI.toast(e.message, 'bad'); }
+    });
+  }
+
+  async function confirmSpend(t, btn){
+    const add = Object.assign({}, staged(t.id));
+    const total = stagedTotal(t.id);
+    if(!total) return;
+    const lines = R.TRAINER_ATTRS.filter(a => add[a.key]).map(a => `${a.label} +${add[a.key]}`).join(', ');
+    const ok = await UI.confirmBox({
+      title: 'Gastar pontos',
+      html: `Gastar <b>${total}</b> ${total === 1 ? 'ponto' : 'pontos'}: ${esc(lines)}.<br>Depois de confirmar, não dá para desfazer (só o mestre corrige).`,
+      yesLabel: 'Confirmar'
+    });
+    if(!ok) return;
+    await UI.busy(btn, async () => {
+      try{
+        const row = await API.spendPoints(t.id, add);
+        stage[t.id] = {};
+        applyRow(row);
+        UI.toast('Pontos gastos', 'good');
       }catch(e){ UI.toast(e.message, 'bad'); }
     });
   }
@@ -390,6 +424,12 @@ window.Trainers = (function(){
         case 'dmg': if(t && App.isMaster) hpChange(t, -1, b); break;
         case 'heal': if(t && App.isMaster) hpChange(t, 1, b); break;
         case 'xp': if(t && App.isMaster) giveXp(t, b); break;
+        case 'spend': if(t && !App.isMaster){
+          const free = R.pointsLeft(t) - stagedTotal(t.id);
+          if(free > 0){ staged(t.id)[b.dataset.attr] = (staged(t.id)[b.dataset.attr] || 0) + 1; renderSheet(view, t.id, { still:true }); }
+        } break;
+        case 'spend-reset': if(t){ stage[t.id] = {}; renderSheet(view, t.id, { still:true }); } break;
+        case 'spend-confirm': if(t && !App.isMaster) confirmSpend(t, b); break;
       }
     });
     root.addEventListener('input', e => {

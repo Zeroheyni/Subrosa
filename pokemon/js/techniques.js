@@ -31,7 +31,7 @@ window.Techniques = (function(){
     return `
       <div class="tech-row">
         ${typeChip(t.type)}
-        <span class="tech-name"><strong>${esc(t.name)}</strong><small>${catLabel(t.category)} · Poder ${t.power} · ${R.powerBand(t.power)}</small></span>
+        <span class="tech-name"><strong>${esc(t.name)}</strong><small>${catLabel(t.category)} · Poder ${t.power} · alcance ${t.reach || 1} · ${R.powerBand(t.power)}</small></span>
         ${paDots(t.pa_cost)}
         ${extra || ''}
       </div>`;
@@ -57,7 +57,7 @@ window.Techniques = (function(){
                 <div class="tcard-body">
                   <span class="chips">${typeChip(t.type)}<span class="chip">${catLabel(t.category)}</span></span>
                   <strong class="tcard-name">${esc(t.name)}</strong>
-                  <span class="where">Poder ${t.power} · ${R.powerBand(t.power)}</span>
+                  <span class="where">Poder ${t.power} · alcance ${t.reach || 1} · ${R.powerBand(t.power)}</span>
                   ${t.description ? `<span class="sub clip">${esc(t.description)}</span>` : ''}
                 </div>
                 <div class="tech-side">${paDots(t.pa_cost)}<small>${n} ${n === 1 ? 'criatura' : 'criaturas'}</small></div>
@@ -91,7 +91,7 @@ window.Techniques = (function(){
   // ---------- formulário ----------
   function openForm(t){
     const isNew = !t;
-    const d = t || { name:'', type:'Normal', category:'fisico', power:40, pa_cost:1, description:'' };
+    const d = t || { name:'', type:'Normal', category:'fisico', power:40, pa_cost:1, reach:1, description:'' };
     const m = UI.openModal({
       title: isNew ? 'Nova técnica' : 'Editar técnica',
       html: `
@@ -110,6 +110,8 @@ window.Techniques = (function(){
             <label class="field"><span>Custo em PA (1 a 5)</span>
               <input type="number" name="pa_cost" inputmode="numeric" min="1" max="${R.PA_PER_TURN}" value="${d.pa_cost}"></label>
           </div>
+          <label class="field"><span>Alcance em blocos (1 a ${R.REACH_MAX})</span>
+            <input type="number" name="reach" inputmode="numeric" min="${R.REACH_MIN}" max="${R.REACH_MAX}" value="${d.reach || 1}"></label>
           <p class="attr-info" data-info></p>
           <label class="field"><span>Descrição</span>
             <textarea name="description" rows="3" maxlength="600" placeholder="O que a técnica faz, como é vista em cena…">${esc(d.description)}</textarea></label>
@@ -160,6 +162,7 @@ window.Techniques = (function(){
         category: form.elements.category.value,
         power: power(),
         pa_cost: cost(),
+        reach: Math.min(R.REACH_MAX, Math.max(R.REACH_MIN, Math.floor(Number(form.elements.reach.value)) || 1)),
         description: form.elements.description.value.trim()
       };
       await UI.busy(form.querySelector('[type=submit]'), async () => {
