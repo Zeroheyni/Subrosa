@@ -43,6 +43,29 @@ window.API = (function(){
   const setTrainerPhoto = (id, url, srcUrl, frame) =>
     rpc('pkm_trainer_set_photo', { p_id: id, p_image_url: url, p_image_src_url: srcUrl, p_image_frame: frame });
 
+  // ---------- espécies e criaturas ----------
+  async function listAll(table){
+    const { data, error } = await sb.from(table).select('*').order('created_at', { ascending:true });
+    if(error) fail(error);
+    return data || [];
+  }
+  const listSpecies = () => listAll('pkm_species');
+  const listCreatures = () => listAll('pkm_creatures');
+  const saveSpecies = (id, data) => rpc('pkm_save_species', { p_token: token(), p_id: id || null, p_data: data });
+  const deleteSpecies = id => rpc('pkm_delete_species', { p_token: token(), p_id: id });
+  const setSpeciesPhoto = (id, url, srcUrl, frame) =>
+    rpc('pkm_species_set_photo', { p_token: token(), p_id: id, p_image_url: url, p_image_src_url: srcUrl, p_image_frame: frame });
+  const saveCreature = (id, data) => rpc('pkm_save_creature', { p_token: token(), p_id: id || null, p_data: data });
+  const moveCreature = (id, trainerId, slot) =>
+    rpc('pkm_creature_move', { p_token: token(), p_id: id, p_trainer_id: trainerId || null, p_slot: slot == null ? null : slot });
+  /** hp = valor absoluto; null = vida cheia. */
+  const creatureHp = (id, hp) => rpc('pkm_creature_set_hp', { p_token: token(), p_id: id, p_hp: hp == null ? null : hp });
+  const creatureAddXp = (id, amount) => rpc('pkm_creature_add_xp', { p_token: token(), p_id: id, p_amount: amount });
+  const deleteCreature = id => rpc('pkm_delete_creature', { p_token: token(), p_id: id });
+  const setCreatureNotes = (id, notes) => rpc('pkm_creature_set_notes', { p_id: id, p_notes: notes });
+  const setCreaturePhoto = (id, url, srcUrl, frame) =>
+    rpc('pkm_creature_set_photo', { p_id: id, p_image_url: url, p_image_src_url: srcUrl, p_image_frame: frame });
+
   // ---------- imagens ----------
   const extFor = type => (type === 'image/webp' ? 'webp' : type === 'image/png' ? 'png' : 'jpg');
   const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
@@ -67,6 +90,9 @@ window.API = (function(){
 
   return {
     sb, token, listTrainers, saveTrainer, addTrainerXp, trainerHp, deleteTrainer,
-    setTrainerNotes, setTrainerPhoto, uploadImage, subscribe
+    setTrainerNotes, setTrainerPhoto,
+    listSpecies, listCreatures, saveSpecies, deleteSpecies, setSpeciesPhoto,
+    saveCreature, moveCreature, creatureHp, creatureAddXp, deleteCreature, setCreatureNotes, setCreaturePhoto,
+    uploadImage, subscribe
   };
 })();

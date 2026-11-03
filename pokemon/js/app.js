@@ -1,7 +1,7 @@
 /* ============================================================
    POKÉMON — inicialização, abas e rotas
 
-   Rotas (hash): #treinadores · #treinador/<id> · #criaturas · #bolsa · #combate
+   Rotas (hash): #treinadores · #treinador/<id> · #criaturas · #criatura/<id> · #bestiario · #especie/<id> · #bolsa · #combate
    O login por PIN é do site todo (shared/auth.js); o app só começa
    depois que SubrosaAuth.onReady avisa o papel (mestre ou jogador).
    ============================================================ */
@@ -9,10 +9,9 @@ window.App = (function(){
   'use strict';
 
   const view = document.getElementById('view');
-  const app = { role: null, isMaster: false, trainers: [], go };
+  const app = { role: null, isMaster: false, trainers: [], species: [], creatures: [], current: 'trainers', go, reloadAll, refreshTrainers };
 
   const SOON = {
-    criaturas: { title: 'Criaturas', text: 'Espécies, time de três, PC, IVs sorteados e atributos calculados pelo nível.', ico: 'ball' },
     bolsa:     { title: 'Bolsa',     text: 'Inventário no estilo da bolsa de Pokémon, sem limite de carga.',               ico: 'bag' },
     combate:   { title: 'Combate',   text: 'Ordem de turnos, PA, dano com tipos, cura e substituição.',                     ico: 'swords' }
   };
@@ -28,7 +27,7 @@ window.App = (function(){
   }
 
   function setTab(name){
-    const tab = name === 'treinador' ? 'treinadores' : name;
+    const tab = name === 'treinador' ? 'treinadores' : ['criatura', 'bestiario', 'especie'].includes(name) ? 'criaturas' : name;
     document.querySelectorAll('.dex-nav .tab').forEach(a => {
       const on = a.dataset.tab === tab;
       a.classList.toggle('on', on);
@@ -49,6 +48,7 @@ window.App = (function(){
 
   function route(){
     Trainers.flushNotes();
+    Creatures.flushNotes();
     let r = parse();
 
     // jogador com um único treinador: cai direto na ficha dele
@@ -61,7 +61,13 @@ window.App = (function(){
     }
 
     setTab(r.name);
+    const inCreatures = ['criaturas', 'criatura', 'bestiario', 'especie'].includes(r.name);
+    app.current = inCreatures ? 'creatures' : 'trainers';
     if(r.name === 'treinador' && r.id) Trainers.renderSheet(view, r.id);
+    else if(r.name === 'criatura' && r.id) Creatures.renderCreature(view, r.id);
+    else if(r.name === 'especie' && r.id) Creatures.renderSpecies(view, r.id);
+    else if(r.name === 'bestiario') Creatures.renderBestiary(view);
+    else if(r.name === 'criaturas') Creatures.renderList(view);
     else if(SOON[r.name]) comingSoon(r.name);
     else Trainers.renderList(view);
 
@@ -72,7 +78,26 @@ window.App = (function(){
   }
 
   async function reload(){
-    app.trainers = await API.listTrainers();
+    const [trainers, species, creatures] = await Promise.all([API.listTrainers(), API.listSpecies(), API.listCreatures()]);
+    app.trainers = trainers;
+    app.species = species;
+    app.creatures = creatures;
+  }
+
+  /** Recarrega tudo e redesenha a tela aberta (usado depois de ações que mexem em mais de uma linha). */
+  async function reloadAll(){
+    await reload();
+    refreshView();
+  }
+
+  /** Só atualiza a lista de treinadores na memória (a tela aberta não mostra dados dele). */
+  async function refreshTrainers(){
+    try{ app.trainers = await API.listTrainers(); }catch(e){ /* a próxima mudança tenta de novo */ }
+  }
+
+  function refreshView(){
+    if(app.current === 'creatures') Creatures.refresh();
+    else Trainers.refresh();
   }
 
   function showError(e){
@@ -112,6 +137,7 @@ window.App = (function(){
     if(poweringOff) return;
     poweringOff = true;
     Trainers.flushNotes();
+    Creatures.flushNotes();
     try{ sessionStorage.setItem('subrosa-hub-poweron', '1'); }catch(e){}
     if(UI.reduceMotion()){ location.href = '../'; return; }
     document.body.classList.add('powering-off');
@@ -129,11 +155,12 @@ window.App = (function(){
     document.body.dataset.role = a.role;
     setupHeader();
     Trainers.init(view);
+    Creatures.init(view);
     window.addEventListener('hashchange', route);
     await boot();
 
-    API.subscribe(['pkm_trainers'], UI.debounce(async () => {
-      try{ await reload(); Trainers.refresh(); }catch(e){ /* tenta de novo na próxima mudança */ }
+    API.subscribe(['pkm_trainers', 'pkm_species', 'pkm_creatures'], UI.debounce(async () => {
+      try{ await reload(); refreshView(); }catch(e){ /* tenta de novo na próxima mudança */ }
     }, 250));
   });
 

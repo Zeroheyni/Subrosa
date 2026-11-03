@@ -177,21 +177,14 @@ window.Trainers = (function(){
 
           <section class="card xpmon">
             <div class="card-head"><h3>Experiência dos Pokémon</h3></div>
-            <p class="hint">O treinador recebe metade do XP total ganho pelos seus Pokémon, sem tirar deles.</p>
+            <p class="hint">Todo XP dado a uma criatura dele credita metade ao treinador, sem tirar da criatura.</p>
             <div class="xp-pair">
               <div><span class="k">XP ganho pelos Pokémon</span><strong>${R.fmtXp(t.creature_xp_total)}</strong></div>
               <div><span class="k">Metade recebida</span><strong>${R.fmtXp(R.trainerShareOfCreatureXp(t.creature_xp_total))}</strong></div>
             </div>
           </section>
 
-          <section class="card team">
-            <div class="card-head"><h3>Equipe carregada</h3><span class="pts">até ${R.TEAM_SIZE}</span></div>
-            <div class="slots">
-              ${Array.from({ length: R.TEAM_SIZE }, (_, i) => `
-                <div class="slot"><div class="slot-ball"></div><span>Vaga ${i + 1}</span></div>`).join('')}
-            </div>
-            <p class="hint">As criaturas e o PC chegam na próxima fase.</p>
-          </section>
+          ${Creatures.teamSection(t.id)}
 
           <section class="card notes">
             <div class="card-head"><h3>Anotações de RP</h3><span class="save-state" id="notesStatus"></span></div>
