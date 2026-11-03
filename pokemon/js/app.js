@@ -1,7 +1,7 @@
 /* ============================================================
    POKÉMON — inicialização, abas e rotas
 
-   Rotas (hash): #treinadores · #treinador/<id> · #criaturas · #criatura/<id> · #bestiario · #especie/<id> · #bolsa · #combate
+   Rotas (hash): #treinadores · #treinador/<id> · #criaturas · #criatura/<id> · #bestiario · #especie/<id> · #bolsa · #bolsa/<id do treinador> · #combate
    O login por PIN é do site todo (shared/auth.js); o app só começa
    depois que SubrosaAuth.onReady avisa o papel (mestre ou jogador).
    ============================================================ */
@@ -9,10 +9,9 @@ window.App = (function(){
   'use strict';
 
   const view = document.getElementById('view');
-  const app = { role: null, isMaster: false, trainers: [], species: [], creatures: [], current: 'trainers', go, reloadAll, refreshTrainers };
+  const app = { role: null, isMaster: false, trainers: [], species: [], creatures: [], items: [], current: 'trainers', go, reloadAll, refreshTrainers };
 
   const SOON = {
-    bolsa:     { title: 'Bolsa',     text: 'Inventário no estilo da bolsa de Pokémon, sem limite de carga.',               ico: 'bag' },
     combate:   { title: 'Combate',   text: 'Ordem de turnos, PA, dano com tipos, cura e substituição.',                     ico: 'swords' }
   };
 
@@ -62,12 +61,13 @@ window.App = (function(){
 
     setTab(r.name);
     const inCreatures = ['criaturas', 'criatura', 'bestiario', 'especie'].includes(r.name);
-    app.current = inCreatures ? 'creatures' : 'trainers';
+    app.current = inCreatures ? 'creatures' : r.name === 'bolsa' ? 'bag' : 'trainers';
     if(r.name === 'treinador' && r.id) Trainers.renderSheet(view, r.id);
     else if(r.name === 'criatura' && r.id) Creatures.renderCreature(view, r.id);
     else if(r.name === 'especie' && r.id) Creatures.renderSpecies(view, r.id);
     else if(r.name === 'bestiario') Creatures.renderBestiary(view);
     else if(r.name === 'criaturas') Creatures.renderList(view);
+    else if(r.name === 'bolsa') Bag.render(view, r.id);
     else if(SOON[r.name]) comingSoon(r.name);
     else Trainers.renderList(view);
 
@@ -78,10 +78,11 @@ window.App = (function(){
   }
 
   async function reload(){
-    const [trainers, species, creatures] = await Promise.all([API.listTrainers(), API.listSpecies(), API.listCreatures()]);
+    const [trainers, species, creatures, items] = await Promise.all([API.listTrainers(), API.listSpecies(), API.listCreatures(), API.listItems()]);
     app.trainers = trainers;
     app.species = species;
     app.creatures = creatures;
+    app.items = items;
   }
 
   /** Recarrega tudo e redesenha a tela aberta (usado depois de ações que mexem em mais de uma linha). */
@@ -97,6 +98,7 @@ window.App = (function(){
 
   function refreshView(){
     if(app.current === 'creatures') Creatures.refresh();
+    else if(app.current === 'bag') Bag.refresh();
     else Trainers.refresh();
   }
 
@@ -156,10 +158,11 @@ window.App = (function(){
     setupHeader();
     Trainers.init(view);
     Creatures.init(view);
+    Bag.init(view);
     window.addEventListener('hashchange', route);
     await boot();
 
-    API.subscribe(['pkm_trainers', 'pkm_species', 'pkm_creatures'], UI.debounce(async () => {
+    API.subscribe(['pkm_trainers', 'pkm_species', 'pkm_creatures', 'pkm_items'], UI.debounce(async () => {
       try{ await reload(); refreshView(); }catch(e){ /* tenta de novo na próxima mudança */ }
     }, 250));
   });

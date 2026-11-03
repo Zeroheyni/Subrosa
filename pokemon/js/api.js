@@ -66,6 +66,14 @@ window.API = (function(){
   const setCreaturePhoto = (id, url, srcUrl, frame) =>
     rpc('pkm_creature_set_photo', { p_id: id, p_image_url: url, p_image_src_url: srcUrl, p_image_frame: frame });
 
+  // ---------- bolsa (sem token: a bolsa também é do jogador) ----------
+  const listItems = () => listAll('pkm_items');
+  const saveItem = (id, trainerId, data) => rpc('pkm_save_item', { p_id: id || null, p_trainer_id: trainerId || null, p_data: data });
+  const itemQty = (id, delta) => rpc('pkm_item_qty', { p_id: id, p_delta: delta });
+  const deleteItem = id => rpc('pkm_delete_item', { p_id: id });
+  const setItemPhoto = (id, url, srcUrl, frame) =>
+    rpc('pkm_item_set_photo', { p_id: id, p_image_url: url, p_image_src_url: srcUrl, p_image_frame: frame });
+
   // ---------- imagens ----------
   const extFor = type => (type === 'image/webp' ? 'webp' : type === 'image/png' ? 'png' : 'jpg');
   const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
@@ -93,6 +101,7 @@ window.API = (function(){
     setTrainerNotes, setTrainerPhoto,
     listSpecies, listCreatures, saveSpecies, deleteSpecies, setSpeciesPhoto,
     saveCreature, moveCreature, creatureHp, creatureAddXp, deleteCreature, setCreatureNotes, setCreaturePhoto,
+    listItems, saveItem, itemQty, deleteItem, setItemPhoto,
     uploadImage, subscribe
   };
 })();

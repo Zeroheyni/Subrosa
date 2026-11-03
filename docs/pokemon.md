@@ -25,7 +25,8 @@ Sem build: HTML/CSS/JS puros, vários arquivos pequenos carregados por `<script 
 | `pokemon/js/cropper.js` | **enquadrador de foto** estilo Discord (arrastar, zoom, recorte) |
 | `pokemon/js/trainers.js` | lista de treinadores e a ficha |
 | `pokemon/js/creatures.js` | bestiário (espécies), lista e ficha de criaturas, formulários, mover entre equipe e PC, trecho "equipe e PC" da ficha do treinador |
-| `pokemon/js/app.js` | inicialização, abas, rotas (`#treinadores`, `#treinador/<id>`, `#criaturas`, `#criatura/<id>`, `#bestiario`, `#especie/<id>`), tempo real |
+| `pokemon/js/bag.js` | a bolsa: bolsos, itens com quantidade (+/−), formulário, foto do item |
+| `pokemon/js/app.js` | inicialização, abas, rotas (`#treinadores`, `#treinador/<id>`, `#criaturas`, `#criatura/<id>`, `#bestiario`, `#especie/<id>`, `#bolsa`, `#bolsa/<id do treinador>`), tempo real |
 
 ### Fotos e enquadramento
 
@@ -54,11 +55,12 @@ Toda foto (treinador, criatura e espécie) guarda **três coisas**: o recorte pr
 
 ## Banco de dados
 
-- **Tabelas** (prefixo `pkm_`): `pkm_trainers`, `pkm_species`, `pkm_creatures`
+- **Tabelas** (prefixo `pkm_`): `pkm_trainers`, `pkm_species`, `pkm_creatures`, `pkm_items`
 - **Funções/RPCs:** `pkm_assert_master`, `pkm_save_trainer`, `pkm_trainer_add_xp`, `pkm_trainer_hp`, `pkm_delete_trainer` (as de mestre exigem o token); `pkm_trainer_set_notes`, `pkm_trainer_set_photo` (qualquer um, são o que o jogador pode mexer).
-  - Espécies e criaturas — mestre (token): `pkm_save_species`, `pkm_delete_species`, `pkm_species_set_photo`, `pkm_save_creature`, `pkm_creature_move`, `pkm_creature_set_hp`, `pkm_creature_add_xp`, `pkm_delete_creature`. Qualquer um (jogador): `pkm_creature_set_notes`, `pkm_creature_set_photo`. Ajudantes: `pkm_valid_types`
-- **Storage:** bucket público `pokemon-images` (5 MB; png/jpeg/webp). Pastas: `trainers/`, `creatures/`, `species/`
-- **Tempo real:** `pkm_trainers`, `pkm_species` e `pkm_creatures` estão na publicação do Realtime; o app recarrega ao vivo
+  - Espécies e criaturas — mestre (token): `pkm_save_species`, `pkm_delete_species`, `pkm_species_set_photo`, `pkm_save_creature`, `pkm_creature_move`, `pkm_creature_set_hp`, `pkm_creature_add_xp`, `pkm_delete_creature`. Qualquer um (jogador): `pkm_creature_set_notes`, `pkm_creature_set_photo`. Ajudantes: `pkm_valid_types`.
+  - Bolsa — sem token (a bolsa é do jogador também): `pkm_save_item`, `pkm_item_qty`, `pkm_delete_item`, `pkm_item_set_photo`
+- **Storage:** bucket público `pokemon-images` (5 MB; png/jpeg/webp). Pastas: `trainers/`, `creatures/`, `species/`, `items/`
+- **Tempo real:** `pkm_trainers`, `pkm_species`, `pkm_creatures` e `pkm_items` estão na publicação do Realtime; o app recarrega ao vivo
 - **Chaves do navegador:** prefixo `pokemon.`
 - **Quem pode o quê:** leitura pública; escrita só por RPC. O **jogador** muda anotações de RP e fotos (do treinador e das criaturas); HP, XP, nível, atributos, IVs, equipe/PC e tudo do bestiário só o mestre. (O PIN do jogador é só a porta da frente, como no resto do site.)
 
@@ -67,6 +69,7 @@ Toda foto (treinador, criatura e espécie) guarda **três coisas**: o recorte pr
 | Arquivo | O que faz |
 |---|---|
 | `01_trainers.sql` | bucket de fotos, tabela e funções dos treinadores |
+| `03_bag.sql` | tabela de itens da bolsa (bolsos, quantidade, foto) e as funções de criar, mudar quantidade, apagar e foto |
 | `02_creatures.sql` | espécies, criaturas (IVs, dono, vaga), tipos válidos e as funções de criar, mover, HP e XP |
 
 ### Telas e comportamentos que não se descobrem lendo o código
@@ -86,6 +89,8 @@ Toda foto (treinador, criatura e espécie) guarda **três coisas**: o recorte pr
 - **Foto da criatura:** se a criatura não tem foto própria, usa a da espécie.
 - **Espécie com criaturas não pode ser apagada** (o banco recusa); primeiro apague ou troque a espécie delas.
 - Quando outra pessoa muda algo e a tela está com um campo em foco (anotações, dano, XP, prévia), o app espera para não atropelar a digitação; a tela atualiza na próxima mudança.
+
+- **Bolsa:** 5 bolsos fixos, como na Bolsa dos jogos: Itens, Remédios, Bolas, Técnicas e Chave (chaves `itens`, `remedios`, `bolas`, `tecnicas`, `chave` no banco). Sem limite de carga. Cada treinador tem a sua; o mestre vê a de todos (inclusive NPCs), o jogador a dos treinadores "jogador". **Mestre e jogador** adicionam, editam, tiram, apagam e põem foto, sem token. Quantidade 0 fica na lista esmaecida (não some sozinha). Apagar o treinador **apaga** os itens dele (cascade).
 
 ### Matriz de tipos (como juntei as duas tabelas do guia)
 
@@ -117,6 +122,7 @@ Para testar a interface sem digitar o PIN: criar uma sessão temporária (com um
 | 2026-11-03 | Projeto criado: plano aprovado em 5 fases (base e fotos → treinadores → bestiário e criaturas → bolsa → técnicas e combate) |
 | 2026-11-03 | **Fases 1 e 2 — base, fotos e treinadores.** Visual de Pokédex em tema escuro (responsivo), enquadrador de foto, lista e ficha de treinador (HP, XP com subida de nível, atributos, pontos a distribuir, anotações que salvam sozinhas), tempo real, cartão no hub e PWA. Migration `01_trainers.sql` testada (transação desfeita) e aplicada. Criaturas, bolsa e combate aparecem como "em construção" |
 | 2026-11-03 | **Fase 3 — bestiário e criaturas.** Espécies com até 3 tipos e Potencial 1–10 nos 9 atributos; criaturas com IVs sorteados, nível até 100, XP, HP (nulo = cheio), atributos calculados, quadro de fraquezas/resistências (matriz de tipos juntando as duas tabelas do guia), equipe de 3 + PC com troca de vagas, XP que credita metade ao treinador, fotos com enquadramento (criatura e espécie) e anotações da criatura. Migration `02_creatures.sql` testada (transação desfeita) e aplicada. Também corrigido: campos de Dano/XP da ficha ficavam com largura total |
+| 2026-11-03 | **Fase 4 — bolsa.** Cinco bolsos, itens com quantidade (+/−), descrição e foto, bolsa por treinador, mestre e jogador editam; tempo real. Migration `03_bag.sql` testada (transação desfeita) e aplicada |
 
 ## Ideias paradas (não construir sem pedir)
 
