@@ -1,0 +1,141 @@
+/* ============================================================
+   POKÉMON — inicialização, abas e rotas
+
+   Rotas (hash): #treinadores · #treinador/<id> · #criaturas · #bolsa · #combate
+   O login por PIN é do site todo (shared/auth.js); o app só começa
+   depois que SubrosaAuth.onReady avisa o papel (mestre ou jogador).
+   ============================================================ */
+window.App = (function(){
+  'use strict';
+
+  const view = document.getElementById('view');
+  const app = { role: null, isMaster: false, trainers: [], go };
+
+  const SOON = {
+    criaturas: { title: 'Criaturas', text: 'Espécies, time de três, PC, IVs sorteados e atributos calculados pelo nível.', ico: 'ball' },
+    bolsa:     { title: 'Bolsa',     text: 'Inventário no estilo da bolsa de Pokémon, sem limite de carga.',               ico: 'bag' },
+    combate:   { title: 'Combate',   text: 'Ordem de turnos, PA, dano com tipos, cura e substituição.',                     ico: 'swords' }
+  };
+
+  function go(hash){
+    if(location.hash === hash) route();
+    else location.hash = hash;
+  }
+
+  function parse(){
+    const parts = location.hash.replace(/^#/, '').split('/');
+    return { name: parts[0] || 'treinadores', id: parts[1] || null };
+  }
+
+  function setTab(name){
+    const tab = name === 'treinador' ? 'treinadores' : name;
+    document.querySelectorAll('.dex-nav .tab').forEach(a => {
+      const on = a.dataset.tab === tab;
+      a.classList.toggle('on', on);
+      if(on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+    });
+  }
+
+  function comingSoon(key){
+    const s = SOON[key];
+    view.innerHTML = `
+      <div class="empty enter">
+        <div class="empty-ico">${UI.icons[s.ico]}</div>
+        <h3>${s.title}</h3>
+        <p>${s.text}</p>
+        <span class="chip soon">em construção</span>
+      </div>`;
+  }
+
+  function route(){
+    Trainers.flushNotes();
+    let r = parse();
+
+    // jogador com um único treinador: cai direto na ficha dele
+    if(r.name === 'treinadores' && !app.isMaster){
+      const mine = app.trainers.filter(t => t.kind === 'player');
+      if(mine.length === 1){
+        history.replaceState(null, '', '#treinador/' + mine[0].id);
+        r = { name: 'treinador', id: mine[0].id };
+      }
+    }
+
+    setTab(r.name);
+    if(r.name === 'treinador' && r.id) Trainers.renderSheet(view, r.id);
+    else if(SOON[r.name]) comingSoon(r.name);
+    else Trainers.renderList(view);
+
+    view.classList.remove('page-in');
+    void view.offsetWidth;
+    view.classList.add('page-in');
+    window.scrollTo({ top: 0 });
+  }
+
+  async function reload(){
+    app.trainers = await API.listTrainers();
+  }
+
+  function showError(e){
+    view.innerHTML = `
+      <div class="empty enter">
+        <div class="empty-ball"></div>
+        <h3>Não consegui carregar</h3>
+        <p>${UI.esc(e.message)}</p>
+        <button class="btn primary" type="button" id="retry">Tentar de novo</button>
+      </div>`;
+    document.getElementById('retry').onclick = boot;
+  }
+
+  async function boot(){
+    view.innerHTML = '<div class="loading"><div class="empty-ball spin"></div></div>';
+    try{ await reload(); }catch(e){ showError(e); return; }
+    route();
+  }
+
+  // ---------- cabeçalho: papel, sair, desligar ----------
+  function setupHeader(){
+    const who = document.getElementById('who');
+    document.getElementById('whoRole').textContent = app.isMaster ? 'Mestre' : 'Jogador';
+    who.hidden = false;
+    who.addEventListener('click', async () => {
+      const ok = await UI.confirmBox({
+        title: 'Sair',
+        text: 'Você vai precisar do PIN para entrar de novo.',
+        yesLabel: 'Sair'
+      });
+      if(ok) SubrosaAuth.logout();
+    });
+  }
+
+  let poweringOff = false;
+  function powerOffToHub(){
+    if(poweringOff) return;
+    poweringOff = true;
+    Trainers.flushNotes();
+    try{ sessionStorage.setItem('subrosa-hub-poweron', '1'); }catch(e){}
+    if(UI.reduceMotion()){ location.href = '../'; return; }
+    document.body.classList.add('powering-off');
+    setTimeout(() => { location.href = '../'; }, 640);
+  }
+  document.addEventListener('click', e => { if(e.target.closest('[data-power-off]')) powerOffToHub(); });
+  window.addEventListener('pageshow', e => {
+    if(e.persisted){ poweringOff = false; document.body.classList.remove('powering-off'); }
+  });
+
+  // ---------- começo ----------
+  SubrosaAuth.onReady(async a => {
+    app.role = a.role;
+    app.isMaster = a.role === 'master';
+    document.body.dataset.role = a.role;
+    setupHeader();
+    Trainers.init(view);
+    window.addEventListener('hashchange', route);
+    await boot();
+
+    API.subscribe(['pkm_trainers'], UI.debounce(async () => {
+      try{ await reload(); Trainers.refresh(); }catch(e){ /* tenta de novo na próxima mudança */ }
+    }, 250));
+  });
+
+  return app;
+})();

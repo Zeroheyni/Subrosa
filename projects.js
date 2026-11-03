@@ -21,5 +21,15 @@ window.SUBROSA_PROJECTS = [
     path: 'levina/',
     icon: 'levina/icons/icon-192.png',
     accent: '#00d4ff'
+  },
+  {
+    id: 'pokemon',
+    kind: 'rpg',
+    name: 'Pokémon',
+    tagline: 'Gestor do RPG de Pokémon: fichas de treinadores, criaturas, bolsa e combate.',
+    tags: ['Pokémon', 'Mestre + jogador'],
+    path: 'pokemon/',
+    icon: 'pokemon/icons/icon-192.png',
+    accent: '#e53b3b'
   }
 ];
