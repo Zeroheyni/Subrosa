@@ -58,6 +58,8 @@ window.Creatures = (function(){
     return `<div class="avatar ${url ? '' : 'no-photo'}" style="--s:${size}px"><div class="avatar-in">${inner}</div></div>`;
   }
 
+  const avatarOf = (c, size) => avatar(photoOf(c), size);
+
   function bar(kind, label, cur, max, key, cls){
     return `
       <div class="meter ${kind}">
@@ -109,6 +111,7 @@ window.Creatures = (function(){
       <nav class="seg" aria-label="Seção">
         <a href="#criaturas" class="${active === 'list' ? 'on' : ''}">Criaturas</a>
         <a href="#bestiario" class="${active === 'bestiary' ? 'on' : ''}">Bestiário</a>
+        <a href="#tecnicas" class="${active === 'techniques' ? 'on' : ''}">Técnicas</a>
       </nav>`;
   }
 
@@ -388,6 +391,8 @@ window.Creatures = (function(){
               <div><span class="k">Percepção</span><strong>+${R.perceptionBonus(stats.percepcao)} <small>no d20</small></strong></div>
             </div>
           </section>
+
+          ${Techniques.creatureCard(c)}
 
           <section class="card">
             <div class="card-head"><h3>Fraquezas e resistências</h3></div>
@@ -883,7 +888,7 @@ window.Creatures = (function(){
   }
 
   return {
-    init, renderList, renderBestiary, renderSpecies, renderCreature, teamSection,
+    init, renderList, renderBestiary, renderSpecies, renderCreature, teamSection, seg, typeChip, nameOf, photoOf, avatarOf,
     openCreatureForm, flushNotes, refresh
   };
 })();

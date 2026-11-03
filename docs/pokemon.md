@@ -1,6 +1,6 @@
 # Pokémon
 
-Gestor do RPG de Pokémon do mestre: fichas de treinadores, time e box de criaturas, bolsa, e (mais pra frente) controle de combate. Funciona para dois lados: o **mestre** (controla tudo) e o **jogador** (vê a própria ficha e mexe só no que é dele).
+Gestor do RPG de Pokémon do mestre: fichas de treinadores, time e box de criaturas, bolsa, técnicas e o controle de combate. Funciona para dois lados: o **mestre** (controla tudo) e o **jogador** (vê a própria ficha e mexe só no que é dele).
 
 > O universo e as criaturas do RPG são **originais**; Pokémon é só inspiração mecânica. O visual do app é inspirado em Pokémon (Pokédex, Bolsa, barras de HP) em tema escuro.
 
@@ -26,7 +26,9 @@ Sem build: HTML/CSS/JS puros, vários arquivos pequenos carregados por `<script 
 | `pokemon/js/trainers.js` | lista de treinadores e a ficha |
 | `pokemon/js/creatures.js` | bestiário (espécies), lista e ficha de criaturas, formulários, mover entre equipe e PC, trecho "equipe e PC" da ficha do treinador |
 | `pokemon/js/bag.js` | a bolsa: bolsos, itens com quantidade (+/−), formulário, foto do item |
-| `pokemon/js/app.js` | inicialização, abas, rotas (`#treinadores`, `#treinador/<id>`, `#criaturas`, `#criatura/<id>`, `#bestiario`, `#especie/<id>`, `#bolsa`, `#bolsa/<id do treinador>`), tempo real |
+| `pokemon/js/techniques.js` | lista e formulário de técnicas, escolha das (até 4) técnicas de cada criatura |
+| `pokemon/js/battle.js` | o combate: montagem, ordem da rodada, PA, ataques com rolagem, troca, nocaute, XP no fim |
+| `pokemon/js/app.js` | inicialização, abas, rotas (`#treinadores`, `#treinador/<id>`, `#criaturas`, `#criatura/<id>`, `#bestiario`, `#especie/<id>`, `#bolsa`, `#bolsa/<id do treinador>`, `#tecnicas`, `#combate`, `#combate/<id>`), tempo real |
 
 ### Fotos e enquadramento
 
@@ -55,12 +57,13 @@ Toda foto (treinador, criatura e espécie) guarda **três coisas**: o recorte pr
 
 ## Banco de dados
 
-- **Tabelas** (prefixo `pkm_`): `pkm_trainers`, `pkm_species`, `pkm_creatures`, `pkm_items`
+- **Tabelas** (prefixo `pkm_`): `pkm_trainers`, `pkm_species`, `pkm_creatures`, `pkm_items`, `pkm_techniques`, `pkm_creature_techniques`, `pkm_battles`
 - **Funções/RPCs:** `pkm_assert_master`, `pkm_save_trainer`, `pkm_trainer_add_xp`, `pkm_trainer_hp`, `pkm_delete_trainer` (as de mestre exigem o token); `pkm_trainer_set_notes`, `pkm_trainer_set_photo` (qualquer um, são o que o jogador pode mexer).
   - Espécies e criaturas — mestre (token): `pkm_save_species`, `pkm_delete_species`, `pkm_species_set_photo`, `pkm_save_creature`, `pkm_creature_move`, `pkm_creature_set_hp`, `pkm_creature_add_xp`, `pkm_delete_creature`. Qualquer um (jogador): `pkm_creature_set_notes`, `pkm_creature_set_photo`. Ajudantes: `pkm_valid_types`.
-  - Bolsa — sem token (a bolsa é do jogador também): `pkm_save_item`, `pkm_item_qty`, `pkm_delete_item`, `pkm_item_set_photo`
+  - Bolsa — sem token (a bolsa é do jogador também): `pkm_save_item`, `pkm_item_qty`, `pkm_delete_item`, `pkm_item_set_photo`.
+  - Técnicas e combate — mestre (token): `pkm_save_technique`, `pkm_delete_technique`, `pkm_creature_set_techniques` (troca o conjunto inteiro, até 4), `pkm_battle_save` (cria ou grava o estado), `pkm_delete_battle`
 - **Storage:** bucket público `pokemon-images` (5 MB; png/jpeg/webp). Pastas: `trainers/`, `creatures/`, `species/`, `items/`
-- **Tempo real:** `pkm_trainers`, `pkm_species`, `pkm_creatures` e `pkm_items` estão na publicação do Realtime; o app recarrega ao vivo
+- **Tempo real:** `pkm_trainers`, `pkm_species`, `pkm_creatures`, `pkm_items`, `pkm_techniques`, `pkm_creature_techniques` e `pkm_battles` estão na publicação do Realtime; o app recarrega ao vivo
 - **Chaves do navegador:** prefixo `pokemon.`
 - **Quem pode o quê:** leitura pública; escrita só por RPC. O **jogador** muda anotações de RP e fotos (do treinador e das criaturas); HP, XP, nível, atributos, IVs, equipe/PC e tudo do bestiário só o mestre. (O PIN do jogador é só a porta da frente, como no resto do site.)
 
@@ -69,6 +72,7 @@ Toda foto (treinador, criatura e espécie) guarda **três coisas**: o recorte pr
 | Arquivo | O que faz |
 |---|---|
 | `01_trainers.sql` | bucket de fotos, tabela e funções dos treinadores |
+| `04_combat.sql` | técnicas (tipo, categoria, Poder, PA), vínculo criatura–técnica (máx. 4), combates e as funções do mestre |
 | `03_bag.sql` | tabela de itens da bolsa (bolsos, quantidade, foto) e as funções de criar, mudar quantidade, apagar e foto |
 | `02_creatures.sql` | espécies, criaturas (IVs, dono, vaga), tipos válidos e as funções de criar, mover, HP e XP |
 
@@ -91,6 +95,13 @@ Toda foto (treinador, criatura e espécie) guarda **três coisas**: o recorte pr
 - Quando outra pessoa muda algo e a tela está com um campo em foco (anotações, dano, XP, prévia), o app espera para não atropelar a digitação; a tela atualiza na próxima mudança.
 
 - **Bolsa:** 5 bolsos fixos, como na Bolsa dos jogos: Itens, Remédios, Bolas, Técnicas e Chave (chaves `itens`, `remedios`, `bolas`, `tecnicas`, `chave` no banco). Sem limite de carga. Cada treinador tem a sua; o mestre vê a de todos (inclusive NPCs), o jogador a dos treinadores "jogador". **Mestre e jogador** adicionam, editam, tiram, apagam e põem foto, sem token. Quantidade 0 fica na lista esmaecida (não some sozinha). Apagar o treinador **apaga** os itens dele (cascade).
+
+- **Técnicas:** criadas só pelo mestre (aba Criaturas › Técnicas): nome, tipo, categoria **Física** (usa Força contra Defesa Física) ou **Especial** (Destreza contra Defesa Especial), Poder 1–150 (a faixa — Inicial, Intermediária… — aparece sozinha) e custo 1–5 PA. Cada criatura sabe **no máximo 4** (o banco recusa mais). Técnica que alguma criatura sabe não pode ser apagada. O jogador vê as técnicas das criaturas dele, sem editar.
+- **Combate (v1, sem tabuleiro):** o mestre conduz e o jogador assiste ao vivo na aba Combate. Monta-se escolhendo 1 contra 1 ou 2 contra 2 e as criaturas de cada lado (escolher o treinador marca a equipe; as primeiras entram em campo, o resto fica no banco; criaturas sem dono ou de NPC servem de adversário selvagem). Cada rodada ordena os que estão em campo por Velocidade (empate por cara ou coroa, como no guia). Quem age tem 5 PA e pode: usar uma técnica, **Mover** (gasta 1 PA e só registra; não há tabuleiro), **Trocar** (gasta os 5 PA; exige o turno inteiro) ou **Encerrar turno** (cada PA que sobrou cura 4% da HP máxima, até 20%).
+- **Ataque:** o app rola os dois d20 e o mestre pode digitar outros valores antes de aplicar. Acerto = d20 + Precisão contra d20 + Evasão, empate favorece quem ataca. Dano = Poder × Ataque ÷ 200, depois × Ataque ÷ (Ataque + Defesa), × multiplicador de tipo, arredondado só no fim (mínimo 1, exceto imunidade). Confere com o exemplo do guia (37,5 → 75). A janela mostra a conta antes de aplicar. O bônus de Percepção não entra em combate (o guia o descreve como de exploração); não há bônus de tipo da própria criatura (o guia não menciona).
+- **Nocaute e troca:** quem chega a 0 HP sai de campo na hora e o lado escolhe a substituta do banco. Quem entra recebe 5 PA e age na mesma rodada **se a vez dele ainda não passou** (Velocidade menor ou igual à de quem estava agindo); se for mais rápido, só age na rodada seguinte. Lado sem nenhuma criatura com vida perde.
+- **Fim e XP:** o resultado fica na tela principal até o mestre clicar em **Concluir** (depois disso só no histórico). O XP sugerido é a soma dos níveis das criaturas derrotadas; quem **participou** (entrou em campo, mesmo que tenha caído) recebe o total inteiro e o treinador ganha metade (pelo mesmo caminho do XP de criatura). "Curar todos os participantes" restaura o HP de todos que entraram.
+- **HP em combate é o HP real das criaturas:** cada dano ou cura grava no banco na hora (as fichas já mostram o valor). Só o mestre grava o estado do combate; vários mestres ao mesmo tempo não são suportados.
 
 ### Matriz de tipos (como juntei as duas tabelas do guia)
 
@@ -123,6 +134,7 @@ Para testar a interface sem digitar o PIN: criar uma sessão temporária (com um
 | 2026-11-03 | **Fases 1 e 2 — base, fotos e treinadores.** Visual de Pokédex em tema escuro (responsivo), enquadrador de foto, lista e ficha de treinador (HP, XP com subida de nível, atributos, pontos a distribuir, anotações que salvam sozinhas), tempo real, cartão no hub e PWA. Migration `01_trainers.sql` testada (transação desfeita) e aplicada. Criaturas, bolsa e combate aparecem como "em construção" |
 | 2026-11-03 | **Fase 3 — bestiário e criaturas.** Espécies com até 3 tipos e Potencial 1–10 nos 9 atributos; criaturas com IVs sorteados, nível até 100, XP, HP (nulo = cheio), atributos calculados, quadro de fraquezas/resistências (matriz de tipos juntando as duas tabelas do guia), equipe de 3 + PC com troca de vagas, XP que credita metade ao treinador, fotos com enquadramento (criatura e espécie) e anotações da criatura. Migration `02_creatures.sql` testada (transação desfeita) e aplicada. Também corrigido: campos de Dano/XP da ficha ficavam com largura total |
 | 2026-11-03 | **Fase 4 — bolsa.** Cinco bolsos, itens com quantidade (+/−), descrição e foto, bolsa por treinador, mestre e jogador editam; tempo real. Migration `03_bag.sql` testada (transação desfeita) e aplicada |
+| 2026-11-03 | **Fase 5 — técnicas e combate.** Técnicas (tipo, categoria, Poder, PA) com até 4 por criatura; combate de controle com ordem por Velocidade, 5 PA, ataque com rolagem e conta visível, dano com tipos, cura de PA, troca voluntária e por nocaute, duplas, XP no fim, histórico e visão ao vivo para o jogador. Migration `04_combat.sql` testada (transação desfeita) e aplicada. Fecha o plano das 5 fases |
 
 ## Ideias paradas (não construir sem pedir)
 

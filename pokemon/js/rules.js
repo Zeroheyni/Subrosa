@@ -218,7 +218,90 @@
     return TYPES.map(t => ({ type: t, mult: typeMultiplier(t, defTypes) }));
   }
 
+  // ---------- técnicas e combate ----------
+  const PA_PER_TURN = 5;
+  const MAX_TECHNIQUES = 4;
+  const POWER_MIN = 1, POWER_MAX = 150;
+  const CATEGORIES = [
+    { key:'fisico',   label:'Física',   atk:'forca',    def:'deffis' },
+    { key:'especial', label:'Especial', atk:'destreza', def:'defesp' }
+  ];
+  const POWER_BANDS = [
+    { from:1,   label:'Inicial' },
+    { from:50,  label:'Intermediária' },
+    { from:80,  label:'Avançada' },
+    { from:110, label:'Especial' },
+    { from:130, label:'Muito poderosa e rara' }
+  ];
+
+  /** Faixa de Poder da técnica (Inicial, Intermediária…). */
+  function powerBand(power){
+    let label = POWER_BANDS[0].label;
+    POWER_BANDS.forEach(b => { if(power >= b.from) label = b.label; });
+    return label;
+  }
+
+  /**
+   * Dano de uma técnica. Poder bruto = Poder × Ataque ÷ 200; antes do tipo = bruto × Ataque ÷ (Ataque + Defesa);
+   * depois vem o multiplicador de tipo e só no fim se arredonda (mínimo 1, exceto imunidade = 0).
+   * Exemplo do guia: Poder 100, Ataque 150, Defesa 150 → 37,5; com 2× → 75.
+   */
+  function techniqueDamage(power, atk, def, mult){
+    const raw = power * atk / 200;
+    const before = raw * atk / Math.max(1, atk + def);
+    const exact = before * mult;
+    const damage = mult === 0 ? 0 : Math.max(1, Math.round(exact));
+    return { raw, before, mult, exact, damage };
+  }
+
+  /** Teste oposto: d20 + Precisão do atacante contra d20 + Evasão do alvo; empate favorece o atacante. */
+  function hitTest(precisao, evasao, d20Atk, d20Def){
+    const atk = d20Atk + precisao, def = d20Def + evasao;
+    return { atk, def, hit: atk >= def };
+  }
+
+  /** Cura dos PA que sobraram: 4% da HP máxima por PA, no máximo 20% por turno. */
+  function paHeal(paLeft, maxHp){
+    const pct = Math.min(Math.max(0, paLeft) * 4, 20);
+    return Math.round(maxHp * pct / 100);
+  }
+
+  /** Desempate de Velocidade por cara ou coroa (regra do guia). rng() < 0,5 = cara. */
+  function resolveTies(ids, rng){
+    const flip = rng || Math.random;
+    let rest = ids.slice();
+    const out = [];
+    while(rest.length > 1){
+      const heads = rest.filter(() => flip() < 0.5);
+      if(heads.length === 1){
+        out.push(heads[0]);
+        rest = rest.filter(x => x !== heads[0]);
+      }
+      // ninguém, todas ou várias com cara: todas lançam de novo
+    }
+    return out.concat(rest);
+  }
+
+  /** Ordem de ação: maior Velocidade primeiro; empates por cara ou coroa. items = [{ id, speed }]. */
+  function initiativeOrder(items, rng){
+    const groups = new Map();
+    items.forEach(it => {
+      const k = Number(it.speed) || 0;
+      if(!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(it.id);
+    });
+    return Array.from(groups.keys()).sort((a, b) => b - a)
+      .reduce((acc, k) => acc.concat(resolveTies(groups.get(k), rng)), []);
+  }
+
+  /** XP de uma batalha: cada criatura derrotada vale o próprio nível; quem participou recebe o total inteiro. */
+  function battleXp(defeatedLevels){
+    return defeatedLevels.reduce((s, l) => s + Math.max(0, Math.floor(Number(l) || 0)), 0);
+  }
+
   return {
+    PA_PER_TURN, MAX_TECHNIQUES, POWER_MIN, POWER_MAX, CATEGORIES, POWER_BANDS,
+    powerBand, techniqueDamage, hitTest, paHeal, resolveTies, initiativeOrder, battleXp,
     TRAINER_ATTRS, TRAINER_BASE_HP, TRAINER_START_POINTS, POINTS_PER_LEVEL, TEAM_SIZE,
     trainerMaxHp, xpToNext, pointsBudget, pointsSpent, pointsLeft,
     trainerShareOfCreatureXp, applyTrainerXp, fmtXp,

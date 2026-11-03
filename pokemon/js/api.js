@@ -74,6 +74,21 @@ window.API = (function(){
   const setItemPhoto = (id, url, srcUrl, frame) =>
     rpc('pkm_item_set_photo', { p_id: id, p_image_url: url, p_image_src_url: srcUrl, p_image_frame: frame });
 
+  // ---------- técnicas e combate (mestre, com token; todos leem) ----------
+  const listTechniques = () => listAll('pkm_techniques');
+  const listBattles = () => listAll('pkm_battles');
+  async function listCreatureTechniques(){
+    const { data, error } = await sb.from('pkm_creature_techniques').select('*');
+    if(error) fail(error);
+    return data || [];
+  }
+  const saveTechnique = (id, data) => rpc('pkm_save_technique', { p_token: token(), p_id: id || null, p_data: data });
+  const deleteTechnique = id => rpc('pkm_delete_technique', { p_token: token(), p_id: id });
+  const setCreatureTechniques = (creatureId, ids) =>
+    rpc('pkm_creature_set_techniques', { p_token: token(), p_creature_id: creatureId, p_technique_ids: ids });
+  const saveBattle = (id, status, state) => rpc('pkm_battle_save', { p_token: token(), p_id: id || null, p_status: status || null, p_state: state });
+  const deleteBattle = id => rpc('pkm_delete_battle', { p_token: token(), p_id: id });
+
   // ---------- imagens ----------
   const extFor = type => (type === 'image/webp' ? 'webp' : type === 'image/png' ? 'png' : 'jpg');
   const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
@@ -101,6 +116,8 @@ window.API = (function(){
     setTrainerNotes, setTrainerPhoto,
     listSpecies, listCreatures, saveSpecies, deleteSpecies, setSpeciesPhoto,
     saveCreature, moveCreature, creatureHp, creatureAddXp, deleteCreature, setCreatureNotes, setCreaturePhoto,
+    listTechniques, listBattles, listCreatureTechniques, saveTechnique, deleteTechnique,
+    setCreatureTechniques, saveBattle, deleteBattle,
     listItems, saveItem, itemQty, deleteItem, setItemPhoto,
     uploadImage, subscribe
   };
