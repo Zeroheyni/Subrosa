@@ -11,6 +11,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Subrosa">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<!-- login por PIN do site todo: tela de bloqueio até entrar (docs/hub.md) -->
+<script src="shared/auth.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -146,6 +148,25 @@
   .empty-title{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;color:var(--dim);}
   .empty-sub{font-size:12px;margin-top:2px;}
 
+  /* quem está logado + sair */
+  .who{
+    position:absolute;top:calc(14px + env(safe-area-inset-top));right:18px;z-index:2;
+    display:flex;align-items:center;gap:8px;padding:6px 6px 6px 11px;border-radius:99px;cursor:pointer;
+    font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;
+    color:var(--dim);background:rgba(255,255,255,0.05);border:1px solid var(--border);
+    transition:color .2s ease, border-color .2s ease, background .2s ease;
+    animation:rise .6s .3s var(--ease-out) both;
+  }
+  .who[hidden]{display:none;}
+  .who i{width:6px;height:6px;border-radius:50%;background:var(--rose);box-shadow:0 0 8px var(--rose);}
+  .who .out{
+    width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,0.08);color:var(--text);
+  }
+  .who .out svg{width:11px;height:11px;display:block;}
+  @media (hover:hover){ .who:hover{color:var(--text);border-color:var(--rose);} }
+  .who:active{transform:scale(.95);}
+
   .foot{
     text-align:center;margin-top:18px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1.6px;color:var(--faint);
     animation:rise .6s .4s var(--ease-out) both;
@@ -169,6 +190,10 @@
 <body>
 <div class="halo"></div>
 <main class="hub" id="hub">
+  <button class="who" id="who" type="button" hidden aria-label="Sair">
+    <i></i><span id="whoRole"></span>
+    <span class="out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H5v16h4"/><path d="M16 8l4 4-4 4"/><path d="M20 12H9"/></svg></span>
+  </button>
   <header class="hub-head">
     <div class="logo" aria-hidden="true">
       <svg viewBox="0 0 100 100" fill="none" stroke="url(#roseGrad)" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round">
@@ -246,6 +271,16 @@
       document.querySelectorAll('.proj.opening').forEach(el => el.classList.remove('opening'));
     }
   });
+
+  // quem está logado (mestre/jogador) e o botão de sair
+  if(window.SubrosaAuth){
+    SubrosaAuth.onReady((a)=>{
+      const who = document.getElementById('who');
+      document.getElementById('whoRole').textContent = a.role === 'master' ? 'Mestre' : 'Jogador';
+      who.hidden = false;
+      who.onclick = ()=> SubrosaAuth.logout();
+    });
+  }
 
   // veio do botão de desligar de um projeto: toca a animação de "ligar"
   try{

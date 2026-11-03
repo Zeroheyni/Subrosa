@@ -19,7 +19,8 @@ Um único arquivo, `levina/index.html` (HTML + CSS + JS puro, sem build), mais o
 | Celular | `PHONE_APPS` é o registro de apps; `renderHome`, `openScreenApp`, `goHome`; o campo `visibleIn` permite apps só do modo sujo |
 | Modos | `state.mode`: `limpo` (tema ciano) e `sujo` (tema vermelho) |
 | Calendário do jogo | começa no ano 3430, 12 meses nomeados, 365 dias; `state.day`, `state.clock` (`HH:MM`) |
-| Mestre | login por PIN (`master_login`) devolve um token guardado em `localStorage` (`subrosa-master-token`); RPCs de mestre exigem o token |
+| Entrada | login por PIN do site (`shared/auth.js`, ver `docs/hub.md`): um PIN entra como mestre, outro como jogador, sem tela de escolha. O papel chega em `SubrosaAuth.onReady` → `bootAfterAuth` |
+| Mestre | o token da sessão (`master_sessions`) vem do login e também é guardado em `localStorage` (`subrosa-master-token`); RPCs de mestre exigem o token. "sair" (widget do mestre) apaga o login e volta à tela de PIN |
 | Tempo real | Supabase Realtime: `postgres_changes`, `broadcast` (digitando…) e `presence` (mestre/jogador online) |
 | Movimento | tokens `--ease-out/--ease-spring/--ease-in`; `#root.still` evita reanimar em re-render só de dados; respeita `prefers-reduced-motion` |
 
@@ -96,6 +97,7 @@ Existem dados **reais** (contatos, conversas, sessões de mestre, o dia do jogo)
 | 2026-09-18 | Horário do RPG → app Relógio; tela inicial vira celular (home, widget, dock, Calendário separado); presença "online/offline"; correções de iOS (zoom, arrastar itens); recipientes dentro de depósitos |
 | 2026-09-19 | Mensagens + Contatos + notificações; fotos nas conversas; mensagens agendadas e foto de quem fala nos grupos |
 | 2026-10-02 | Polimento de movimento e acabamento visual |
+| 2026-11-03 | **Entrada por PIN**: some a tela "entrar como jogador/mestre"; a página abre direto no papel do PIN (login do hub). Sessão expirada volta à tela de PIN com aviso. Código da tela antiga mantido como reserva se o login do site não carregar |
 | 2026-11-03 | **Vira um projeto do hub Subrosa**: app movido para `levina/`, manifest próprio (nome "Levina"), botão de desligar para voltar ao hub, migrations movidas para `supabase/levina/`. Nada deletado; nenhuma tabela, função ou chave renomeada. Marca de segurança no git: tag `antes-do-hub` |
 
 ## Ideias paradas (não construir sem pedir)

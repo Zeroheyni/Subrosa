@@ -14,6 +14,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Levina">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<!-- login por PIN do site todo (tela de bloqueio até entrar; ver docs/hub.md) -->
+<script src="../shared/auth.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1773,15 +1775,18 @@ let masterToken = localStorage.getItem(MASTER_TOKEN_KEY) || null;
 
 function uid(prefix){ return prefix + '_' + Math.random().toString(36).slice(2,9); }
 
+// (só usado se o login do site, shared/auth.js, não carregou)
 async function loginAsMaster(pin){
-  const { data, error } = await sb.rpc('master_login', { pin });
-  if(error){ throw new Error('PIN incorreto'); }
-  masterToken = data;
+  const { data, error } = await sb.rpc('hub_login', { p_pin: pin });
+  if(error || !data || !data.ok || data.role !== 'master'){ throw new Error('PIN incorreto'); }
+  masterToken = data.token;
   localStorage.setItem(MASTER_TOKEN_KEY, masterToken);
   isMaster = true;
 }
 
 function logoutMaster(){
+  // sair = apagar o login do site e voltar pra tela de PIN (recarrega a página)
+  if(window.SubrosaAuth){ SubrosaAuth.logout(); return; }
   isMaster = false;
   masterToken = null;
   localStorage.removeItem(MASTER_TOKEN_KEY);
@@ -1841,8 +1846,10 @@ function isMasterSessionExpiredError(msg){
   return /mestre inv.lida ou expirada/i.test(msg || '');
 }
 function handleExpiredMasterSession(extra){
+  const msg = 'Sua sessão de mestre expirou (90 dias) — entre de novo com o PIN.' + (extra ? ' ' + extra : '');
+  if(window.SubrosaAuth){ SubrosaAuth.logout(msg); return; }
   logoutMaster();
-  showToast('Sua sessão de mestre expirou (90 dias) — você foi desconectado. Entre de novo com o PIN.' + (extra ? ' ' + extra : ''));
+  showToast(msg);
 }
 
 /* ============================================================
@@ -2364,6 +2371,17 @@ window.addEventListener('pageshow', (e)=>{
 });
 
 function renderLoginScreen(){
+  // já logado pelo PIN do site: esta tela só aparece enquanto o estado carrega
+  if(window.SubrosaAuth && SubrosaAuth.get()){
+    return `
+    <div class="login-screen">
+      ${POWER_BTN_LOGIN}
+      <div class="login-card">
+        <div class="brand" style="justify-content:center;margin-bottom:10px;"><span class="dot"></span>SUBROSA</div>
+        <div class="hint" style="text-align:center;">Carregando…</div>
+      </div>
+    </div>`;
+  }
   if(loginMode === 'pin'){
     return `
     <div class="login-screen">
@@ -2530,7 +2548,7 @@ function renderMasterWidget(){
   <div class="home-master">
     <div class="hm-head">
       <span class="hm-title">MESTRE</span>
-      <button class="hm-link" id="homeExitMaster">sair do modo mestre</button>
+      <button class="hm-link" id="homeExitMaster">sair</button>
     </div>
     <div class="hm-actions">
       <button class="hm-btn" id="btnBack" ${(state.history.length===0 || dayActionInFlight)?'disabled':''} title="Voltar um dia">
@@ -3665,7 +3683,7 @@ function attachHandlers(){
 
   const homeExitMaster = $('#homeExitMaster');
   if(homeExitMaster) homeExitMaster.onclick = ()=>{
-    if(isMaster && confirm('Sair do modo mestre? Você vai continuar vendo o jogo, só que como jogador.')){
+    if(isMaster && confirm('Sair? Você vai precisar do PIN pra entrar de novo.')){
       logoutMaster();
     }
   };
@@ -8614,12 +8632,26 @@ document.addEventListener('paste', async (e)=>{
   }
 });
 
-if(masterToken){
-  // já tem um token salvo de uma sessão de mestre anterior — tenta usar direto
+// entrada: o PIN do site (shared/auth.js) já diz se é mestre ou jogador
+function bootAfterAuth(a){
+  if(a.role === 'master' && a.token){
+    masterToken = a.token;
+    isMaster = true;
+    loadState();
+  } else {
+    enterAsPlayer();
+    loadState();
+  }
+}
+if(window.SubrosaAuth){
+  render(); // tela "Carregando…" por baixo (a tela de PIN cobre até entrar)
+  SubrosaAuth.onReady(bootAfterAuth);
+} else if(masterToken){
+  // login do site indisponível: comportamento antigo
   isMaster = true;
   loadState();
 } else {
-  render(); // mostra a tela de escolha mestre/jogador
+  render(); // tela de escolha mestre/jogador
 }
 
 /* ---------- PWA: instalar como app (Android + iOS) ---------- */
