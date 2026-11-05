@@ -31,5 +31,15 @@ window.SUBROSA_PROJECTS = [
     path: 'pokemon/',
     icon: 'pokemon/icons/icon-192.png',
     accent: '#e53b3b'
+  },
+  {
+    id: 'catdog',
+    kind: 'app',
+    name: 'Cat & Dog',
+    tagline: 'Produtividade a dois: tarefas, moedas felinas e caninas, timers e alarmes.',
+    tags: ['Produtividade', 'Dois lados'],
+    path: 'catdog/',
+    icon: 'catdog/icons/icon-192.png',
+    accent: '#b48bff'
   }
 ];

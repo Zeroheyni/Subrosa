@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cat &amp; Dog</title>
+<meta name="description" content="Produtividade a dois, gamificada: tarefas, moedas felinas e caninas, timers e alarmes.">
+<meta name="theme-color" content="#07070d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cat & Dog">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<!-- login por PIN do site: tem que vir antes de tudo -->
+<script src="../shared/auth.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<!-- desenhos reutilizados: moedas e carinhas -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="g-gato" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e2ccff"/><stop offset=".5" stop-color="#a97bff"/><stop offset="1" stop-color="#ff6fd0"/>
+    </linearGradient>
+    <linearGradient id="g-cao" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffe19a"/><stop offset=".5" stop-color="#ffae3d"/><stop offset="1" stop-color="#ff6f45"/>
+    </linearGradient>
+    <radialGradient id="shine" cx=".3" cy=".25" r=".8">
+      <stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <symbol id="paw" viewBox="0 0 32 32">
+    <ellipse cx="16" cy="20.2" rx="5.2" ry="4.2"/>
+    <ellipse cx="9.6" cy="15" rx="2.2" ry="2.9" transform="rotate(-20 9.6 15)"/>
+    <ellipse cx="13.8" cy="10.6" rx="2.2" ry="3"/>
+    <ellipse cx="18.2" cy="10.6" rx="2.2" ry="3"/>
+    <ellipse cx="22.4" cy="15" rx="2.2" ry="2.9" transform="rotate(20 22.4 15)"/>
+  </symbol>
+
+  <symbol id="coin-gato" viewBox="0 0 32 32">
+    <circle cx="16" cy="16" r="15" fill="url(#g-gato)"/>
+    <circle cx="16" cy="16" r="15" fill="url(#shine)"/>
+    <circle cx="16" cy="16" r="11.8" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="1.3"/>
+    <circle cx="16" cy="16" r="15" fill="none" stroke="#3a1670" stroke-opacity=".35" stroke-width="1"/>
+    <use href="#paw" fill="#2b1055" opacity=".9"/>
+  </symbol>
+  <symbol id="coin-cao" viewBox="0 0 32 32">
+    <circle cx="16" cy="16" r="15" fill="url(#g-cao)"/>
+    <circle cx="16" cy="16" r="15" fill="url(#shine)"/>
+    <circle cx="16" cy="16" r="11.8" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.3"/>
+    <circle cx="16" cy="16" r="15" fill="none" stroke="#6b2a08" stroke-opacity=".35" stroke-width="1"/>
+    <use href="#paw" fill="#5a2204" opacity=".9"/>
+  </symbol>
+
+  <symbol id="face-gato" viewBox="0 0 32 32">
+    <path d="M4.6 14.2 6.2 3.8 12.4 8.3Q16 7.4 19.6 8.3L25.8 3.8 27.4 14.2Q28.6 22.6 16 27.4 3.4 22.6 4.6 14.2Z" fill="url(#g-gato)"/>
+    <path d="M7.4 7.6 11 10M24.6 7.6 21 10" stroke="#fff" stroke-opacity=".5" stroke-width="1.4" stroke-linecap="round"/>
+    <ellipse cx="11.6" cy="15.6" rx="1.9" ry="2.7" fill="#25104a"/><ellipse cx="20.4" cy="15.6" rx="1.9" ry="2.7" fill="#25104a"/>
+    <circle cx="12.2" cy="14.7" r=".7" fill="#fff"/><circle cx="21" cy="14.7" r=".7" fill="#fff"/>
+    <path d="M14.6 19.2h2.8l-1.4 1.7z" fill="#25104a"/>
+    <path d="M16 20.9v1.2M16 22.1q-1.4 1.3-2.8.5M16 22.1q1.4 1.3 2.8.5" stroke="#25104a" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+    <path d="M3.4 18.4 9 19.2M3.8 21.8 9.2 21M28.6 18.4 23 19.2M28.2 21.8 22.8 21" stroke="#fff" stroke-opacity=".6" stroke-width="1" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="face-cao" viewBox="0 0 32 32">
+    <path d="M9.4 7.6Q16 5 22.6 7.6 25 13 24 20.4 21 27.6 16 27.6T8 20.4Q7 13 9.4 7.6Z" fill="url(#g-cao)"/>
+    <path d="M10 8.4Q3.6 7.6 3.4 17.6 3.6 22.6 8 22.2 9 15 10 8.4ZM22 8.4Q28.4 7.6 28.6 17.6 28.4 22.6 24 22.2 23 15 22 8.4Z" fill="#c9561f"/>
+    <ellipse cx="16" cy="21.2" rx="5.8" ry="4.6" fill="#ffe7bd"/>
+    <ellipse cx="12" cy="14.6" rx="1.7" ry="2.2" fill="#321404"/><ellipse cx="20" cy="14.6" rx="1.7" ry="2.2" fill="#321404"/>
+    <circle cx="12.5" cy="13.9" r=".65" fill="#fff"/><circle cx="20.5" cy="13.9" r=".65" fill="#fff"/>
+    <ellipse cx="16" cy="19.2" rx="2.3" ry="1.6" fill="#321404"/>
+    <path d="M16 20.6v1.8M16 22.4q-1.5 1.4-3 .4M16 22.4q1.5 1.4 3 .4" stroke="#321404" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+  </symbol>
+</svg>
+
+<header class="top">
+  <a class="brand" href="#hoje" aria-label="Cat &amp; Dog — início">
+    <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><use href="#paw" fill="url(#g-gato)"/></svg></span>
+    <span class="brand-name">Cat <i>&amp;</i> Dog</span>
+  </a>
+  <div class="top-wallets" id="topWallets" aria-label="Moedas"></div>
+  <button class="power-btn" type="button" data-power-off title="Voltar ao Subrosa" aria-label="Voltar ao Subrosa">
+    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 3v8"/><path d="M6.4 6.9a8 8 0 1 0 11.2 0"/></svg>
+  </button>
+</header>
+
+<main id="view" aria-live="polite"></main>
+
+<nav class="dock" aria-label="Seções" id="dock">
+  <a class="tab" data-tab="hoje" href="#hoje"><span class="tab-ico" data-ico="sun"></span><span class="tab-label">Hoje</span></a>
+  <a class="tab" data-tab="tarefas" href="#tarefas"><span class="tab-ico" data-ico="list"></span><span class="tab-label">Tarefas</span><b class="tab-badge" id="badgeTasks" hidden></b></a>
+  <a class="tab" data-tab="moedas" href="#moedas"><span class="tab-ico" data-ico="coins"></span><span class="tab-label">Moedas</span></a>
+  <a class="tab" data-tab="ajustes" href="#ajustes"><span class="tab-ico" data-ico="gear"></span><span class="tab-label">Ajustes</span></a>
+</nav>
+
+<script src="js/rules.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/api.js"></script>
+<script src="js/push.js"></script>
+<script src="js/tasks.js"></script>
+<script src="js/wallet.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/app.js"></script>
+<script>window.SUBROSA_PWA = { id:'catdog', title:'o Cat & Dog', swPath:'../sw.js', icon:'icons/icon-192.png' };</script>
+<script src="../shared/pwa.js"></script>
+</body>
+</html>

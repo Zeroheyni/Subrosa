@@ -1,0 +1,98 @@
+/* ============================================================
+   CAT & DOG — acesso ao Supabase (leitura pública + RPCs)
+
+   O Cão (mestre) manda o token da sessão (vem do login por PIN do site);
+   o Gato (jogador) não usa token. Toda ação diz de qual lado vem (p_side).
+   ============================================================ */
+window.API = (function(){
+  'use strict';
+
+  const SUPABASE_URL = 'https://tvhdlqapeofyxfxppjov.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_NUWJIuwNHS0Y5tWeC-3aWw_nT4oS805';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  const token = () => (window.SubrosaAuth && SubrosaAuth.get() && SubrosaAuth.get().token) || null;
+  const mySide = () => (window.SubrosaAuth && SubrosaAuth.role() === 'master' ? 'cao' : 'gato');
+
+  function fail(error){
+    const msg = (error && (error.message || error.details)) || 'Erro desconhecido';
+    if(/sessão de mestre inválida/i.test(msg) && window.SubrosaAuth){
+      SubrosaAuth.logout('Sua sessão de mestre expirou — entre de novo com o PIN.');
+    }
+    const e = new Error(msg);
+    e.cause = error;
+    throw e;
+  }
+  async function rpc(name, args){
+    const { data, error } = await sb.rpc(name, args);
+    if(error) fail(error);
+    return data;
+  }
+  // toda ação de escrita leva o lado e o token (nulo para o gato)
+  const who = () => ({ p_side: mySide(), p_token: mySide() === 'cao' ? token() : null });
+
+  // ---------- leitura ----------
+  async function listTasks(){
+    const { data, error } = await sb.from('catdog_tasks').select('*').order('created_at', { ascending:true });
+    if(error) fail(error);
+    return data || [];
+  }
+  /** Só as conclusões de hoje e das tarefas avulsas (as repetidas de dias antigos ficam para as estatísticas). */
+  async function listCompletions(periods){
+    const { data, error } = await sb.from('catdog_completions').select('*').in('period', periods);
+    if(error) fail(error);
+    return data || [];
+  }
+  async function listLog(limit){
+    const { data, error } = await sb.from('catdog_coin_log').select('*').order('created_at', { ascending:false }).limit(limit || 300);
+    if(error) fail(error);
+    return data || [];
+  }
+  async function wallets(){
+    const { data, error } = await sb.from('catdog_wallets').select('*');
+    if(error) fail(error);
+    const w = { gato: 0, cao: 0 };
+    (data || []).forEach(r => { w[r.side] = r.coins; });
+    return w;
+  }
+
+  // ---------- tarefas ----------
+  const saveTask = (id, data) => rpc('catdog_save_task', { ...who(), p_id: id || null, p_data: data });
+  const deleteTask = id => rpc('catdog_delete_task', { ...who(), p_id: id });
+  const setValue = (id, target, value) => rpc('catdog_set_value', { ...who(), p_id: id, p_target: target, p_value: value });
+  const complete = (id, done) => rpc('catdog_complete', { ...who(), p_id: id, p_done: !!done });
+
+  // ---------- moedas ----------
+  const adjust = (side, amount, note) => rpc('catdog_adjust', { p_token: token(), p_side: side, p_amount: amount, p_note: note || '' });
+
+  // ---------- notificações ----------
+  const pushSubscribe = (sub, ua) => rpc('catdog_push_subscribe', {
+    ...who(), p_endpoint: sub.endpoint, p_p256dh: sub.keys.p256dh, p_auth: sub.keys.auth, p_ua: ua || ''
+  });
+  const pushUnsubscribe = endpoint => rpc('catdog_push_unsubscribe', { p_endpoint: endpoint });
+  async function pushTest(endpoint){
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/catdog-push`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY },
+      body: JSON.stringify({ action: 'test', endpoint })
+    });
+    const out = await res.json().catch(() => ({}));
+    if(!res.ok) throw new Error(out.error || `A notificação de teste falhou (${res.status})`);
+    return out;
+  }
+
+  /** Assina mudanças das tabelas; devolve função pra cancelar. */
+  function subscribe(tables, onChange){
+    const ch = sb.channel('catdog_live');
+    tables.forEach(table => ch.on('postgres_changes', { event:'*', schema:'public', table }, p => onChange(table, p)));
+    ch.subscribe();
+    return () => sb.removeChannel(ch);
+  }
+
+  return {
+    sb, token, mySide,
+    listTasks, listCompletions, listLog, wallets,
+    saveTask, deleteTask, setValue, complete, adjust,
+    pushSubscribe, pushUnsubscribe, pushTest, subscribe
+  };
+})();
