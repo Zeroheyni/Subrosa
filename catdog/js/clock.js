@@ -31,22 +31,49 @@ window.Clock = (function(){
   }
 
   // ---------- peças ----------
-  function ticks(){
+  // estilo do relógio vem do tema equipado (themes.js → clockCfg); sem tema = o relógio de sempre
+  const DEFAULT_CFG = { minor:'line', major:'line', hand:'plain', pad:'circle', tip:'', tipH:'' };
+  const cfg = () => ({ ...DEFAULT_CFG, ...((window.Themes && Themes.clockCfg && Themes.clockCfg()) || {}) });
+
+  function marks(c){
     let out = '';
     for(let i = 0; i < 60; i++){
-      const a = (i / 60) * 2 * Math.PI, big = i % 5 === 0;
-      const r1 = 121, r2 = big ? 108 : 114;
-      out += `<line x1="${(CX + Math.sin(a) * r1).toFixed(1)}" y1="${(CY - Math.cos(a) * r1).toFixed(1)}" x2="${(CX + Math.sin(a) * r2).toFixed(1)}" y2="${(CY - Math.cos(a) * r2).toFixed(1)}" class="${big ? 'ck-tk big' : 'ck-tk'}"/>`;
+      const big = i % 5 === 0, kind = big ? c.major : c.minor;
+      if(kind === 'none') continue;
+      const deg = i * 6, a = (deg * Math.PI) / 180;
+      if(kind === 'line'){
+        const r1 = 121, r2 = big ? 108 : 114;
+        out += `<line x1="${(CX + Math.sin(a) * r1).toFixed(1)}" y1="${(CY - Math.cos(a) * r1).toFixed(1)}" x2="${(CX + Math.sin(a) * r2).toFixed(1)}" y2="${(CY - Math.cos(a) * r2).toFixed(1)}" class="${big ? 'ck-tk big' : 'ck-tk'}"/>`;
+        continue;
+      }
+      const r = big ? 113 : 117;
+      const x = (CX + Math.sin(a) * r).toFixed(1), y = (CY - Math.cos(a) * r).toFixed(1);
+      const cls = `ck-mk ${kind}${big ? ' big' : ''}`;
+      if(kind === 'dot') out += `<circle cx="${x}" cy="${y}" r="${big ? 3.6 : 1.7}" class="${cls}"/>`;
+      else if(kind === 'star') out += `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-size="${big ? 13 : 6}" class="${cls}">✦</text>`;
+      else{
+        const w = kind === 'window' ? 5.5 : big ? 7 : 3.2, h = kind === 'window' ? 8.5 : w;
+        const rot = kind === 'diamond' ? deg + 45 : deg;
+        out += `<rect x="${(x - w / 2).toFixed(1)}" y="${(y - h / 2).toFixed(1)}" width="${w}" height="${h}" transform="rotate(${rot} ${x} ${y})" class="${cls}"/>`;
+      }
     }
     return out;
   }
 
+  function pad(c){
+    if(c.pad === 'square') return `<rect class="ck-pad" x="86" y="86" width="128" height="128" rx="10"/>`;
+    if(c.pad === 'squircle') return `<rect class="ck-pad" x="86" y="86" width="128" height="128" rx="40"/>`;
+    if(c.pad === 'cut') return `<polygon class="ck-pad" points="108,86 192,86 214,108 214,192 192,214 108,214 86,192 86,108"/>`;
+    return `<circle class="ck-pad" cx="${CX}" cy="${CY}" r="64"/>`;
+  }
+  const tipText = (cls, y, ch) => `<text class="ck-tip ${cls}" x="${CX}" y="${y}" text-anchor="middle" dominant-baseline="central" font-size="15">${ch}</text>`;
+
   const SWAP = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h13M16 3l4 4-4 4M17 17H4M8 13l-4 4 4 4"/></svg>';
 
   function html(){
-    const k = shown(), o = R.other(k);
+    const k = shown(), o = R.other(k), c = cfg();
     return `
-      <section class="clock-card v-${k} enter" data-ckroot aria-label="Relógio">
+      <section class="clock-card v-${k} hs-${c.hand} pad-${c.pad} enter" data-ckroot aria-label="Relógio">
         <div class="clock-dial" data-c-go>
           <svg viewBox="0 0 300 300" aria-hidden="true">
             <defs>
@@ -56,11 +83,11 @@ window.Clock = (function(){
             <circle class="ck-track" cx="${CX}" cy="${CY}" r="${RING_R}"/>
             <circle class="ck-prog" data-c-prog cx="${CX}" cy="${CY}" r="${RING_R}" stroke-dasharray="${RING_C.toFixed(1)}" stroke-dashoffset="${RING_C.toFixed(1)}"/>
             <circle class="ck-face" cx="${CX}" cy="${CY}" r="128"/>
-            ${ticks()}
-            <g class="ck-hand ck-h" data-c-h><line x1="${CX}" y1="${CY - 70}" x2="${CX}" y2="${CY - 92}"/></g>
+            ${marks(c)}
+            <g class="ck-hand ck-h" data-c-h><line x1="${CX}" y1="${CY - 70}" x2="${CX}" y2="${CY - 92}"/>${c.tipH ? tipText('h', CY - 98, c.tipH) : ''}</g>
             <g class="ck-hand ck-m" data-c-m><line x1="${CX}" y1="${CY - 70}" x2="${CX}" y2="${CY - 104}"/></g>
-            <g class="ck-hand ck-s" data-c-s><line x1="${CX}" y1="${CY - 70}" x2="${CX}" y2="${CY - 108}"/><circle cx="${CX}" cy="${CY - 108}" r="3.6"/></g>
-            <circle class="ck-pad" cx="${CX}" cy="${CY}" r="64"/>
+            <g class="ck-hand ck-s" data-c-s><line x1="${CX}" y1="${CY - 70}" x2="${CX}" y2="${CY - 108}"/>${c.tip ? tipText('s', CY - 112, c.tip) : `<circle cx="${CX}" cy="${CY - 108}" r="3.6"/>`}</g>
+            ${pad(c)}
           </svg>
           <div class="clock-in">
             <small data-c-label></small>
@@ -87,7 +114,12 @@ window.Clock = (function(){
     lastAngle[key] += d;
     return lastAngle[key];
   }
-  const setAngle = (el, key, deg) => { if(el) el.style.transform = `rotate(${unwrap(key, deg).toFixed(2)}deg)`; };
+  const setAngle = (el, key, deg) => {
+    if(!el) return;
+    const d = unwrap(key, deg).toFixed(2);
+    el.style.transform = `rotate(${d}deg)`;
+    el.style.setProperty('--rot', d + 'deg');
+  };
   const setText = (el, v) => { if(el && el.textContent !== v) el.textContent = v; };
 
   /** Diferença de horas entre dois países agora (o outro menos o mostrado), em horas. */

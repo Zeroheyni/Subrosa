@@ -154,7 +154,7 @@ window.Themes = (function(){
       fx:[{ t:'rise', n:14, c:'rgba(160,240,255,.7)', s:[3, 9], d:[9, 18], o:.6, dx:14 }] }
     ,
     // ===== LENDÁRIOS — cor + animação + temática =====
-    { id:'cyberpunk', tier:'lendario', name:'Cyberpunk', tagline:'Neo-Tóquio: sol de synthwave, grade em movimento, chuva de código e cartões de neon.', price:500,
+    { id:'cyberpunk', tier:'lendario', name:'Retro Wave', tagline:'Synthwave dos anos 80: sol listrado, grade em movimento, chuva de código e cartões de neon.', price:500,
       pal:{ bg:'#05020d', a:'#ff2e97', a2:'#00f0ff', c2:'#fcee09' },
       vars:{ '--shape':'3px', '--surface':'rgba(16,6,34,.74)', '--surface2':'rgba(30,10,60,.8)', '--line':'rgba(0,240,255,.2)', '--line2':'rgba(255,46,151,.45)', '--stars-o':'0' },
       font: font('Orbitron', 'Orbitron:wght@500;700;800'),
@@ -217,6 +217,27 @@ window.Themes = (function(){
       html: cityScene(),
       fx:[{ t:'twinkle', n:46, c:['#ffffff', '#cfe0ff', '#ffe9b0'], s:[1, 2.4], d:[2.5, 7], o:.9 }, { t:'streak', n:2, c:'#e6f0ff', s:[80, 130], d:[10, 18], o:.8 }] }
   ];
+
+  // ---------- relógio da tela Hoje (raros, lendários e míticos têm o seu) ----------
+  // minor/major: marcas dos minutos e das horas (line · dot · square · diamond · star · window · none)
+  // hand: estilo dos ponteiros (CSS .hs-<nome>) · pad: formato do miolo (circle · square · squircle · cut)
+  // tip / tipH: peça na ponta do ponteiro de segundos / de horas
+  const CLOCKS = {
+    'aurora':             { minor:'dot',    major:'dot',     hand:'glow',   tip:'✨' },
+    'pulso-neon':         { minor:'line',   major:'line',    hand:'neon' },
+    'chuva-estrelas':     { minor:'dot',    major:'star',    hand:'thin',   tip:'☄️' },
+    'lava-lamp':          { minor:'none',   major:'dot',     hand:'fat' },
+    'mare':               { minor:'dot',    major:'dot',     hand:'glass',  tip:'🫧' },
+    'cyberpunk':          { minor:'line',   major:'diamond', hand:'retro',  pad:'cut' },
+    'abismo':             { minor:'dot',    major:'dot',     hand:'glass',  tip:'🐠' },
+    'floresta-encantada': { minor:'dot',    major:'diamond', hand:'twig',   tip:'🍃' },
+    'cosmos':             { minor:'dot',    major:'star',    hand:'thin',   tip:'🪐' },
+    'arcade':             { minor:'square', major:'square',  hand:'block',  pad:'square', tip:'👾' },
+    'eclipse':            { minor:'line',   major:'dot',     hand:'gold',   tip:'☀️', tipH:'🌙' },
+    'yin-yang':           { minor:'dot',    major:'dot',     hand:'brush' },
+    'telhados':           { minor:'none',   major:'window',  hand:'round',  pad:'squircle', tip:'🐾' }
+  };
+  CATALOG.forEach(t => { if(CLOCKS[t.id]) t.clock = CLOCKS[t.id]; });
 
   // ----- completa cada tema com a paleta calculada -----
   CATALOG.forEach(t => {
@@ -456,16 +477,50 @@ window.Themes = (function(){
       </section>`;
   }
 
+  // ---------- abas por raridade ----------
+  const TAB_ORDER = ['simples', 'raro', 'lendario', 'mitico'];
+  const TAB_TEXT = {
+    simples:  ['Simples', 'Só mudam as cores.'],
+    raro:     ['Raros', 'Cores e animação (e o relógio ganha um visual próprio).'],
+    lendario: ['Lendários', 'Cores, animação e uma temática inteira: fonte, formas, cenas e relógio.'],
+    mitico:   ['Míticos', 'Conjuntos: os dois depositam moedas no cofre para liberar — e libera para os dois.']
+  };
+  let themeTab = null;
+  function currentTab(){
+    if(!themeTab) themeTab = ss.get('catdog.themeTab');
+    if(!TAB_ORDER.includes(themeTab)){
+      const eq = BY_ID[equippedId() || DEFAULT];
+      themeTab = TAB_ORDER.includes(eq.tier) ? eq.tier : 'simples';
+    }
+    return themeTab;
+  }
+  function tabsBar(){
+    const cur = currentTab();
+    return `<nav class="seg th-tabs" aria-label="Raridade">${TAB_ORDER.map(t => {
+      const list = CATALOG.filter(x => x.tier === t);
+      const own = list.filter(x => owns(x.id)).length;
+      return `<button class="seg-btn ${TIERS[t].cls} ${cur === t ? 'on' : ''}" type="button" data-th-tab="${t}"><i class="th-dot"></i><span>${TAB_TEXT[t][0]}</span><b>${own}/${list.length}</b></button>`;
+    }).join('')}</nav>`;
+  }
+
   /** Conteúdo da aba Loja → Temas. */
   function renderStore(){
-    const has = id => CATALOG.some(t => t.tier === id);
+    const cur = currentTab();
+    const list = CATALOG.filter(t => t.tier === cur);
     return `
       <p class="hint enter">${I.info}<span>Temas são só visual e todos são escuros. Você compra com as <b>suas</b> moedas e equipa o seu: o tema de um lado <b>não</b> muda a tela do outro.</span></p>
-      <div class="th-group-first">${card(BY_ID[DEFAULT])}</div>
-      ${group('simples', 'Só mudam as cores.')}
-      ${group('raro', 'Cores e animação.')}
-      ${has('lendario') ? group('lendario', 'Cores, animação e uma temática inteira.') : ''}
-      ${has('mitico') ? group('mitico', 'Conjuntos: os dois depositam moedas no cofre para liberar — e libera para os dois.') : ''}`;
+      ${tabsBar()}
+      <section class="group th-group ${TIERS[cur].cls}">
+        <p class="hint-line">${TAB_TEXT[cur][1]}</p>
+        ${cur === 'simples' ? `<div class="th-group-first">${card(BY_ID[DEFAULT])}</div>` : ''}
+        <div class="th-grid">${list.map(t => (cur === 'mitico' ? vaultCard(t) : card(t))).join('')}</div>
+      </section>`;
+  }
+
+  /** Configuração do relógio do tema em uso (a tela Hoje desenha o relógio a partir disto). */
+  function clockCfg(){
+    const t = BY_ID[currentId()];
+    return (t && t.clock) || {};
   }
 
   // ---------- ações ----------
@@ -526,6 +581,8 @@ window.Themes = (function(){
   function init(root){
     view = root;
     root.addEventListener('click', async e => {
+      const tb = e.target.closest('[data-th-tab]');
+      if(tb && App.current === 'loja'){ themeTab = tb.dataset.thTab; ss.set('catdog.themeTab', themeTab); App.refreshView(); return; }
       const b = e.target.closest('[data-th-act]');
       if(!b || App.current !== 'loja') return;
       const th = BY_ID[b.dataset.th];
@@ -555,5 +612,5 @@ window.Themes = (function(){
   // aplica logo ao carregar (último tema deste aparelho), antes dos dados chegarem
   try{ if(document.body) apply(BY_ID[ls.get(LS_THEME)] ? ls.get(LS_THEME) : DEFAULT); }catch(e){}
 
-  return { init, sync, apply, renderStore, CATALOG, BY_ID, TIERS, debugOn, setDebug, previewId, setPreview, clearPreview, equippedId, owns, currentId, paintChip };
+  return { init, sync, apply, renderStore, clockCfg, CATALOG, BY_ID, TIERS, debugOn, setDebug, previewId, setPreview, clearPreview, equippedId, owns, currentId, paintChip };
 })();

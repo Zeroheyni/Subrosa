@@ -266,3 +266,92 @@ body[data-theme="telhados"] :is(.hero, .wallet, .task, .card, .streak, .clock-ca
 .ct-side svg .skw{ stroke:none; }
 .ct-side svg .pet, .ct-side svg .pet *{ stroke:none; }
 .ct-side svg .pet .tail{ stroke:#02040f; }
+
+/* ============================================================
+   ABAS POR RARIDADE (Loja → Temas)
+   ============================================================ */
+.th-tabs{ margin-top:14px; }
+.th-tabs .seg-btn{ gap:6px; padding:0 10px; }
+.th-tabs .seg-btn .th-dot{ width:9px; height:9px; border-radius:50%; flex:none; background:var(--tc); box-shadow:0 0 8px var(--tc); }
+.th-tabs .seg-btn.t-mitico .th-dot{ background:linear-gradient(135deg, #ff5ad1, #7a5cff, #3de0ff); }
+.th-tabs .seg-btn.on{ box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--tc) 55%, transparent); background:color-mix(in srgb, var(--tc) 16%, transparent); }
+.th-tabs .seg-btn b{ background:color-mix(in srgb, var(--tc) 80%, #fff); color:#10101a; min-width:30px; }
+.th-group > .hint-line{ margin-top:2px; }
+
+/* ============================================================
+   RELÓGIO DOS TEMAS (marcas, ponteiros, miolo e peças das pontas)
+   ============================================================ */
+.ck-mk{ fill:rgba(255,255,255,.55); stroke:none; }
+.ck-mk.big{ fill:rgba(255,255,255,.9); }
+.ck-mk.star{ fill:rgba(255,255,255,.6); }
+.ck-mk.star.big{ fill:#fff; filter:drop-shadow(0 0 4px var(--a)); }
+.ck-mk.window{ fill:#ffd36b; filter:drop-shadow(0 0 4px rgba(255,211,107,.9)); }
+.ck-mk.dot{ fill:rgba(255,255,255,.4); }
+.ck-mk.dot.big{ fill:var(--a); filter:drop-shadow(0 0 5px var(--a)); }
+.ck-mk.square{ fill:rgba(255,255,255,.55); }
+.ck-mk.square.big{ fill:var(--a); }
+.ck-mk.diamond{ fill:var(--a); filter:drop-shadow(0 0 4px var(--a)); }
+.ck-tip{ font-family:'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif; transform-box:fill-box; transform-origin:50% 50%; transform:rotate(calc(var(--rot, 0deg) * -1)); transition:transform .32s cubic-bezier(.3,1.7,.5,1); }
+.ck-h .ck-tip{ transition:transform .6s cubic-bezier(.4,0,.2,1); }
+
+/* ponteiros: cada estilo troca cor, espessura e brilho */
+.hs-glow .ck-h line{ stroke:var(--a); stroke-width:6; filter:drop-shadow(0 0 6px var(--a)); }
+.hs-glow .ck-m line{ stroke:var(--a2); stroke-width:4; filter:drop-shadow(0 0 6px var(--a2)); }
+.hs-glow .ck-s line{ stroke:#fff; stroke-width:1.6; }
+.hs-neon .ck-h line{ stroke:var(--a); stroke-width:5; filter:drop-shadow(0 0 3px var(--a)) drop-shadow(0 0 10px var(--a)); }
+.hs-neon .ck-m line{ stroke:var(--a2); stroke-width:3.4; filter:drop-shadow(0 0 3px var(--a2)) drop-shadow(0 0 10px var(--a2)); }
+.hs-neon .ck-s line{ stroke:#fff; stroke-width:1.4; filter:drop-shadow(0 0 5px #fff); }
+.hs-neon .ck-s circle{ fill:#fff; }
+.hs-thin .ck-h line{ stroke:rgba(255,255,255,.9); stroke-width:3.4; }
+.hs-thin .ck-m line{ stroke:rgba(255,255,255,.8); stroke-width:2.2; }
+.hs-thin .ck-s line{ stroke:var(--a2); stroke-width:1.2; }
+.hs-fat .ck-h line{ stroke:var(--a); stroke-width:11; opacity:.95; }
+.hs-fat .ck-m line{ stroke:var(--a2); stroke-width:7.5; opacity:.95; }
+.hs-fat .ck-s line{ stroke:#fff; stroke-width:2.4; }
+.hs-glass .ck-h line{ stroke:rgba(255,255,255,.42); stroke-width:7; filter:drop-shadow(0 0 7px var(--a)); }
+.hs-glass .ck-m line{ stroke:rgba(255,255,255,.55); stroke-width:4.6; filter:drop-shadow(0 0 6px var(--a2)); }
+.hs-glass .ck-s line{ stroke:var(--a); stroke-width:1.6; }
+.hs-retro .ck-h line{ stroke:var(--a); stroke-width:6.4; stroke-linecap:butt; filter:drop-shadow(3px 0 0 var(--a2)); }
+.hs-retro .ck-m line{ stroke:var(--a2); stroke-width:4.2; stroke-linecap:butt; filter:drop-shadow(-2px 0 0 var(--a)); }
+.hs-retro .ck-s line{ stroke:#fcee09; stroke-width:1.8; }
+.hs-retro .ck-s circle{ fill:#fcee09; }
+.hs-twig .ck-h line{ stroke:#b79a63; stroke-width:5.4; }
+.hs-twig .ck-m line{ stroke:#d8c48a; stroke-width:3.2; }
+.hs-twig .ck-s line{ stroke:var(--a); stroke-width:1.5; }
+.hs-block .ck-hand line{ stroke-linecap:butt; }
+.hs-block .ck-h line{ stroke:var(--a); stroke-width:9; filter:drop-shadow(2px 2px 0 #000); }
+.hs-block .ck-m line{ stroke:var(--a2); stroke-width:6; filter:drop-shadow(2px 2px 0 #000); }
+.hs-block .ck-s line{ stroke:#fff; stroke-width:3; }
+.hs-block .ck-s circle{ fill:#fff; }
+.hs-gold .ck-h line{ stroke:#ffd98a; stroke-width:6.6; filter:drop-shadow(0 0 7px rgba(255,170,70,.75)); }
+.hs-gold .ck-m line{ stroke:#d8ccff; stroke-width:4.4; filter:drop-shadow(0 0 7px rgba(160,130,255,.75)); }
+.hs-gold .ck-s line{ stroke:var(--a); stroke-width:1.6; }
+.hs-brush .ck-h line{ stroke:#f1ece0; stroke-width:8; opacity:.92; }
+.hs-brush .ck-m line{ stroke:#f1ece0; stroke-width:5; opacity:.86; }
+.hs-brush .ck-s line{ stroke:#e8402f; stroke-width:2.6; }
+.hs-brush .ck-s circle{ fill:#e8402f; }
+.hs-round .ck-h line{ stroke:#ffe9a8; stroke-width:8.4; }
+.hs-round .ck-m line{ stroke:#ffd36b; stroke-width:5.8; }
+.hs-round .ck-s line{ stroke:var(--a2); stroke-width:2; }
+
+/* miolo: formas diferentes; o contorno acompanha o tema */
+.pad-square .ck-pad, .pad-cut .ck-pad{ stroke-width:2; }
+body[data-theme="arcade"] .ck-pad{ stroke:var(--line2); stroke-width:3; }
+body[data-theme="arcade"] .ck-face{ fill:rgba(255,255,255,.04); stroke:var(--line2); stroke-width:3; }
+body[data-theme="cyberpunk"] .ck-pad{ stroke:var(--a2); filter:drop-shadow(0 0 8px var(--a2)); }
+body[data-theme="cyberpunk"] .ck-face{ stroke:var(--a); stroke-opacity:.5; }
+body[data-theme="eclipse"] .ck-pad{ stroke:rgba(255,220,160,.7); filter:drop-shadow(0 0 10px rgba(255,170,70,.55)); }
+body[data-theme="eclipse"] .ck-face{ stroke:rgba(200,170,255,.35); }
+body[data-theme="telhados"] .ck-pad{ fill:rgba(8,12,34,.92); stroke:rgba(255,211,107,.5); }
+body[data-theme="yin-yang"] .ck-face{ stroke:rgba(241,236,224,.25); }
+body[data-theme="yin-yang"] .ck-pad{ stroke:rgba(241,236,224,.4); }
+body[data-theme="aurora"] .ck-face{ fill:rgba(108,255,196,.05); }
+body[data-theme="abismo"] .ck-face, body[data-theme="mare"] .ck-face{ fill:rgba(63,224,208,.05); stroke:rgba(63,224,208,.25); }
+body[data-theme="cosmos"] .ck-face{ fill:rgba(157,140,255,.06); }
+body[data-theme="lava-lamp"] .ck-face{ fill:rgba(255,120,80,.06); }
+body[data-theme="pulso-neon"] .ck-pad{ stroke:var(--a); filter:drop-shadow(0 0 8px var(--a)); }
+body[data-theme="floresta-encantada"] .ck-face{ fill:rgba(141,255,122,.04); stroke:rgba(255,226,122,.22); }
+.th-tabs .seg-btn{ padding:0 7px; gap:4px; font-size:13px; }
+.th-tabs .seg-btn b{ min-width:26px; font-size:10.5px; padding:0 4px; }
+.th-tabs .seg-btn .th-dot{ width:7px; height:7px; }
+@media (max-width:420px){ .th-tabs .seg-btn .th-dot{ display:none; } }
