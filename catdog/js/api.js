@@ -101,6 +101,16 @@ window.API = (function(){
   const timerFinish = id => rpc('catdog_timer_finish', { ...who(), p_id: id });
   const setFocusValue = (target, value) => rpc('catdog_set_focus_value', { ...who(), p_target: target, p_value: value });
 
+  // ---------- alarmes ----------
+  async function listAlarms(){
+    const { data, error } = await sb.from('catdog_alarms').select('*').order('at_time', { ascending:true });
+    if(error) fail(error);
+    return data || [];
+  }
+  const saveAlarm = (id, data) => rpc('catdog_save_alarm', { ...who(), p_id: id || null, p_data: data });
+  const toggleAlarm = (id, active) => rpc('catdog_toggle_alarm', { ...who(), p_id: id, p_active: active });
+  const deleteAlarm = id => rpc('catdog_delete_alarm', { ...who(), p_id: id });
+
   // ---------- moedas ----------
   const adjust = (side, amount, note) => rpc('catdog_adjust', { p_token: token(), p_side: side, p_amount: amount, p_note: note || '' });
 
@@ -132,6 +142,7 @@ window.API = (function(){
     sb, token, mySide,
     listTasks, listCompletions, listLog, wallets,
     saveTask, deleteTask, setValue, complete, adjust,
+    listAlarms, saveAlarm, toggleAlarm, deleteAlarm,
     listTimers, listSettings, serverNow, timerStart, timerPause, timerResume, timerCancel, timerFinish, setFocusValue,
     listRewards, listPurchases, streaks, saveReward, deleteReward, buyReward, fulfillPurchase, refundPurchase,
     pushSubscribe, pushUnsubscribe, pushTest, subscribe

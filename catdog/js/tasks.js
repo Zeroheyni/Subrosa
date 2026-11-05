@@ -131,6 +131,11 @@ window.Tasks = (function(){
       </a>`;
   }
 
+  function nextAlarmChip(){
+    const n = Alarms.next();
+    return n ? `<a class="presence alarm-chip enter" href="#tempo/alarmes">${I.bell}<span>Próximo alarme <b>${n.time}</b>${n.label ? ' · ' + esc(n.label) : ''} <small>${n.when}</small></span></a>` : '';
+  }
+
   function presenceChip(){
     const o = App.timers.find(t => t.side === them() && t.kind === 'focus' && (t.status === 'running' || t.status === 'paused'));
     if(!o) return '';
@@ -184,6 +189,7 @@ window.Tasks = (function(){
       </section>
       ${streakCard()}
       ${presenceChip()}
+      ${nextAlarmChip()}
       ${gain ? `<p class="gain enter">${UI.coin(s, 16)}<span>Hoje você já ganhou <b>${R.pluralCoins(gain, s)}</b></span></p>` : ''}
 
       ${pend.length ? `

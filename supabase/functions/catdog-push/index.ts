@@ -2,9 +2,10 @@
 // Edge Function: catdog-push  (projeto Cat & Dog)
 // Envia notificações Web Push para os aparelhos inscritos em catdog_push_subs.
 //
-// Fase 1: só a ação "test" ({ action: 'test', endpoint }) — manda uma notificação
-// de teste para o aparelho que pediu. As próximas fases acrescentam a varredura
-// de alarmes, timers e prazos.
+// Ações:
+//   test  ({ action: 'test', endpoint }) — notificação de teste para o aparelho que pediu (Fase 1);
+//   scan  ({ action: 'scan' })           — avisa alarmes, fins de timer, prazos e vales na hora (Fase 4),
+//                                          chamada pelo pg_cron via catdog_ping().
 //
 // Segredos (supabase secrets): VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT.
 // A chave privada nunca vai para o repositório.
@@ -25,7 +26,7 @@ function json(body: unknown, status = 200) {
 }
 
 type Sub = { id: string; side: string; endpoint: string; p256dh: string; auth: string };
-type Payload = { title: string; body: string; tag?: string; url?: string };
+type Payload = { title: string; body: string; tag?: string; url?: string; key?: string };
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -85,6 +86,32 @@ Deno.serve(async (req: Request) => {
         url: 'catdog/',
       });
       return json(res, res.ok ? 200 : 502);
+    }
+
+    // Varredura (Fase 4): o pg_cron chama esta ação quando há algo para avisar.
+    // catdog_claim_due() reserva cada item uma única vez, então chamar à toa não manda nada repetido.
+    if (action === 'scan') {
+      const { data: items, error } = await supabase.rpc('catdog_claim_due');
+      if (error) return json({ error: error.message }, 500);
+      const list = (items ?? []) as { key: string; side: string; title: string; body: string; tag: string; url: string }[];
+      if (list.length === 0) return json({ sent: 0, items: 0 });
+
+      const { data: subs, error: subErr } = await supabase
+        .from('catdog_push_subs')
+        .select('id, side, endpoint, p256dh, auth');
+      if (subErr) return json({ error: subErr.message }, 500);
+
+      let sent = 0;
+      let failed = 0;
+      for (const it of list) {
+        const targets = (subs ?? []).filter((s) => s.side === it.side) as Sub[];
+        const results = await Promise.all(
+          targets.map((s) => sendTo(s, { title: it.title, body: it.body, tag: it.tag, url: it.url, key: it.key })),
+        );
+        sent += results.filter((r) => r.ok).length;
+        failed += results.filter((r) => !r.ok).length;
+      }
+      return json({ items: list.length, sent, failed });
     }
 
     return json({ error: 'ação desconhecida' }, 400);

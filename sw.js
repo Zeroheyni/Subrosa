@@ -22,14 +22,19 @@ self.addEventListener('push', (event) => {
   try{ data = event.data ? event.data.json() : {}; }
   catch(e){ data = { body: event.data ? event.data.text() : '' }; }
   const title = data.title || 'Cat & Dog';
-  event.waitUntil(self.registration.showNotification(title, {
+  event.waitUntil((async () => {
+    // se o app estiver aberto, avisa a página também (ela toca o alarme na tela)
+    const open = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    open.forEach(c => { try{ c.postMessage({ type: 'catdog-push', payload: data }); }catch(e){} });
+    await self.registration.showNotification(title, {
     body: data.body || '',
     icon: 'catdog/icons/icon-192.png',
     badge: 'catdog/icons/icon-192.png',
     tag: data.tag || undefined,
     data: { url: data.url || 'catdog/' },
     vibrate: [120, 60, 120]
-  }));
+    });
+  })());
 });
 
 self.addEventListener('notificationclick', (event) => {

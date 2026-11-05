@@ -1,6 +1,6 @@
 /* ============================================================
    CAT & DOG — começo do app: login, dados, rotas, cabeçalho
-   Rotas (hash): #hoje · #tarefas[/minhas|juntas|outro|avaliar] · #tempo[/foco|contagem|cronometro] · #loja[/comprar|ofertas|vales] · #moedas · #ajustes
+   Rotas (hash): #hoje · #tarefas[/minhas|juntas|outro|avaliar] · #tempo[/foco|contagem|cronometro|alarmes] · #loja[/comprar|ofertas|vales] · #moedas · #ajustes
    ============================================================ */
 window.App = (function(){
   'use strict';
@@ -11,7 +11,7 @@ window.App = (function(){
 
   const app = {
     role: null, isMaster: false, side: 'gato',
-    tasks: [], comps: [], log: [], wallets: { gato: 0, cao: 0 }, rewards: [], purchases: [], streaks: { gato: null, cao: null }, timers: [], settings: {}, skew: 0,
+    tasks: [], comps: [], log: [], wallets: { gato: 0, cao: 0 }, rewards: [], purchases: [], streaks: { gato: null, cao: null }, timers: [], settings: {}, alarms: [], sub: null, skew: 0,
     current: 'hoje', go, reload, refreshView
   };
 
@@ -34,8 +34,10 @@ window.App = (function(){
     const r = parse();
     const name = ['hoje', 'tarefas', 'tempo', 'loja', 'moedas', 'ajustes'].includes(r.name) ? r.name : 'hoje';
     app.current = name;
+    app.sub = r.arg || null;
     setTab(name);
     if(name === 'tarefas') Tasks.renderList(view, ['minhas', 'juntas', 'outro', 'avaliar'].includes(r.arg) ? r.arg : null);
+    else if(name === 'tempo' && r.arg === 'alarmes') Alarms.render(view);
     else if(name === 'tempo') Tempo.render(view, ['foco', 'contagem', 'cronometro'].includes(r.arg) ? r.arg : null);
     else if(name === 'loja') Shop.render(view, ['comprar', 'ofertas', 'vales'].includes(r.arg) ? r.arg : null);
     else if(name === 'moedas') Wallet.render(view);
@@ -53,7 +55,7 @@ window.App = (function(){
     paintBadge();
     Tempo.watch();
     if(app.current === 'tarefas' || app.current === 'hoje') Tasks.refresh();
-    else if(app.current === 'tempo') Tempo.refresh();
+    else if(app.current === 'tempo') (app.sub === 'alarmes' ? Alarms.refresh() : Tempo.refresh());
     else if(app.current === 'loja') Shop.refresh();
     else if(app.current === 'moedas') Wallet.refresh();
   }
@@ -61,13 +63,13 @@ window.App = (function(){
   // ---------- dados ----------
   async function reload(){
     const td = R.todayISO();
-    const [tasks, comps, log, wallets, rewards, purchases, streaks, timers, settings] = await Promise.all([
+    const [tasks, comps, log, wallets, rewards, purchases, streaks, timers, settings, alarms] = await Promise.all([
       API.listTasks(), API.listCompletions([td, R.ONE_OFF_PERIOD]), API.listLog(300), API.wallets(),
-      API.listRewards(), API.listPurchases(), API.streaks(), API.listTimers(), API.listSettings()
+      API.listRewards(), API.listPurchases(), API.streaks(), API.listTimers(), API.listSettings(), API.listAlarms()
     ]);
     app.tasks = tasks; app.comps = comps; app.log = log; app.wallets = wallets;
     app.rewards = rewards; app.purchases = purchases; app.streaks = streaks || { gato: null, cao: null };
-    app.timers = timers; app.settings = settings;
+    app.timers = timers; app.settings = settings; app.alarms = alarms;
     app.day = td;
   }
 
@@ -142,13 +144,14 @@ window.App = (function(){
 
     Tasks.init(view);
     Tempo.init(view);
+    Alarms.init(view);
     Shop.init(view);
     Wallet.init(view);
     Settings.init(view);
     window.addEventListener('hashchange', route);
     await boot();
 
-    API.subscribe(['catdog_tasks', 'catdog_completions', 'catdog_coin_log', 'catdog_rewards', 'catdog_purchases', 'catdog_timers', 'catdog_settings'], UI.debounce(async () => {
+    API.subscribe(['catdog_tasks', 'catdog_completions', 'catdog_coin_log', 'catdog_rewards', 'catdog_purchases', 'catdog_timers', 'catdog_settings', 'catdog_alarms'], UI.debounce(async () => {
       try{ await reload(); refreshView(); }catch(e){ /* tenta de novo na próxima mudança */ }
     }, 250));
 

@@ -250,9 +250,10 @@ window.Tempo = (function(){
   }
 
   // ---------- render ----------
-  function tabsHtml(){
-    const t = (key, label) => `<a href="#tempo/${key}" class="seg-btn ${tab === key ? 'on' : ''}">${label}</a>`;
-    return `<nav class="seg" aria-label="Tipo de timer">${t('foco', 'Foco')}${t('contagem', 'Contagem')}${t('cronometro', 'Cronômetro')}</nav>`;
+  function tabsHtml(activeKey){
+    const cur = activeKey || tab;
+    const t = (key, label) => `<a href="#tempo/${key}" class="seg-btn ${cur === key ? 'on' : ''}">${label}</a>`;
+    return `<nav class="seg" aria-label="Tipo de timer">${t('foco', 'Foco')}${t('contagem', 'Contagem')}${t('cronometro', 'Cronômetro')}${t('alarmes', 'Alarmes')}</nav>`;
   }
 
   function render(root, t){
@@ -362,9 +363,11 @@ window.Tempo = (function(){
     const tk = view.querySelector('select[name=task]'); if(tk) draftTask = tk.value;
   }
 
+  const inTempo = () => App.current === 'tempo' && App.sub !== 'alarmes';
+
   function init(root){
     root.addEventListener('click', async e => {
-      if(App.current !== 'tempo') return;
+      if(!inTempo()) return;
       const step = e.target.closest('[data-step]');
       const q = e.target.closest('[data-q]');
       if(step || q){
@@ -413,7 +416,7 @@ window.Tempo = (function(){
       }
     });
     root.addEventListener('change', e => {
-      if(App.current !== 'tempo') return;
+      if(!inTempo()) return;
       const n = e.target.name;
       if(n === 'cfgFocus' || n === 'cfgBrk' || n === 'cfgLong'){
         const c = cfg();
@@ -426,7 +429,7 @@ window.Tempo = (function(){
         render(view);
       }else if(n === 'task' || n === 'label') readDraft();
     });
-    root.addEventListener('input', e => { if(App.current === 'tempo' && e.target.name === 'label') draftLabel = e.target.value; });
+    root.addEventListener('input', e => { if(inTempo() && e.target.name === 'label') draftLabel = e.target.value; });
     draft.foco = cfg().focus * 60;
   }
 
@@ -436,5 +439,5 @@ window.Tempo = (function(){
     else{ stopTicker(); updateTitle(); keepAwake(false); }
   }
 
-  return { init, render, refresh, tick, watch, mine };
+  return { init, render, refresh, tick, watch, mine, tabsHtml, beep, unlockAudio };
 })();

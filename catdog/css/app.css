@@ -548,3 +548,36 @@ body[data-side="cao"] .dial-fg{ stroke:url(#g-cao); }
 .inline-step{ display:flex; align-items:center; gap:10px; margin-top:10px; justify-content:flex-start; }
 .fv-n{ font-family:var(--display); font-weight:800; font-size:26px; min-width:44px; text-align:center; }
 .inline-step .btn{ margin-left:auto; }
+
+/* ---------- alarmes ---------- */
+.alarm-list{ display:grid; gap:10px; margin-bottom:96px; }
+.alarm{ display:flex; align-items:center; gap:10px; padding:6px 14px 6px 6px; border-radius:22px; background:var(--surface); border:1px solid var(--line); transition:opacity .25s, border-color .25s; }
+.alarm:hover{ border-color:var(--line2); }
+.alarm.off{ opacity:.55; }
+.alarm-main{ flex:1; min-width:0; display:flex; align-items:center; gap:14px; padding:10px 8px 10px 12px; border:0; background:transparent; color:inherit; font:inherit; text-align:left; cursor:pointer; border-radius:16px; }
+.alarm-time{ font-family:var(--display); font-weight:800; font-size:34px; letter-spacing:-.02em; line-height:1; font-variant-numeric:tabular-nums; }
+.alarm:not(.off) .alarm-time{ background:linear-gradient(135deg, var(--a), var(--a2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.alarm-info{ display:grid; gap:2px; min-width:0; }
+.alarm-label{ font-weight:600; font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.alarm-info small{ color:var(--muted); font-size:12.5px; }
+.time-big{ font-size:30px !important; font-family:var(--display); font-weight:800; text-align:center; min-height:64px; }
+.hint-card{ display:flex; align-items:center; gap:12px; margin:0 0 14px; padding:12px 14px; border-radius:18px; text-decoration:none; color:var(--muted); font-size:13.5px; line-height:1.4;
+  background:rgba(255,200,87,.06); border:1px solid rgba(255,200,87,.28); }
+.hint-card .ico{ width:22px; height:22px; flex:none; color:#ffc857; }
+.hint-card b{ color:var(--text); }
+.alarm-chip small{ color:var(--faint); }
+.alarm-chip .ico{ width:18px; height:18px; color:var(--a); }
+
+/* ---------- alarme tocando ---------- */
+.ring-overlay{ position:fixed; inset:0; z-index:200; display:grid; place-items:center; padding:24px; background:rgba(6,4,14,.82); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); animation:ringFade .3s ease both; }
+@keyframes ringFade{ from{ opacity:0; } }
+.ring-card{ width:min(100%, 360px); display:grid; justify-items:center; gap:14px; text-align:center; padding:34px 24px 26px; border-radius:32px;
+  background:linear-gradient(160deg, color-mix(in srgb, var(--a) 22%, #120a22), #0d0818); border:1px solid color-mix(in srgb, var(--a) 50%, transparent); box-shadow:0 0 80px -10px var(--ag); }
+.ring-bell{ width:88px; height:88px; border-radius:30px; display:grid; place-items:center; color:#fff; background:linear-gradient(135deg, var(--a), var(--a2)); animation:bellShake 1s ease-in-out infinite; transform-origin:50% 12%; }
+.ring-bell .ico{ width:44px; height:44px; }
+@keyframes bellShake{ 0%,60%,100%{ transform:rotate(0); } 10%{ transform:rotate(14deg); } 20%{ transform:rotate(-12deg); } 30%{ transform:rotate(9deg); } 40%{ transform:rotate(-7deg); } 50%{ transform:rotate(4deg); } }
+.ring-time{ font-family:var(--display); font-weight:800; font-size:56px; line-height:1; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+.ring-card h2{ font-family:var(--display); font-weight:700; font-size:20px; overflow-wrap:anywhere; }
+.ring-actions{ display:grid; gap:10px; width:100%; margin-top:8px; }
+.ring-actions .big-play{ width:100%; }
+@media (prefers-reduced-motion: reduce){ .ring-bell{ animation:none; } }
