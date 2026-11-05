@@ -62,15 +62,18 @@ window.App = (function(){
 
   // ---------- dados ----------
   async function reload(){
-    const td = R.todayISO();
-    const [tasks, comps, log, wallets, rewards, purchases, streaks, timers, settings, alarms] = await Promise.all([
-      API.listTasks(), API.listCompletions([td, R.ONE_OFF_PERIOD]), API.listLog(300), API.wallets(),
-      API.listRewards(), API.listPurchases(), API.streaks(), API.listTimers(), API.listSettings(), API.listAlarms()
+    // a virada do dia de cada lado vem das configurações: lê primeiro para saber quais dias carregar
+    const settings = await API.listSettings();
+    R.configure({ viewer: app.side, dayStart: { gato: settings.gato && settings.gato.day_start_min, cao: settings.cao && settings.cao.day_start_min } });
+    const periods = R.activePeriods();
+    const [tasks, comps, log, wallets, rewards, purchases, streaks, timers, alarms] = await Promise.all([
+      API.listTasks(), API.listCompletions(periods), API.listLog(300), API.wallets(),
+      API.listRewards(), API.listPurchases(), API.streaks(), API.listTimers(), API.listAlarms()
     ]);
     app.tasks = tasks; app.comps = comps; app.log = log; app.wallets = wallets;
     app.rewards = rewards; app.purchases = purchases; app.streaks = streaks || { gato: null, cao: null };
     app.timers = timers; app.settings = settings; app.alarms = alarms;
-    app.day = td;
+    app.day = periods.join('|');
   }
 
   // ---------- cabeçalho ----------
@@ -157,7 +160,7 @@ window.App = (function(){
 
     // virou o dia (ou voltou ao app depois de um tempo): recarrega para "hoje" ficar certo
     const checkDay = async () => {
-      if(R.todayISO() !== app.day){
+      if(R.activePeriods().join('|') !== app.day){
         try{ await reload(); route(); }catch(e){}
       }
     };

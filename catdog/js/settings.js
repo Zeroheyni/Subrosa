@@ -34,6 +34,29 @@ window.Settings = (function(){
       </section>`;
   }
 
+  /** minutos → "HH:MM" */
+  const hhmm = min => String(Math.floor(min / 60)).padStart(2, '0') + ':' + String(min % 60).padStart(2, '0');
+
+  function timeCard(){
+    const s = me(), o = R.other(s);
+    const start = App.settings[s] ? App.settings[s].day_start_min : 0;
+    const opts = [];
+    for(let m = 0; m <= 720; m += 30) opts.push(`<option value="${m}" ${m === start ? 'selected' : ''}>${hhmm(m)}${m === 0 ? ' (meia-noite)' : ''}</option>`);
+    return `
+      <section class="card enter">
+        <div class="card-head"><h3>Horário</h3></div>
+        <p class="muted">Cada um usa o próprio relógio, com horário de verão automático. Alarmes e prazos valem na hora local de quem faz.</p>
+        <ul class="rules">
+          <li>${UI.coin(s, 18)}<span>Você: <b>${R.TZ_NAMES[s]}</b> — agora são <b data-clock="${s}">${R.timeOf(Date.now(), s)}</b></span></li>
+          <li>${UI.coin(o, 18)}<span>${R.SIDES[o].label}: <b>${R.TZ_NAMES[o]}</b> — agora são <b data-clock="${o}">${R.timeOf(Date.now(), o)}</b></span></li>
+        </ul>
+        <label class="field"><span>Seu dia começa às</span>
+          <select name="daystart" class="select" data-v="${start}">${opts.join('')}</select></label>
+        <p class="fine">Suas tarefas diárias, o "Hoje" e a sequência só viram nesse horário (ex.: 06:00 para quem dorme de manhã). As tarefas <b>compartilhadas</b> repetidas sempre viram à meia-noite de Brasília.</p>
+        <div class="card-actions"><button class="btn primary small" type="button" data-act="ds-save" disabled>Salvar</button></div>
+      </section>`;
+  }
+
   function pushCard(){
     if(!info) return `<div class="card"><div class="card-head"><h3>Notificações</h3></div><p class="muted">Verificando este aparelho…</p></div>`;
 
@@ -86,6 +109,8 @@ window.Settings = (function(){
 
       <div class="enter" id="pushHost">${pushCard()}</div>
 
+      ${timeCard()}
+
       ${focusCard()}
 
       <section class="card enter">
@@ -116,6 +141,11 @@ window.Settings = (function(){
   function refresh(){ /* nada vem do banco nesta tela */ }
 
   function init(root){
+    root.addEventListener('change', e => {
+      if(e.target.name !== 'daystart' || !view) return;
+      const btn = root.querySelector('[data-act="ds-save"]');
+      if(btn) btn.disabled = Number(e.target.value) === Number(e.target.dataset.v);
+    });
     root.addEventListener('click', async e => {
       const b = e.target.closest('[data-act]');
       if(!b || !view || !root.contains(b)) return;
@@ -123,6 +153,17 @@ window.Settings = (function(){
       if(a === 'logout'){
         const ok = await UI.confirmBox({ title: 'Sair', text: 'Você vai precisar do PIN para entrar de novo.', yesLabel: 'Sair' });
         if(ok) SubrosaAuth.logout();
+      }else if(a === 'ds-save'){
+        const sel = root.querySelector('[name=daystart]');
+        await UI.busy(b, async () => {
+          try{
+            await API.setDayStart(Number(sel.value));
+            await App.reload();
+            App.refreshView();
+            UI.toast('Início do dia atualizado', 'good');
+            render(view);
+          }catch(err){ UI.toast(err.message, 'bad'); }
+        });
       }else if(a === 'fv-step'){
         const n = root.querySelector('[data-fv]');
         n.textContent = Math.max(0, Math.min(50, Number(n.textContent) + Number(b.dataset.d)));

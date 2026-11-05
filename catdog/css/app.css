@@ -581,3 +581,10 @@ body[data-side="cao"] .dial-fg{ stroke:url(#g-cao); }
 .ring-actions{ display:grid; gap:10px; width:100%; margin-top:8px; }
 .ring-actions .big-play{ width:100%; }
 @media (prefers-reduced-motion: reduce){ .ring-bell{ animation:none; } }
+
+/* ---------- fuso horário ---------- */
+.tz-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:8px; }
+.tz-row select{ flex:none; width:auto; min-width:170px; }
+.tz-row .fine{ color:var(--accent-text, var(--muted)); }
+.card .rules + .field{ margin-top:16px; }
+.card .field + .fine{ margin-top:10px; }

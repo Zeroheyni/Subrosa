@@ -25,10 +25,10 @@ window.Alarms = (function(){
   const me = () => App.side;
   const mine = () => App.alarms.filter(a => a.side === me()).sort((x, y) => x.at_time.localeCompare(y.at_time));
 
-  // ---------- hora de São Paulo ----------
+  // ---------- hora do meu fuso (Portugal para o jogador, Brasília para o mestre) ----------
   const nowMs = () => Date.now() + (App.skew || 0);
   function spNow(){
-    const p = new Intl.DateTimeFormat('en-CA', { timeZone: R.TZ, hourCycle: 'h23', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' })
+    const p = new Intl.DateTimeFormat('en-CA', { timeZone: R.TZS[me()], hourCycle: 'h23', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' })
       .formatToParts(new Date(nowMs())).reduce((o, x) => { o[x.type] = x.value; return o; }, {});
     const iso = `${p.year}-${p.month}-${p.day}`;
     return { iso, sec: Number(p.hour) * 3600 + Number(p.minute) * 60 + Number(p.second), dow: new Date(iso + 'T12:00:00Z').getUTCDay() };
@@ -128,7 +128,7 @@ window.Alarms = (function(){
 
   async function snoozeAlarm(label){
     const at = new Date(nowMs() + SNOOZE_MIN * 60000);
-    const p = new Intl.DateTimeFormat('en-GB', { timeZone: R.TZ, hourCycle: 'h23', hour:'2-digit', minute:'2-digit' }).format(at);
+    const p = R.timeOf(at, me());
     try{
       await API.saveAlarm(null, { label, at_time: p, repeat: 'none' });
       await App.reload();
@@ -146,7 +146,7 @@ window.Alarms = (function(){
       if(!day) return;
       const at = secOf(a.at_time);
       if(n.sec < at || n.sec >= at + LOCAL_WINDOW_S) return;
-      if(Date.parse(a.updated_at) > Date.parse(`${day}T${a.at_time}-03:00`)) return;   // editado depois da hora
+      if(Date.parse(a.updated_at) > Date.parse(R.zonedToISO(day, hm(a.at_time), R.TZS[me()]))) return;   // editado depois da hora
       const key = `alarm:${a.id}:${a.repeat === 'none' ? a.on_date : day}`;
       if(!rung.has(key)) ring(a, key);
     });

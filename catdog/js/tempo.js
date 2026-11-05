@@ -146,7 +146,7 @@ window.Tempo = (function(){
   function setupView(){
     const k = KINDS[tab];
     const c = cfg();
-    const tasks = App.tasks.filter(t => R.relevantTo(t, me()) && !R.status(t, App.comps, R.todayISO()).complete && R.isDayOf(t, R.todayISO()));
+    const tasks = App.tasks.filter(t => R.relevantTo(t, me()) && !R.status(t, App.comps, new Date()).complete && R.isDayOf(t, new Date()));
     const dur = tab === 'foco' ? draft.foco : draft.contagem;
     const tdy = today();
     const presets = tab === 'foco' ? [15, 25, 45, 60] : [1, 5, 10, 15, 30, 60];
@@ -230,7 +230,7 @@ window.Tempo = (function(){
     const isLong = t.kind === 'focus' && tdy.count > 0 && tdy.count % 4 === 0;
     const brk = isLong ? c.longBrk : c.brk;
     const task = t.task_id ? App.tasks.find(x => x.id === t.task_id) : null;
-    const taskOpen = task && !R.status(task, App.comps, R.todayISO()).complete && R.canToggle(task, me(), R.status(task, App.comps, R.todayISO()), R.todayISO());
+    const taskOpen = task && !R.status(task, App.comps, new Date()).complete && R.canToggle(task, me(), R.status(task, App.comps, new Date()));
     const m = Math.round((t.elapsed_s || 0) / 60);
     const head = t.kind === 'focus' ? 'Sessão de foco concluída!' : t.kind === 'break' ? 'Pausa concluída' : t.kind === 'countdown' ? 'Tempo esgotado!' : 'Cronômetro parado';
     return `

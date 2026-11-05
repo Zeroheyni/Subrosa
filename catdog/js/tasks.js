@@ -21,7 +21,7 @@ window.Tasks = (function(){
   const them = () => R.other(App.side);
   const name = s => R.SIDES[s].label;
   const today = () => R.todayISO();
-  const SP = 'America/Sao_Paulo';
+  const tz = () => R.tzOf(me());       // fuso de quem está olhando
 
   // ---------- peças de tela ----------
   function chip(html, cls){ return `<span class="chip ${cls || ''}">${html}</span>`; }
@@ -47,11 +47,10 @@ window.Tasks = (function(){
 
   function card(t, i){
     const s = me();
-    const td = today();
-    const st = R.status(t, App.comps, td);
+    const st = R.status(t, App.comps, new Date());
     const mine = R.relevantTo(t, s);
     const info = R.dueInfo(t);
-    const canT = mine && R.canToggle(t, s, st, td);
+    const canT = mine && R.canToggle(t, s, st);
     const myDone = t.shared_mode === 'any' ? st.complete : st.done[s];
     const doneByOther = t.shared_mode === 'any' && st.doneBy && st.doneBy !== s;
     const needVal = R.needsMyValue(t, s);
@@ -96,11 +95,11 @@ window.Tasks = (function(){
 
   // ---------- HOJE ----------
   function greeting(){
-    const h = Number(new Intl.DateTimeFormat('pt-BR', { timeZone: SP, hour:'2-digit', hour12:false }).format(new Date()));
+    const h = Number(new Intl.DateTimeFormat('pt-BR', { timeZone: tz(), hourCycle:'h23', hour:'2-digit' }).format(new Date()));
     return h < 5 ? 'Boa madrugada' : h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
   }
   const longDate = () => {
-    const s = new Intl.DateTimeFormat('pt-BR', { timeZone: SP, weekday:'long', day:'numeric', month:'long' }).format(new Date());
+    const s = new Intl.DateTimeFormat('pt-BR', { timeZone: tz(), weekday:'long', day:'numeric', month:'long' }).format(new Date());
     return s.charAt(0).toUpperCase() + s.slice(1);
   };
 
@@ -287,7 +286,7 @@ window.Tasks = (function(){
   // ---------- ações ----------
   async function toggle(t, btn){
     const s = me();
-    const st = R.status(t, App.comps, today());
+    const st = R.status(t, App.comps, new Date());
     const myDone = t.shared_mode === 'any' ? st.complete : st.done[s];
     const to = !myDone;
     btn.disabled = true;
@@ -321,8 +320,7 @@ window.Tasks = (function(){
   // ---------- detalhe ----------
   function openDetail(t){
     const s = me();
-    const td = today();
-    const st = R.status(t, App.comps, td);
+    const st = R.status(t, App.comps, new Date());
     const info = R.dueInfo(t);
     const mode = t.shared_mode ? R.MODES[t.shared_mode] : null;
     const mineT = R.relevantTo(t, s);
@@ -430,8 +428,12 @@ window.Tasks = (function(){
     const s = me();
     const isNew = !t;
     const d = t || { title:'', notes:'', owner:s, shared_mode:'parts', repeat:'none', repeat_days:[], due_at:null, due_time:null, hint:null };
-    const dueDay = d.due_at ? R.dayOf(d.due_at) : '';
-    const dueHm = d.due_at ? R.timeOf(d.due_at) : '';
+    // o prazo vale, por padrão, no relógio de quem faz a tarefa (compartilhada: de quem criou); dá para trocar
+    const doer = t ? R.taskSide(t) : s;
+    const dueAllDay = d.due_at ? R.allDaySide(d.due_at) : null;
+    const dueDay = !d.due_at ? '' : dueAllDay ? R.dueParts(d).day : (w => `${w.year}-${w.month}-${w.day}`)(R.wall(d.due_at, R.TZS[doer]));
+    const dueHm = d.due_at && !dueAllDay ? R.timeOf(d.due_at, doer) : '';
+    const tzOpt = k => `<option value="${k}" ${k === doer ? 'selected' : ''}>Hora de ${R.TZ_NAMES[k]}</option>`;
     const when = d.repeat !== 'none' ? 'repeat' : d.due_at ? 'date' : 'none';
     const days = new Set(d.repeat_days || []);
 
@@ -468,7 +470,11 @@ window.Tasks = (function(){
             <div class="when-panel" data-when="date" hidden>
               <div class="row2">
                 <input type="date" name="day" value="${dueDay}" aria-label="Dia">
-                <input type="time" name="hm" value="${dueHm && dueHm !== R.END_OF_DAY ? dueHm : ''}" aria-label="Hora (opcional)">
+                <input type="time" name="hm" value="${dueHm}" aria-label="Hora (opcional)">
+              </div>
+              <div class="tz-row" data-tzrow hidden>
+                <select name="tz" class="select" aria-label="Relógio do prazo">${tzOpt(s)}${tzOpt(them())}</select>
+                <small class="fine" data-tzhint></small>
               </div>
               <div class="quick-days">
                 <button type="button" class="qbtn" data-day="0">Hoje</button>
@@ -485,6 +491,7 @@ window.Tasks = (function(){
                 ${R.WEEKDAYS.map((w, i) => `<button type="button" class="wd ${days.has(i) ? 'on' : ''}" data-wd="${i}" aria-pressed="${days.has(i)}">${w}</button>`).join('')}
               </div>
               <label class="field inline"><span>Hora <small>(opcional)</small></span><input type="time" name="rtime" value="${d.due_time ? d.due_time.slice(0, 5) : ''}"></label>
+              <small class="fine">Vale no relógio de quem faz: Portugal para o Cão, Brasília para o Gato.</small>
             </div>
           </fieldset>
 
@@ -511,9 +518,26 @@ window.Tasks = (function(){
       wk.hidden = !(w === 'repeat' && radio('rep') === 'weekly');
       const sh = form.querySelector('[data-shared]');
       if(sh) sh.hidden = radio('kind') !== 'shared';
+      paintTz();
+    }
+    // com hora digitada, mostra a mesma hora no relógio do outro lugar
+    function paintTz(){
+      const row = form.querySelector('[data-tzrow]');
+      const hint = form.querySelector('[data-tzhint]');
+      const hm = form.elements.hm.value, day = form.elements.day.value;
+      row.hidden = !(radio('when') === 'date' && hm);
+      if(row.hidden) return;
+      const k = form.elements.tz.value, o = R.other(k);
+      if(!day){ hint.textContent = ''; return; }
+      const at = R.zonedToISO(day, hm, R.TZS[k]);
+      const w = R.wall(at, R.TZS[o]);
+      const oDay = `${w.year}-${w.month}-${w.day}`;
+      const shift = oDay === day ? '' : oDay > day ? ' (dia seguinte)' : ' (dia anterior)';
+      hint.textContent = `= ${R.timeOf(at, o)}${shift} em ${R.TZ_NAMES[o]}`;
     }
     paint();
     form.addEventListener('change', paint);
+    form.addEventListener('input', e => { if(e.target.name === 'hm' || e.target.name === 'day') paintTz(); });
     form.addEventListener('click', e => {
       const wd = e.target.closest('[data-wd]');
       if(wd){
@@ -523,7 +547,7 @@ window.Tasks = (function(){
         wd.setAttribute('aria-pressed', days.has(n) ? 'true' : 'false');
       }
       const q = e.target.closest('[data-day]');
-      if(q) form.elements.day.value = R.addDays(today(), Number(q.dataset.day));
+      if(q){ form.elements.day.value = R.addDays(today(), Number(q.dataset.day)); paintTz(); }
       // clicar de novo na dificuldade marcada a desmarca
     });
     form.querySelectorAll('input[name=hint]').forEach(r => {
@@ -544,7 +568,9 @@ window.Tasks = (function(){
       if(w === 'date'){
         const day = form.elements.day.value;
         if(!day){ UI.toast('Escolha o dia', 'bad'); return; }
-        data.due_at = `${day}T${form.elements.hm.value || R.END_OF_DAY}:00-03:00`;
+        const hm = form.elements.hm.value;
+        // com hora: no relógio escolhido; só com data ("o dia todo"): 23:59 no relógio de quem faz
+        data.due_at = hm ? R.zonedToISO(day, hm, R.TZS[form.elements.tz.value]) : R.zonedToISO(day, R.END_OF_DAY, R.TZS[doer]);
       }else if(w === 'repeat'){
         data.repeat = radio('rep') || 'daily';
         if(data.repeat === 'weekly'){

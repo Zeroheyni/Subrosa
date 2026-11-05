@@ -41,10 +41,9 @@ window.Wallet = (function(){
   /** Tarefas minhas já concluídas cujo valor ainda não foi definido (moedas a caminho). */
   function waiting(){
     const s = me();
-    const td = R.todayISO();
     return App.tasks.filter(t => {
       if(!R.relevantTo(t, s) || R.hasValue(t, s)) return false;
-      return R.status(t, App.comps, td).done[s];
+      return R.status(t, App.comps, new Date()).done[s];
     });
   }
 

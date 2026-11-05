@@ -101,6 +101,8 @@ window.API = (function(){
   const timerFinish = id => rpc('catdog_timer_finish', { ...who(), p_id: id });
   const setFocusValue = (target, value) => rpc('catdog_set_focus_value', { ...who(), p_target: target, p_value: value });
 
+  const setDayStart = minutes => rpc('catdog_set_day_start', { ...who(), p_minutes: minutes });
+
   // ---------- alarmes ----------
   async function listAlarms(){
     const { data, error } = await sb.from('catdog_alarms').select('*').order('at_time', { ascending:true });
@@ -143,7 +145,7 @@ window.API = (function(){
     listTasks, listCompletions, listLog, wallets,
     saveTask, deleteTask, setValue, complete, adjust,
     listAlarms, saveAlarm, toggleAlarm, deleteAlarm,
-    listTimers, listSettings, serverNow, timerStart, timerPause, timerResume, timerCancel, timerFinish, setFocusValue,
+    listTimers, listSettings, setDayStart, serverNow, timerStart, timerPause, timerResume, timerCancel, timerFinish, setFocusValue,
     listRewards, listPurchases, streaks, saveReward, deleteReward, buyReward, fulfillPurchase, refundPurchase,
     pushSubscribe, pushUnsubscribe, pushTest, subscribe
   };
