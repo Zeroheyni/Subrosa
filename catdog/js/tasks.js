@@ -2,7 +2,7 @@
    CAT & DOG — telas "Hoje" e "Tarefas": cartões, detalhe, formulário e valor
 
    Cada lado vê as próprias tarefas e as compartilhadas. As tarefas do outro
-   lado também aparecem (aba "Do Cão"/"Do Gato") porque é o outro quem define
+   lado também aparecem (aba "Do Gato"/"Do Cão") porque é o outro quem define
    o valor das moedas.
    ============================================================ */
 window.Tasks = (function(){
@@ -131,6 +131,12 @@ window.Tasks = (function(){
       </a>`;
   }
 
+  function presenceChip(){
+    const o = App.timers.find(t => t.side === them() && t.kind === 'focus' && (t.status === 'running' || t.status === 'paused'));
+    if(!o) return '';
+    return `<a class="presence enter" href="#tempo">${UI.face(them(), 20)}<span><b>${name(them())}</b> está em foco${o.label ? ' · ' + esc(o.label) : ''}</span></a>`;
+  }
+
   function streakCard(){
     const s = me(), o = them();
     const mine = App.streaks[s] || { cur: 0, best: 0, today_done: false };
@@ -177,6 +183,7 @@ window.Tasks = (function(){
         ${walletCard(them(), false)}
       </section>
       ${streakCard()}
+      ${presenceChip()}
       ${gain ? `<p class="gain enter">${UI.coin(s, 16)}<span>Hoje você já ganhou <b>${R.pluralCoins(gain, s)}</b></span></p>` : ''}
 
       ${pend.length ? `

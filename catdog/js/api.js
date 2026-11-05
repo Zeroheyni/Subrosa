@@ -1,8 +1,8 @@
 /* ============================================================
    CAT & DOG — acesso ao Supabase (leitura pública + RPCs)
 
-   O Cão (mestre) manda o token da sessão (vem do login por PIN do site);
-   o Gato (jogador) não usa token. Toda ação diz de qual lado vem (p_side).
+   O mestre (lado 'cao', que é o GATO) manda o token da sessão (vem do login por PIN do site);
+   o jogador (lado 'gato', que é o CÃO) não usa token. Toda ação diz de qual lado vem (p_side).
    ============================================================ */
 window.API = (function(){
   'use strict';
@@ -28,7 +28,7 @@ window.API = (function(){
     if(error) fail(error);
     return data;
   }
-  // toda ação de escrita leva o lado e o token (nulo para o gato)
+  // toda ação de escrita leva o lado e o token (nulo para o jogador)
   const who = () => ({ p_side: mySide(), p_token: mySide() === 'cao' ? token() : null });
 
   // ---------- leitura ----------
@@ -80,6 +80,27 @@ window.API = (function(){
   const fulfillPurchase = id => rpc('catdog_fulfill_purchase', { ...who(), p_id: id });
   const refundPurchase = id => rpc('catdog_refund_purchase', { ...who(), p_id: id });
 
+  // ---------- tempo (timers) ----------
+  async function listTimers(){
+    const { data, error } = await sb.from('catdog_timers').select('*').order('created_at', { ascending:false }).limit(300);
+    if(error) fail(error);
+    return data || [];
+  }
+  async function listSettings(){
+    const { data, error } = await sb.from('catdog_settings').select('*');
+    if(error) fail(error);
+    const o = {};
+    (data || []).forEach(r => { o[r.side] = r; });
+    return o;
+  }
+  const serverNow = async () => { const t0 = Date.now(); const v = await rpc('catdog_now', {}); const t1 = Date.now(); return Date.parse(v) - (t0 + t1) / 2; };
+  const timerStart = (kind, label, seconds, taskId) => rpc('catdog_timer_start', { ...who(), p_kind: kind, p_label: label || '', p_duration_s: seconds, p_task: taskId || null });
+  const timerPause = id => rpc('catdog_timer_pause', { ...who(), p_id: id });
+  const timerResume = id => rpc('catdog_timer_resume', { ...who(), p_id: id });
+  const timerCancel = id => rpc('catdog_timer_cancel', { ...who(), p_id: id });
+  const timerFinish = id => rpc('catdog_timer_finish', { ...who(), p_id: id });
+  const setFocusValue = (target, value) => rpc('catdog_set_focus_value', { ...who(), p_target: target, p_value: value });
+
   // ---------- moedas ----------
   const adjust = (side, amount, note) => rpc('catdog_adjust', { p_token: token(), p_side: side, p_amount: amount, p_note: note || '' });
 
@@ -111,6 +132,7 @@ window.API = (function(){
     sb, token, mySide,
     listTasks, listCompletions, listLog, wallets,
     saveTask, deleteTask, setValue, complete, adjust,
+    listTimers, listSettings, serverNow, timerStart, timerPause, timerResume, timerCancel, timerFinish, setFocusValue,
     listRewards, listPurchases, streaks, saveReward, deleteReward, buyReward, fulfillPurchase, refundPurchase,
     pushSubscribe, pushUnsubscribe, pushTest, subscribe
   };

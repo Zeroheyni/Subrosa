@@ -80,7 +80,7 @@ Deno.serve(async (req: Request) => {
 
       const res = await sendTo(sub as Sub, {
         title: 'Cat & Dog 🐾',
-        body: sub.side === 'cao' ? 'Funcionou! As notificações do Cão chegam neste aparelho.' : 'Funcionou! As notificações do Gato chegam neste aparelho.',
+        body: sub.side === 'cao' ? 'Funcionou! As notificações do Gato (mestre) chegam neste aparelho.' : 'Funcionou! As notificações do Cão (jogador) chegam neste aparelho.',
         tag: 'catdog-test',
         url: 'catdog/',
       });

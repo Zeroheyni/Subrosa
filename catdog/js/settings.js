@@ -13,6 +13,27 @@ window.Settings = (function(){
 
   const me = () => App.side;
 
+  function focusCard(){
+    const s = me(), o = R.other(s);
+    const mineV = App.settings[s] ? App.settings[s].focus_value : 2;
+    const theirV = App.settings[o] ? App.settings[o].focus_value : 2;
+    return `
+      <section class="card enter">
+        <div class="card-head"><h3>Moedas de foco</h3></div>
+        <p class="muted">Cada sessão de foco concluída (mín. 15 min, até 8 por dia) vale quanto o <b>outro lado</b> definir.</p>
+        <ul class="rules">
+          <li>${UI.coin(s, 18)}<span>Sua sessão vale <b>${R.pluralCoins(mineV, s)}</b> (definido pelo ${R.SIDES[o].label}).</span></li>
+          <li>${UI.coin(o, 18)}<span>A sessão do ${R.SIDES[o].label} vale <b>${R.pluralCoins(theirV, o)}</b> — você define:</span></li>
+        </ul>
+        <div class="stepper ${o} inline-step">
+          <button class="icon-btn" type="button" data-act="fv-step" data-d="-1" aria-label="Menos">${I.minus}</button>
+          <b class="fv-n" data-fv="${theirV}">${theirV}</b>
+          <button class="icon-btn" type="button" data-act="fv-step" data-d="1" aria-label="Mais">${I.plus}</button>
+          <button class="btn primary small" type="button" data-act="fv-save" disabled>Salvar</button>
+        </div>
+      </section>`;
+  }
+
   function pushCard(){
     if(!info) return `<div class="card"><div class="card-head"><h3>Notificações</h3></div><p class="muted">Verificando este aparelho…</p></div>`;
 
@@ -65,11 +86,13 @@ window.Settings = (function(){
 
       <div class="enter" id="pushHost">${pushCard()}</div>
 
+      ${focusCard()}
+
       <section class="card enter">
         <div class="card-head"><h3>Sobre as moedas</h3></div>
         <ul class="rules">
-          <li>${UI.coin('gato', 18)}<span><b>Moedas felinas</b> são do Gato (jogador). <b>Moedas caninas</b> são do Cão (mestre).</span></li>
-          <li>${I.users}<span>O valor de cada tarefa é definido pelo <b>outro lado</b>: o Cão valora as tarefas do Gato e o Gato valora as do Cão.</span></li>
+          <li>${UI.coin('gato', 18)}<span>Cada um ganha a moeda do <b>outro</b> bicho: o Cão (jogador) ganha <b>moedas felinas</b> e o Gato (mestre) ganha <b>moedas caninas</b>.</span></li>
+          <li>${I.users}<span>O valor de cada tarefa é definido pelo <b>outro lado</b>: o Gato (mestre) valora as tarefas do Cão e o Cão (jogador) valora as do Gato.</span></li>
           <li>${I.hourglass}<span>Concluiu antes de ter valor? As moedas ficam <b>pendentes</b> e entram quando o valor for definido.</span></li>
         </ul>
       </section>
@@ -100,6 +123,20 @@ window.Settings = (function(){
       if(a === 'logout'){
         const ok = await UI.confirmBox({ title: 'Sair', text: 'Você vai precisar do PIN para entrar de novo.', yesLabel: 'Sair' });
         if(ok) SubrosaAuth.logout();
+      }else if(a === 'fv-step'){
+        const n = root.querySelector('[data-fv]');
+        n.textContent = Math.max(0, Math.min(50, Number(n.textContent) + Number(b.dataset.d)));
+        root.querySelector('[data-act="fv-save"]').disabled = Number(n.textContent) === Number(n.dataset.fv);
+      }else if(a === 'fv-save'){
+        const n = root.querySelector('[data-fv]');
+        await UI.busy(b, async () => {
+          try{
+            await API.setFocusValue(R.other(me()), Number(n.textContent));
+            await App.reload();
+            UI.toast('Valor do foco atualizado', 'good');
+            render(view);
+          }catch(err){ UI.toast(err.message, 'bad'); }
+        });
       }else if(a === 'push-on'){
         await UI.busy(b, async () => {
           try{ await Push.enable(); UI.toast('Notificações ativadas neste aparelho', 'good'); }

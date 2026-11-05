@@ -9,7 +9,7 @@ O **Subrosa** é um hub pessoal: um site (GitHub Pages) e um banco (Supabase) qu
 | [hub.md](hub.md) | A tela inicial do site e como adicionar projetos |
 | [levina.md](levina.md) | Levina — o RPG cyberpunk (banco, calendário, relógio, mensagens, inventário, codex, diário…) |
 | [pokemon.md](pokemon.md) | Pokémon — gestor do RPG de Pokémon (treinadores, criaturas, bolsa, combate) |
-| [catdog.md](catdog.md) | Cat & Dog — gamificação de produtividade a dois (tarefas, moedas felinas e caninas, timers, alarmes); fases 1 e 2 feitas |
+| [catdog.md](catdog.md) | Cat & Dog — gamificação de produtividade a dois (tarefas, moedas felinas e caninas, timers, alarmes); fases 1 a 3 feitas |
 | [_MODELO_PROJETO.md](_MODELO_PROJETO.md) | Modelo para o documento de um projeto novo |
 
 ## Regras

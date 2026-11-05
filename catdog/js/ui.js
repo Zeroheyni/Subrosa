@@ -155,6 +155,7 @@ window.UI = (function(){
   };
 
   // ---------- gato, cão e moedas (desenhos próprios, sprite em index.html) ----------
+  // O sprite 'face-gato' é o CÃO violeta (lado do jogador) e 'face-cao' é o GATO âmbar (lado do mestre).
   const coin = (side, size) => `<svg class="coin coin-${side}" width="${size || 20}" height="${size || 20}" viewBox="0 0 32 32" aria-hidden="true"><use href="#coin-${side}"/></svg>`;
   const face = (side, size) => `<svg class="face face-${side}" width="${size || 28}" height="${size || 28}" viewBox="0 0 32 32" aria-hidden="true"><use href="#face-${side}"/></svg>`;
 

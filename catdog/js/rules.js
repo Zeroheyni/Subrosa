@@ -1,7 +1,10 @@
 /* ============================================================
    CAT & DOG — regras puras (sem tela, sem banco). Testáveis no Node.
 
-   Lados: 'gato' = jogador (moedas felinas) · 'cao' = mestre (moedas caninas).
+   Lados (as chaves guardam o LADO = cor + moeda; o bicho é o contrário da chave):
+     'gato' = jogador  → é o CÃO  · ganha moedas felinas (violeta)
+     'cao'  = mestre   → é o GATO · ganha moedas caninas (âmbar)
+   Cada um ganha a moeda do outro bicho.
    Quem define o valor (em moedas) da parte do lado X é o OUTRO lado.
    O banco é quem paga as moedas (catdog_reconcile); aqui só espelhamos
    as regras para mostrar na tela o que vale e o que está pendente.
@@ -18,8 +21,8 @@
   const BONUS_RATE = 0.5;                // bônus de "cada um marca a sua parte" quando os dois concluem
 
   const SIDES = {
-    gato: { key:'gato', label:'Gato', article:'o', coin:'moedas felinas', coinOne:'moeda felina', role:'Jogador' },
-    cao:  { key:'cao',  label:'Cão',  article:'o', coin:'moedas caninas', coinOne:'moeda canina', role:'Mestre' }
+    gato: { key:'gato', label:'Cão',  animal:'dog', coin:'moedas felinas', coinOne:'moeda felina', coinWord:'felinas', role:'Jogador' },
+    cao:  { key:'cao',  label:'Gato', animal:'cat', coin:'moedas caninas', coinOne:'moeda canina', coinWord:'caninas', role:'Mestre' }
   };
   const other = side => (side === 'gato' ? 'cao' : 'gato');
 

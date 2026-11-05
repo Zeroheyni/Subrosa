@@ -16,7 +16,7 @@ window.Wallet = (function(){
   const them = () => R.other(App.side);
   const name = s => R.SIDES[s].label;
 
-  const KIND = { task: 'Tarefa', adjust: 'Ajuste do mestre', reward: 'Loja', refund: 'Reembolso', streak: 'Sequência' };
+  const KIND = { task: 'Tarefa', adjust: 'Ajuste do mestre', reward: 'Loja', refund: 'Reembolso', streak: 'Sequência', focus: 'Foco' };
 
   function dayLabel(iso){
     const td = R.todayISO();

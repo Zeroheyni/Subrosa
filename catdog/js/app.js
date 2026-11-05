@@ -1,6 +1,6 @@
 /* ============================================================
    CAT & DOG — começo do app: login, dados, rotas, cabeçalho
-   Rotas (hash): #hoje · #tarefas[/minhas|juntas|outro|avaliar] · #loja[/comprar|ofertas|vales] · #moedas · #ajustes
+   Rotas (hash): #hoje · #tarefas[/minhas|juntas|outro|avaliar] · #tempo[/foco|contagem|cronometro] · #loja[/comprar|ofertas|vales] · #moedas · #ajustes
    ============================================================ */
 window.App = (function(){
   'use strict';
@@ -11,7 +11,7 @@ window.App = (function(){
 
   const app = {
     role: null, isMaster: false, side: 'gato',
-    tasks: [], comps: [], log: [], wallets: { gato: 0, cao: 0 }, rewards: [], purchases: [], streaks: { gato: null, cao: null },
+    tasks: [], comps: [], log: [], wallets: { gato: 0, cao: 0 }, rewards: [], purchases: [], streaks: { gato: null, cao: null }, timers: [], settings: {}, skew: 0,
     current: 'hoje', go, reload, refreshView
   };
 
@@ -32,10 +32,11 @@ window.App = (function(){
 
   function route(){
     const r = parse();
-    const name = ['hoje', 'tarefas', 'loja', 'moedas', 'ajustes'].includes(r.name) ? r.name : 'hoje';
+    const name = ['hoje', 'tarefas', 'tempo', 'loja', 'moedas', 'ajustes'].includes(r.name) ? r.name : 'hoje';
     app.current = name;
     setTab(name);
     if(name === 'tarefas') Tasks.renderList(view, ['minhas', 'juntas', 'outro', 'avaliar'].includes(r.arg) ? r.arg : null);
+    else if(name === 'tempo') Tempo.render(view, ['foco', 'contagem', 'cronometro'].includes(r.arg) ? r.arg : null);
     else if(name === 'loja') Shop.render(view, ['comprar', 'ofertas', 'vales'].includes(r.arg) ? r.arg : null);
     else if(name === 'moedas') Wallet.render(view);
     else if(name === 'ajustes') Settings.render(view);
@@ -50,7 +51,9 @@ window.App = (function(){
   function refreshView(){
     paintTop();
     paintBadge();
+    Tempo.watch();
     if(app.current === 'tarefas' || app.current === 'hoje') Tasks.refresh();
+    else if(app.current === 'tempo') Tempo.refresh();
     else if(app.current === 'loja') Shop.refresh();
     else if(app.current === 'moedas') Wallet.refresh();
   }
@@ -58,12 +61,13 @@ window.App = (function(){
   // ---------- dados ----------
   async function reload(){
     const td = R.todayISO();
-    const [tasks, comps, log, wallets, rewards, purchases, streaks] = await Promise.all([
+    const [tasks, comps, log, wallets, rewards, purchases, streaks, timers, settings] = await Promise.all([
       API.listTasks(), API.listCompletions([td, R.ONE_OFF_PERIOD]), API.listLog(300), API.wallets(),
-      API.listRewards(), API.listPurchases(), API.streaks()
+      API.listRewards(), API.listPurchases(), API.streaks(), API.listTimers(), API.listSettings()
     ]);
     app.tasks = tasks; app.comps = comps; app.log = log; app.wallets = wallets;
     app.rewards = rewards; app.purchases = purchases; app.streaks = streaks || { gato: null, cao: null };
+    app.timers = timers; app.settings = settings;
     app.day = td;
   }
 
@@ -122,8 +126,10 @@ window.App = (function(){
   async function boot(){
     view.innerHTML = '<div class="loading"><svg class="spin" width="46" height="46" viewBox="0 0 32 32"><use href="#paw" fill="currentColor"/></svg></div>';
     try{ await reload(); }catch(e){ showError(e); return; }
+    try{ app.skew = await API.serverNow(); }catch(e){ app.skew = 0; }
     paintTop();
     route();
+    Tempo.watch();
   }
 
   // ---------- começo ----------
@@ -135,13 +141,14 @@ window.App = (function(){
     document.querySelectorAll('[data-ico]').forEach(el => { el.innerHTML = I[el.dataset.ico] || ''; });
 
     Tasks.init(view);
+    Tempo.init(view);
     Shop.init(view);
     Wallet.init(view);
     Settings.init(view);
     window.addEventListener('hashchange', route);
     await boot();
 
-    API.subscribe(['catdog_tasks', 'catdog_completions', 'catdog_coin_log', 'catdog_rewards', 'catdog_purchases'], UI.debounce(async () => {
+    API.subscribe(['catdog_tasks', 'catdog_completions', 'catdog_coin_log', 'catdog_rewards', 'catdog_purchases', 'catdog_timers', 'catdog_settings'], UI.debounce(async () => {
       try{ await reload(); refreshView(); }catch(e){ /* tenta de novo na próxima mudança */ }
     }, 250));
 
@@ -152,7 +159,7 @@ window.App = (function(){
       }
     };
     setInterval(checkDay, 60000);
-    document.addEventListener('visibilitychange', () => { if(!document.hidden) checkDay(); });
+    document.addEventListener('visibilitychange', () => { if(!document.hidden){ checkDay(); API.serverNow().then(v => { app.skew = v; }).catch(() => {}); } });
   });
 
   return app;

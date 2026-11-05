@@ -494,3 +494,57 @@ input:focus, textarea:focus{ border-color:var(--a); box-shadow:0 0 0 4px color-m
 .switch input:focus-visible + .switch-ui{ outline:2px solid var(--a); outline-offset:2px; }
 .sheet .stepper{ justify-content:center; }
 @media (max-width:420px){ .tab{ font-size:10.5px; } .rc-face{ width:42px; height:42px; } .reward-card{ gap:10px; padding:12px 12px 12px 14px; } }
+
+/* ---------- tempo: timers ---------- */
+.tempo-body{ display:grid; gap:14px; }
+.setup{ display:grid; gap:16px; justify-items:center; padding:6px 0; }
+.dial{ position:relative; width:min(78vw, 300px); aspect-ratio:1; }
+.dial svg{ width:100%; height:100%; transform:rotate(0deg); overflow:visible; }
+.dial .tk{ stroke:rgba(255,255,255,.14); stroke-width:1.4; stroke-linecap:round; }
+.dial .tk.big{ stroke:rgba(255,255,255,.32); stroke-width:2; }
+.dial-bg{ fill:none; stroke:rgba(255,255,255,.07); stroke-width:11; }
+.dial-fg{ fill:none; stroke:url(#g-gato); stroke-width:11; stroke-linecap:round; transform:rotate(-90deg); transform-origin:130px 130px; filter:drop-shadow(0 0 10px var(--ag));
+  transition:stroke-dashoffset .3s linear; }
+body[data-side="cao"] .dial-fg{ stroke:url(#g-cao); }
+.dial.idle .dial-fg{ transition:none; }
+.dial.paused .dial-fg{ opacity:.45; filter:none; }
+.dial.break .dial-fg{ stroke:#5ee6a6; filter:drop-shadow(0 0 10px rgba(94,230,166,.5)); }
+.dial-in{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:2px; padding:0 18%; }
+.dial-in small{ font-size:12px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--a); }
+.dial-in b{ font-family:var(--display); font-weight:800; font-size:clamp(46px, 15vw, 64px); line-height:1.05; font-variant-numeric:tabular-nums; letter-spacing:-.02em; }
+.dial-in em{ font-style:normal; font-size:13px; color:var(--muted); max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.running.paused .dial-in b{ opacity:.6; animation:blink 1.4s ease-in-out infinite; }
+@keyframes blink{ 50%{ opacity:.25; } }
+.running.focus .dial{ filter:drop-shadow(0 0 40px var(--ag)); }
+.step-label{ display:flex; flex-direction:column; align-items:center; min-width:96px; }
+.step-label b{ font-family:var(--display); font-weight:800; font-size:34px; line-height:1; }
+.step-label small{ color:var(--muted); font-size:12px; }
+.setup .stepper{ margin-top:0; }
+.start{ width:100%; min-height:56px; font-size:16.5px; border-radius:18px; }
+.start .ico{ width:22px; height:22px; }
+.ctl{ display:flex; align-items:center; justify-content:center; gap:16px; }
+.big-play{ min-width:160px; min-height:60px; border-radius:20px; font-size:16px; }
+.icon-btn.ghost{ background:transparent; }
+.chip-row{ display:flex; justify-content:center; }
+.center{ text-align:center; justify-content:center; }
+.select{ width:100%; min-height:48px; padding:0 14px; border-radius:14px; font:inherit; font-size:16px; color:var(--text); background:rgba(255,255,255,.05); border:1px solid var(--line2); color-scheme:dark; }
+.select:focus{ border-color:var(--a); outline:0; box-shadow:0 0 0 4px color-mix(in srgb, var(--a) 18%, transparent); }
+.today-grid{ display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; text-align:center; }
+.today-grid b{ display:block; font-family:var(--display); font-weight:800; font-size:26px; }
+.today-grid small{ display:inline-flex; align-items:center; gap:4px; color:var(--muted); font-size:12px; }
+.cfg-grid{ display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-top:6px; }
+.cfg-grid label{ display:grid; gap:5px; font-size:12px; color:var(--muted); }
+.cfg-grid input{ min-height:42px; padding:8px 10px; text-align:center; }
+.presence{ display:flex; align-items:center; gap:9px; justify-content:center; margin:0 0 12px; padding:9px 13px; border-radius:99px; background:rgba(94,230,166,.07); border:1px solid rgba(94,230,166,.3); color:var(--muted); font-size:13px; }
+.presence b{ color:var(--text); }
+.result{ padding:18px 0 4px; text-align:center; }
+.result h2{ font-family:var(--display); font-weight:800; font-size:26px; }
+.result-art{ width:120px; height:120px; border-radius:36px; display:grid; place-items:center; background:linear-gradient(135deg, color-mix(in srgb, var(--s) 24%, transparent), rgba(255,255,255,.03)); border:1px solid color-mix(in srgb, var(--s) 45%, transparent);
+  box-shadow:0 0 50px -10px var(--sg); animation:floaty 4s ease-in-out infinite; }
+.result-actions{ display:grid; gap:10px; width:100%; margin-top:6px; }
+.reward.big{ height:46px; padding:0 18px 0 10px; font-size:24px; gap:9px; }
+.pill.me .coin, .pill .coin{ transition:transform .3s var(--spring); }
+
+.inline-step{ display:flex; align-items:center; gap:10px; margin-top:10px; justify-content:flex-start; }
+.fv-n{ font-family:var(--display); font-weight:800; font-size:26px; min-width:44px; text-align:center; }
+.inline-step .btn{ margin-left:auto; }
