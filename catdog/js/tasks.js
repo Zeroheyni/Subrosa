@@ -117,7 +117,7 @@ window.Tasks = (function(){
 
   function earnedToday(){
     const td = today();
-    return App.log.filter(l => l.side === me() && l.amount > 0 && R.dayOf(l.created_at) === td).reduce((n, l) => n + l.amount, 0);
+    return App.log.filter(l => l.side === me() && l.amount > 0 && (l.kind === 'task' || l.kind === 'streak') && R.dayOf(l.created_at) === td).reduce((n, l) => n + l.amount, 0);
   }
 
   function walletCard(s, isMe){
@@ -129,6 +129,28 @@ window.Tasks = (function(){
           <b data-v="${App.wallets[s]}">${App.wallets[s]}</b>
         </span>
       </a>`;
+  }
+
+  function streakCard(){
+    const s = me(), o = them();
+    const mine = App.streaks[s] || { cur: 0, best: 0, today_done: false };
+    const theirs = App.streaks[o] || { cur: 0, best: 0 };
+    const next = R.nextMilestone(mine.cur);
+    const pct = next ? Math.round(((mine.cur - next.prev) / (next.days - next.prev)) * 100) : 100;
+    const lit = mine.today_done;
+    const sub = mine.cur === 0 ? 'Conclua uma tarefa hoje para começar.'
+      : lit ? (next ? `Faltam ${next.left} ${next.left === 1 ? 'dia' : 'dias'} para +${next.bonus} moedas.` : 'Você zerou os marcos. Lenda!')
+      : 'Conclua uma tarefa hoje para manter a sequência.';
+    return `
+      <section class="streak ${s} ${lit ? 'lit' : ''} enter" aria-label="Sequência de dias">
+        <span class="streak-flame">${I.flame}</span>
+        <div class="streak-body">
+          <b>${mine.cur} ${mine.cur === 1 ? 'dia' : 'dias'} seguidos</b>
+          <small>${sub}</small>
+          ${next ? `<div class="streak-bar"><i style="width:${pct}%"></i></div>` : ''}
+        </div>
+        <span class="streak-other ${o}" title="Sequência do ${name(o)} (melhor: ${theirs.best})">${UI.face(o, 18)}<b>${theirs.cur}</b>${I.flame}</span>
+      </section>`;
   }
 
   function renderToday(root){
@@ -154,6 +176,7 @@ window.Tasks = (function(){
         ${walletCard(s, true)}
         ${walletCard(them(), false)}
       </section>
+      ${streakCard()}
       ${gain ? `<p class="gain enter">${UI.coin(s, 16)}<span>Hoje você já ganhou <b>${R.pluralCoins(gain, s)}</b></span></p>` : ''}
 
       ${pend.length ? `
@@ -257,14 +280,23 @@ window.Tasks = (function(){
     btn.disabled = true;
     btn.classList.toggle('on', to);
     const before = App.wallets[s];
+    const seen = new Set(App.log.map(l => l.id));
     try{
       await API.complete(t.id, to);
       await App.reload();
       const gained = App.wallets[s] - before;
+      const streakRows = App.log.filter(l => l.kind === 'streak' && l.side === s && !seen.has(l.id));
+      const streakGain = streakRows.reduce((n, l) => n + l.amount, 0);
       if(to && gained > 0) UI.coinBurst(view.querySelector(`[data-id="${t.id}"] .check`) || btn, s, gained);
       if(to && gained === 0 && R.relevantTo(t, s) && !R.hasValue(t, s)) UI.toast(`Concluída! As moedas entram quando o ${name(them())} definir o valor.`);
       else if(to && gained === 0 && t.shared_mode === 'both') UI.toast(`Sua parte está feita. As moedas saem quando o ${name(them())} também concluir.`);
       else if(!to && gained < 0) UI.toast(`${R.pluralCoins(-gained, s)} devolvidas.`);
+      if(streakRows.length){
+        setTimeout(() => {
+          UI.toast(`${streakRows[streakRows.length - 1].note}! +${R.pluralCoins(streakGain, s)} de bônus`, 'good');
+          UI.coinBurst(document.querySelector('.streak-flame') || document.querySelector('.top-wallets .pill.me'), s, streakGain);
+        }, 700);
+      }
       App.refreshView();
     }catch(e){
       UI.toast(e.message, 'bad');
@@ -525,6 +557,7 @@ window.Tasks = (function(){
   // ---------- eventos ----------
   function init(root){
     root.addEventListener('click', e => {
+      if(App.current !== 'hoje' && App.current !== 'tarefas') return;
       const taskEl = e.target.closest('.task');
       const act = e.target.closest('[data-act]');
       if(!act) return;

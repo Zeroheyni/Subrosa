@@ -185,12 +185,31 @@
     return { active, finished };
   }
 
+  // ---------- sequência (streak): marcos em dias → moedas de bônus (os mesmos do banco) ----------
+  const STREAK_MILESTONES = [[3, 3], [7, 10], [14, 20], [30, 50], [60, 100], [100, 200]];
+  function nextMilestone(cur){
+    let prev = 0;
+    for(const [days, bonus] of STREAK_MILESTONES){
+      if(cur < days) return { days, bonus, left: days - cur, prev };
+      prev = days;
+    }
+    return null;
+  }
+
+  // ---------- loja ----------
+  const isOwnReward = r => r.owner === r.for_side;
+  const rewardsToBuy = (rewards, side) => rewards.filter(r => r.for_side === side && r.active);
+  const rewardsOffered = (rewards, side) => rewards.filter(r => r.owner === side);
+  const toFulfill = (purchases, side) => purchases.filter(p => p.provider === side && p.status === 'pending');
+  const waitingFor = (purchases, side) => purchases.filter(p => p.buyer === side && p.provider !== side && p.status === 'pending');
+
   const pluralCoins = (n, side) => `${n} ${Math.abs(n) === 1 ? SIDES[side].coinOne : SIDES[side].coin}`;
 
   return {
     TZ, ONE_OFF_PERIOD, END_OF_DAY, BONUS_RATE, SIDES, MODES, HINTS, WEEKDAYS, VALUE_MAX, other,
     todayISO, dowOf, addDays, dayOf, timeOf, fmtDay,
     isRepeating, periodOf, isDayOf, relevantTo, valueOf, hasValue, partsOf, needsMyValue,
-    status, canToggle, myReward, dueInfo, todayGroups, listFor, pluralCoins
+    status, canToggle, myReward, dueInfo, todayGroups, listFor, pluralCoins,
+    STREAK_MILESTONES, nextMilestone, isOwnReward, rewardsToBuy, rewardsOffered, toFulfill, waitingFor
   };
 });

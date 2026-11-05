@@ -62,6 +62,24 @@ window.API = (function(){
   const setValue = (id, target, value) => rpc('catdog_set_value', { ...who(), p_id: id, p_target: target, p_value: value });
   const complete = (id, done) => rpc('catdog_complete', { ...who(), p_id: id, p_done: !!done });
 
+  // ---------- loja e sequência ----------
+  async function listRewards(){
+    const { data, error } = await sb.from('catdog_rewards').select('*').order('created_at', { ascending:true });
+    if(error) fail(error);
+    return data || [];
+  }
+  async function listPurchases(){
+    const { data, error } = await sb.from('catdog_purchases').select('*').order('created_at', { ascending:false }).limit(200);
+    if(error) fail(error);
+    return data || [];
+  }
+  const streaks = () => rpc('catdog_streaks', {});
+  const saveReward = (id, data) => rpc('catdog_save_reward', { ...who(), p_id: id || null, p_data: data });
+  const deleteReward = id => rpc('catdog_delete_reward', { ...who(), p_id: id });
+  const buyReward = id => rpc('catdog_buy_reward', { ...who(), p_id: id });
+  const fulfillPurchase = id => rpc('catdog_fulfill_purchase', { ...who(), p_id: id });
+  const refundPurchase = id => rpc('catdog_refund_purchase', { ...who(), p_id: id });
+
   // ---------- moedas ----------
   const adjust = (side, amount, note) => rpc('catdog_adjust', { p_token: token(), p_side: side, p_amount: amount, p_note: note || '' });
 
@@ -93,6 +111,7 @@ window.API = (function(){
     sb, token, mySide,
     listTasks, listCompletions, listLog, wallets,
     saveTask, deleteTask, setValue, complete, adjust,
+    listRewards, listPurchases, streaks, saveReward, deleteReward, buyReward, fulfillPurchase, refundPurchase,
     pushSubscribe, pushUnsubscribe, pushTest, subscribe
   };
 })();

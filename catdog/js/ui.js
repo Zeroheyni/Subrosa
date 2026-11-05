@@ -150,6 +150,7 @@ window.UI = (function(){
     smartphone: svg('<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/>'),
     send: svg('<path d="M21 3L10.5 13.5M21 3l-6.5 18-4-8.5L2 8.5 21 3z"/>'),
     info: svg('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6v.1"/>'),
+    flame: svg('<path d="M12 3c.8 3.6 5 5.6 5 10.2a5 5 0 0 1-10 0c0-2.2 1-3.4 2.2-4.6.3 1.4 1 2.2 2 2.4C10.6 7.4 10.4 5.2 12 3z"/>'),
     gift: svg('<rect x="3.5" y="8" width="17" height="4"/><path d="M5 12v8.5h14V12M12 8v12.5M12 8c-2.5 0-4.5-.8-4.5-2.5S9 3 10.5 3C11.7 3 12 5 12 8zM12 8c2.5 0 4.5-.8 4.5-2.5S15 3 13.5 3C12.3 3 12 5 12 8z"/>')
   };
 

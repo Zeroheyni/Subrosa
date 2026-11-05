@@ -1,6 +1,6 @@
 /* ============================================================
    CAT & DOG — começo do app: login, dados, rotas, cabeçalho
-   Rotas (hash): #hoje · #tarefas · #tarefas/<minhas|juntas|outro|avaliar> · #moedas · #ajustes
+   Rotas (hash): #hoje · #tarefas[/minhas|juntas|outro|avaliar] · #loja[/comprar|ofertas|vales] · #moedas · #ajustes
    ============================================================ */
 window.App = (function(){
   'use strict';
@@ -11,7 +11,7 @@ window.App = (function(){
 
   const app = {
     role: null, isMaster: false, side: 'gato',
-    tasks: [], comps: [], log: [], wallets: { gato: 0, cao: 0 },
+    tasks: [], comps: [], log: [], wallets: { gato: 0, cao: 0 }, rewards: [], purchases: [], streaks: { gato: null, cao: null },
     current: 'hoje', go, reload, refreshView
   };
 
@@ -32,10 +32,11 @@ window.App = (function(){
 
   function route(){
     const r = parse();
-    const name = ['hoje', 'tarefas', 'moedas', 'ajustes'].includes(r.name) ? r.name : 'hoje';
+    const name = ['hoje', 'tarefas', 'loja', 'moedas', 'ajustes'].includes(r.name) ? r.name : 'hoje';
     app.current = name;
     setTab(name);
     if(name === 'tarefas') Tasks.renderList(view, ['minhas', 'juntas', 'outro', 'avaliar'].includes(r.arg) ? r.arg : null);
+    else if(name === 'loja') Shop.render(view, ['comprar', 'ofertas', 'vales'].includes(r.arg) ? r.arg : null);
     else if(name === 'moedas') Wallet.render(view);
     else if(name === 'ajustes') Settings.render(view);
     else Tasks.renderToday(view);
@@ -50,16 +51,19 @@ window.App = (function(){
     paintTop();
     paintBadge();
     if(app.current === 'tarefas' || app.current === 'hoje') Tasks.refresh();
+    else if(app.current === 'loja') Shop.refresh();
     else if(app.current === 'moedas') Wallet.refresh();
   }
 
   // ---------- dados ----------
   async function reload(){
     const td = R.todayISO();
-    const [tasks, comps, log, wallets] = await Promise.all([
-      API.listTasks(), API.listCompletions([td, R.ONE_OFF_PERIOD]), API.listLog(300), API.wallets()
+    const [tasks, comps, log, wallets, rewards, purchases, streaks] = await Promise.all([
+      API.listTasks(), API.listCompletions([td, R.ONE_OFF_PERIOD]), API.listLog(300), API.wallets(),
+      API.listRewards(), API.listPurchases(), API.streaks()
     ]);
     app.tasks = tasks; app.comps = comps; app.log = log; app.wallets = wallets;
+    app.rewards = rewards; app.purchases = purchases; app.streaks = streaks || { gato: null, cao: null };
     app.day = td;
   }
 
@@ -84,6 +88,10 @@ window.App = (function(){
     const b = document.getElementById('badgeTasks');
     b.hidden = !n;
     b.textContent = n;
+    const v = R.toFulfill(app.purchases, app.side).length;
+    const bs = document.getElementById('badgeShop');
+    bs.hidden = !v;
+    bs.textContent = v;
   }
 
   let poweringOff = false;
@@ -127,12 +135,13 @@ window.App = (function(){
     document.querySelectorAll('[data-ico]').forEach(el => { el.innerHTML = I[el.dataset.ico] || ''; });
 
     Tasks.init(view);
+    Shop.init(view);
     Wallet.init(view);
     Settings.init(view);
     window.addEventListener('hashchange', route);
     await boot();
 
-    API.subscribe(['catdog_tasks', 'catdog_completions', 'catdog_coin_log'], UI.debounce(async () => {
+    API.subscribe(['catdog_tasks', 'catdog_completions', 'catdog_coin_log', 'catdog_rewards', 'catdog_purchases'], UI.debounce(async () => {
       try{ await reload(); refreshView(); }catch(e){ /* tenta de novo na próxima mudança */ }
     }, 250));
 
