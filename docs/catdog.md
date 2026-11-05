@@ -6,7 +6,7 @@ Aplicativo para **gamificar a produtividade de duas pessoas**: tarefas, lista de
 - **Pasta:** `catdog/`  ·  **Migrations:** `supabase/catdog/`  ·  **Edge Function:** `supabase/functions/catdog-push/`
 - **App instalável (PWA):** sim — nome na tela inicial: **Cat & Dog** (no iPhone a notificação com o app fechado só funciona com o app instalado)
 - **Tipo no hub:** `app`
-- **Estado:** Fases 1 a 4 feitas (tarefas, moedas, loja, vales, sequência, timers, alarmes e avisos automáticos com o app fechado). Cada lado usa o **próprio fuso** (jogador em Portugal, mestre em Brasília), com virada do dia ajustável. A notificação ainda **não foi testada em celular de verdade**.
+- **Estado:** Fases 1 a 4 feitas (tarefas, moedas, loja, vales, sequência, timers, alarmes e avisos automáticos com o app fechado). Cada lado usa o **próprio fuso** (jogador em Portugal, mestre em Brasília), com virada do dia ajustável. A notificação com o app fechado **foi testada nos dois celulares e funcionou**.
 
 ## ⚠️ Quem é quem (leia antes de mexer no código ou no banco)
 
@@ -106,7 +106,7 @@ Em **Ajustes → Notificações** o aparelho pede permissão, se inscreve (chave
 
 - No **iPhone** só funciona com o app **instalado na tela inicial** (iOS 16.4+); sem isso a tela explica como instalar.
 - No Android/Chrome funciona instalado ou no navegador. A entrega não é garantida como a de um alarme do sistema (economia de bateria pode atrasar).
-- **Ainda não testado em celular de verdade** (o navegador embutido do Claude bloqueia notificações). O envio em si foi testado: a função carrega `web-push`, cifra a mensagem e tenta entregar (com um aparelho de mentira falha só na rede, como esperado).
+- **Testado em celular de verdade (2026-11-05):** iPhone do jogador (app instalado na tela inicial) e Android/Chrome do mestre receberam o teste e o alarme com o app fechado. O envio passa por: agendador → `catdog_ping` → função `scan` → Apple/Google. (O navegador embutido do Claude bloqueia notificações, então o teste real só vale em celular.)
 - **Avisos automáticos (Fase 4):** ver "Avisos automáticos" nas regras. O agendador pode atrasar até ~10 s mais o tempo de entrega do serviço de push (Android/iOS podem demorar mais por economia de bateria).
 - **Foco com o app fechado:** a notificação avisa que acabou, mas **as moedas só entram quando o app é aberto** (quem confirma o fim é o app chamando `catdog_timer_finish`; o servidor confere o tempo).
 - **Duplicidade:** com o app aberto, o aviso chega pela notificação do sistema **e** pela tela de alarme; a chave do aviso (`alarm:<id>:<dia>`) evita tocar duas vezes.
