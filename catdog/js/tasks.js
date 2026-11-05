@@ -182,6 +182,8 @@ window.Tasks = (function(){
         ${ring(g.done.length, total)}
       </section>
 
+      ${Clock.html()}
+
       <section class="duo enter">
         ${walletCard(s, true)}
         ${walletCard(them(), false)}
@@ -217,6 +219,7 @@ window.Tasks = (function(){
 
       <button class="fab ${s}" type="button" data-act="new" aria-label="Nova tarefa">${I.plus}<span>Nova tarefa</span></button>`;
     animateNumbers(root);
+    Clock.mount();
   }
 
   // ---------- TAREFAS ----------

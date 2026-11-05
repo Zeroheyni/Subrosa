@@ -433,11 +433,20 @@ window.Tempo = (function(){
     draft.foco = cfg().focus * 60;
   }
 
+  /** Andamento do meu timer ativo (para o aro do relógio da tela Hoje): pct = quanto já passou (0 a 1). */
+  function progress(){
+    const t = mine();
+    if(!t) return null;
+    const rem = remainingMs(t);
+    const pct = rem == null ? (elapsedMs(t) % 60000) / 60000 : Math.max(0, Math.min(1, 1 - rem / (t.duration_s * 1000)));
+    return { kind: t.kind, label: KIND_TEXT[t.kind], paused: t.status === 'paused', pct, text: rem == null ? fmt(elapsedMs(t), true) : fmt(rem) };
+  }
+
   /** Garante que o relógio rode (e conclua sozinho) mesmo fora da tela Tempo. */
   function watch(){
     if(mine()){ if(!ticker) startTicker(); }
     else{ stopTicker(); updateTitle(); keepAwake(false); }
   }
 
-  return { init, render, refresh, tick, watch, mine, tabsHtml, beep, unlockAudio };
+  return { init, render, refresh, tick, watch, mine, progress, tabsHtml, beep, unlockAudio };
 })();

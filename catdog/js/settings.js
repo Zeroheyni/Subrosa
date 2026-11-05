@@ -50,6 +50,13 @@ window.Settings = (function(){
           <li>${UI.coin(s, 18)}<span>Você: <b>${R.TZ_NAMES[s]}</b> — agora são <b data-clock="${s}">${R.timeOf(Date.now(), s)}</b></span></li>
           <li>${UI.coin(o, 18)}<span>${R.SIDES[o].label}: <b>${R.TZ_NAMES[o]}</b> — agora são <b data-clock="${o}">${R.timeOf(Date.now(), o)}</b></span></li>
         </ul>
+        <div class="field"><span>Relógio da tela inicial</span>
+          <div class="seg seg-2" data-clock-fmt role="group" aria-label="Formato da hora">
+            <button class="seg-btn ${Clock.use24() ? 'on' : ''}" type="button" data-act="clock-fmt" data-v="24">24 horas</button>
+            <button class="seg-btn ${Clock.use24() ? '' : 'on'}" type="button" data-act="clock-fmt" data-v="12">12 horas (AM/PM)</button>
+          </div>
+          <small class="fine">Vale só neste aparelho.</small>
+        </div>
         <label class="field"><span>Seu dia começa às</span>
           <select name="daystart" class="select" data-v="${start}">${opts.join('')}</select></label>
         <p class="fine">Suas tarefas diárias, o "Hoje" e a sequência só viram nesse horário (ex.: 06:00 para quem dorme de manhã). As tarefas <b>compartilhadas</b> repetidas sempre viram à meia-noite de Brasília.</p>
@@ -153,6 +160,9 @@ window.Settings = (function(){
       if(a === 'logout'){
         const ok = await UI.confirmBox({ title: 'Sair', text: 'Você vai precisar do PIN para entrar de novo.', yesLabel: 'Sair' });
         if(ok) SubrosaAuth.logout();
+      }else if(a === 'clock-fmt'){
+        Clock.setUse24(b.dataset.v === '24');
+        root.querySelectorAll('[data-act="clock-fmt"]').forEach(x => x.classList.toggle('on', x === b));
       }else if(a === 'ds-save'){
         const sel = root.querySelector('[name=daystart]');
         await UI.busy(b, async () => {
