@@ -11,7 +11,7 @@ window.App = (function(){
 
   const app = {
     role: null, isMaster: false, side: 'gato',
-    tasks: [], comps: [], log: [], wallets: { gato: 0, cao: 0 }, rewards: [], purchases: [], streaks: { gato: null, cao: null }, timers: [], settings: {}, alarms: [], themesOwned: [], vault: [], themeCatalog: [], sub: null, skew: 0,
+    tasks: [], comps: [], log: [], wallets: { gato: 0, cao: 0 }, rewards: [], purchases: [], streaks: { gato: null, cao: null }, timers: [], settings: {}, alarms: [], themesOwned: [], vault: [], themeCatalog: [], shopTabs: [], sub: null, skew: 0,
     current: 'hoje', go, reload, refreshView
   };
 
@@ -66,15 +66,15 @@ window.App = (function(){
     const settings = await API.listSettings();
     R.configure({ viewer: app.side, dayStart: { gato: settings.gato && settings.gato.day_start_min, cao: settings.cao && settings.cao.day_start_min } });
     const periods = R.activePeriods();
-    const [tasks, comps, log, wallets, rewards, purchases, streaks, timers, alarms, themesOwned, vault, themeCatalog] = await Promise.all([
+    const [tasks, comps, log, wallets, rewards, purchases, streaks, timers, alarms, themesOwned, vault, themeCatalog, shopTabs] = await Promise.all([
       API.listTasks(), API.listCompletions(periods), API.listLog(300), API.wallets(),
       API.listRewards(), API.listPurchases(), API.streaks(), API.listTimers(), API.listAlarms(),
-      API.listThemesOwned(), API.listVault(), API.listThemeCatalog()
+      API.listThemesOwned(), API.listVault(), API.listThemeCatalog(), API.listShopTabs()
     ]);
     app.tasks = tasks; app.comps = comps; app.log = log; app.wallets = wallets;
     app.rewards = rewards; app.purchases = purchases; app.streaks = streaks || { gato: null, cao: null };
     app.timers = timers; app.settings = settings; app.alarms = alarms;
-    app.themesOwned = themesOwned; app.vault = vault; app.themeCatalog = themeCatalog;
+    app.themesOwned = themesOwned; app.vault = vault; app.themeCatalog = themeCatalog; app.shopTabs = shopTabs;
     app.day = periods.join('|');
     Themes.sync();
   }
@@ -158,7 +158,7 @@ window.App = (function(){
     window.addEventListener('hashchange', route);
     await boot();
 
-    API.subscribe(['catdog_tasks', 'catdog_completions', 'catdog_coin_log', 'catdog_rewards', 'catdog_purchases', 'catdog_timers', 'catdog_settings', 'catdog_alarms', 'catdog_theme_owned', 'catdog_theme_vault'], UI.debounce(async () => {
+    API.subscribe(['catdog_tasks', 'catdog_completions', 'catdog_coin_log', 'catdog_rewards', 'catdog_purchases', 'catdog_timers', 'catdog_settings', 'catdog_alarms', 'catdog_theme_owned', 'catdog_theme_vault', 'catdog_shop_tabs'], UI.debounce(async () => {
       try{ await reload(); refreshView(); }catch(e){ /* tenta de novo na próxima mudança */ }
     }, 250));
 

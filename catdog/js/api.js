@@ -63,11 +63,26 @@ window.API = (function(){
   const complete = (id, done) => rpc('catdog_complete', { ...who(), p_id: id, p_done: !!done });
 
   // ---------- loja e sequência ----------
+  // a imagem do produto é grande: a lista vem SEM ela (has_image diz se existe) e as imagens vêm à parte
   async function listRewards(){
-    const { data, error } = await sb.from('catdog_rewards').select('*').order('created_at', { ascending:true });
+    const { data, error } = await sb.from('catdog_rewards')
+      .select('id,owner,for_side,title,description,price,once,active,created_at,updated_at,tab_id,emoji,border_color,has_image')
+      .order('created_at', { ascending:true });
     if(error) fail(error);
     return data || [];
   }
+  async function listRewardImages(ids){
+    const { data, error } = await sb.from('catdog_rewards').select('id,image,updated_at').in('id', ids);
+    if(error) fail(error);
+    return data || [];
+  }
+  async function listShopTabs(){
+    const { data, error } = await sb.from('catdog_shop_tabs').select('*').order('position', { ascending:true });
+    if(error) fail(error);
+    return data || [];
+  }
+  const saveShopTab = (id, data) => rpc('catdog_save_shop_tab', { ...who(), p_id: id || null, p_data: data });
+  const deleteShopTab = id => rpc('catdog_delete_shop_tab', { ...who(), p_id: id });
   async function listPurchases(){
     const { data, error } = await sb.from('catdog_purchases').select('*').order('created_at', { ascending:false }).limit(200);
     if(error) fail(error);
@@ -168,7 +183,7 @@ window.API = (function(){
     listAlarms, saveAlarm, toggleAlarm, deleteAlarm,
     listTimers, listSettings, setDayStart,
     listThemeCatalog, listThemesOwned, listVault, buyTheme, equipTheme, vaultDeposit, vaultWithdraw, serverNow, timerStart, timerPause, timerResume, timerCancel, timerFinish, setFocusValue,
-    listRewards, listPurchases, streaks, saveReward, deleteReward, buyReward, fulfillPurchase, refundPurchase,
+    listRewards, listRewardImages, listShopTabs, saveShopTab, deleteShopTab, listPurchases, streaks, saveReward, deleteReward, buyReward, fulfillPurchase, refundPurchase,
     pushSubscribe, pushUnsubscribe, pushTest, subscribe
   };
 })();
