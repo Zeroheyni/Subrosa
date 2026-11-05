@@ -87,7 +87,7 @@ window.Shop = (function(){
   function tabsHtml(){
     const need = R.toFulfill(App.purchases, me()).length;
     const t = (key, label, badge) => `<a href="#loja/${key}" class="seg-btn ${tab === key ? 'on' : ''}">${label}${badge ? `<b>${badge}</b>` : ''}</a>`;
-    return `<nav class="seg" aria-label="Loja">${t('comprar', 'Comprar')}${t('ofertas', 'Minhas ofertas')}${t('vales', 'Vales', need)}</nav>`;
+    return `<nav class="seg" aria-label="Loja">${t('comprar', 'Comprar')}${t('ofertas', 'Minhas ofertas')}${t('vales', 'Vales', need)}${t('temas', 'Temas')}</nav>`;
   }
 
   function head(){
@@ -150,8 +150,8 @@ window.Shop = (function(){
     root.innerHTML = `
       ${head()}
       ${tabsHtml()}
-      ${tab === 'ofertas' ? renderOffers() : tab === 'vales' ? renderVouchers() : renderBuy()}
-      <button class="fab ${s}" type="button" data-act="new" aria-label="Nova recompensa">${I.plus}<span>Nova recompensa</span></button>`;
+      ${tab === 'ofertas' ? renderOffers() : tab === 'vales' ? renderVouchers() : tab === 'temas' ? Themes.renderStore() : renderBuy()}
+      ${tab === 'temas' ? '' : `<button class="fab ${s}" type="button" data-act="new" aria-label="Nova recompensa">${I.plus}<span>Nova recompensa</span></button>`}`;
     const b = root.querySelector('.shop-balance b');
     if(b) UI.countTo(b, balance());
   }

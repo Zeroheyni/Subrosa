@@ -103,6 +103,27 @@ window.API = (function(){
 
   const setDayStart = minutes => rpc('catdog_set_day_start', { ...who(), p_minutes: minutes });
 
+  // ---------- temas ----------
+  async function listThemeCatalog(){
+    const { data, error } = await sb.from('catdog_theme_catalog').select('*');
+    if(error) fail(error);
+    return data || [];
+  }
+  async function listThemesOwned(){
+    const { data, error } = await sb.from('catdog_theme_owned').select('*');
+    if(error) fail(error);
+    return data || [];
+  }
+  async function listVault(){
+    const { data, error } = await sb.from('catdog_theme_vault').select('*');
+    if(error) fail(error);
+    return data || [];
+  }
+  const buyTheme = id => rpc('catdog_buy_theme', { ...who(), p_theme: id });
+  const equipTheme = id => rpc('catdog_equip_theme', { ...who(), p_theme: id });
+  const vaultDeposit = (id, n) => rpc('catdog_vault_deposit', { ...who(), p_theme: id, p_amount: n });
+  const vaultWithdraw = (id, n) => rpc('catdog_vault_withdraw', { ...who(), p_theme: id, p_amount: n });
+
   // ---------- alarmes ----------
   async function listAlarms(){
     const { data, error } = await sb.from('catdog_alarms').select('*').order('at_time', { ascending:true });
@@ -145,7 +166,8 @@ window.API = (function(){
     listTasks, listCompletions, listLog, wallets,
     saveTask, deleteTask, setValue, complete, adjust,
     listAlarms, saveAlarm, toggleAlarm, deleteAlarm,
-    listTimers, listSettings, setDayStart, serverNow, timerStart, timerPause, timerResume, timerCancel, timerFinish, setFocusValue,
+    listTimers, listSettings, setDayStart,
+    listThemeCatalog, listThemesOwned, listVault, buyTheme, equipTheme, vaultDeposit, vaultWithdraw, serverNow, timerStart, timerPause, timerResume, timerCancel, timerFinish, setFocusValue,
     listRewards, listPurchases, streaks, saveReward, deleteReward, buyReward, fulfillPurchase, refundPurchase,
     pushSubscribe, pushUnsubscribe, pushTest, subscribe
   };

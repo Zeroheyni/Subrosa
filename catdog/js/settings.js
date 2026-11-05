@@ -64,6 +64,31 @@ window.Settings = (function(){
       </section>`;
   }
 
+  function themeCard(){
+    const id = Themes.equippedId() || 'meia-noite';
+    const th = Themes.BY_ID[id];
+    const tier = Themes.TIERS[th.tier];
+    const prev = Themes.previewId();
+    return `
+      <section class="card enter ${tier.cls}">
+        <div class="card-head"><h3>Tema</h3><span class="status">${tier.label}</span></div>
+        <p class="muted">Equipado: <b>${esc(th.name)}</b>${prev ? ` · testando agora: <b>${esc(Themes.BY_ID[prev].name)}</b>` : ''}</p>
+        <div class="card-actions"><a class="btn primary" href="#loja/temas">${I.sparkle}<span>Ver temas</span></a></div>
+      </section>`;
+  }
+
+  function debugCard(){
+    if(!App.isMaster) return '';
+    const on = Themes.debugOn();
+    return `
+      <section class="card enter">
+        <div class="card-head"><h3>Modo Debug</h3><span class="status ${on ? 'warn' : ''}">${on ? 'Ligado' : 'Desligado'}</span></div>
+        <p class="muted">Só para o mestre. Liga o botão <b>🧪 Testar</b> em todos os temas da Loja: dá para ver qualquer tema, inclusive os míticos, <b>sem comprar</b> e sem gravar nada (ao sair, voltam os seus temas de verdade).</p>
+        <label class="switch-line"><span>Testar temas</span>
+          <span class="switch"><input type="checkbox" data-dbg-toggle ${on ? 'checked' : ''}><span class="switch-ui"></span></span></label>
+      </section>`;
+  }
+
   function pushCard(){
     if(!info) return `<div class="card"><div class="card-head"><h3>Notificações</h3></div><p class="muted">Verificando este aparelho…</p></div>`;
 
@@ -116,9 +141,13 @@ window.Settings = (function(){
 
       <div class="enter" id="pushHost">${pushCard()}</div>
 
+      ${themeCard()}
+
       ${timeCard()}
 
       ${focusCard()}
+
+      ${debugCard()}
 
       <section class="card enter">
         <div class="card-head"><h3>Sobre as moedas</h3></div>
@@ -149,6 +178,12 @@ window.Settings = (function(){
 
   function init(root){
     root.addEventListener('change', e => {
+      if(e.target.matches('[data-dbg-toggle]') && view){
+        Themes.setDebug(e.target.checked);
+        render(view);
+        UI.toast(e.target.checked ? 'Modo Debug ligado' : 'Modo Debug desligado');
+        return;
+      }
       if(e.target.name !== 'daystart' || !view) return;
       const btn = root.querySelector('[data-act="ds-save"]');
       if(btn) btn.disabled = Number(e.target.value) === Number(e.target.dataset.v);
