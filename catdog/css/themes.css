@@ -6,7 +6,7 @@
 
 /* ---------- camada de efeitos ---------- */
 #fx{ position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; contain:strict; }
-.fx-layer{ position:absolute; }
+.th-layer{ position:absolute; }
 
 /* partículas */
 .pt{ position:absolute; display:block; will-change:transform, opacity; }
@@ -103,3 +103,91 @@ body[data-theme="pulso-neon"] .top{ border-bottom-color:color-mix(in srgb, var(-
 .vault-ok{ display:flex !important; align-items:center; gap:8px; color:var(--tc) !important; font-weight:700; }
 .vault-ok .ico{ width:18px; height:18px; }
 .th-card.unlocked{ border-color:color-mix(in srgb, var(--tc) 55%, var(--line)); }
+
+/* ============================================================
+   FORMA DOS CARTÕES (temas lendários e míticos mudam o desenho)
+   ============================================================ */
+.pt.sq{ border-radius:0 !important; }
+body[data-shape] :is(.hero, .wallet, .notice, .task, .balance, .log-row, .card, .streak, .reward-card, .alarm, .hint-card, .clock-card, .th-card, .hint, .profile, .switch-line, .vault, .presence, .btn, .seg, .seg-btn, .dock, .tab, .pill, .toast, .start, .select, .clock-switch){ border-radius:var(--shape) !important; }
+body[data-shape] .sheet{ border-radius:var(--shape) var(--shape) 0 0 !important; }
+
+/* ============================================================
+   LENDÁRIO: Cyberpunk
+   ============================================================ */
+.fx-cy-sun{ left:50%; bottom:21vh; width:30vh; height:30vh; margin-left:-15vh; border-radius:50%; opacity:.55;
+  background:linear-gradient(180deg, #fcee09 0%, #ff8a2e 30%, #ff2e97 62%, #7a2cff 100%);
+  -webkit-mask:repeating-linear-gradient(180deg, #000 0 7px, transparent 7px 11px); mask:repeating-linear-gradient(180deg, #000 0 7px, transparent 7px 11px);
+  animation:sunBreath 6s ease-in-out infinite alternate; }
+@keyframes sunBreath{ from{ transform:translateY(0) scale(1); filter:saturate(1); } to{ transform:translateY(-1.5vh) scale(1.04); filter:saturate(1.3); } }
+.fx-cy-grid{ left:-80%; right:-80%; bottom:0; height:62vh; transform-origin:50% 100%; transform:perspective(380px) rotateX(58deg); opacity:.8;
+  background:repeating-linear-gradient(90deg, rgba(0,240,255,.55) 0 1px, transparent 1px 64px), repeating-linear-gradient(0deg, rgba(255,46,151,.6) 0 1px, transparent 1px 64px);
+  -webkit-mask:linear-gradient(180deg, transparent, #000 55%); mask:linear-gradient(180deg, transparent, #000 55%); animation:gridRun 2.2s linear infinite; }
+@keyframes gridRun{ from{ background-position:0 0, 0 0; } to{ background-position:0 0, 0 64px; } }
+body[data-theme="cyberpunk"]::after{ content:""; position:fixed; inset:0; z-index:100; pointer-events:none; mix-blend-mode:multiply;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,.2) 0 1px, transparent 1px 3px); }
+body[data-theme="cyberpunk"] :is(.hero, .wallet, .task, .card, .streak, .clock-card, .alarm, .balance, .notice, .th-card){ border:1px solid color-mix(in srgb, var(--a2) 50%, transparent) !important; box-shadow:0 0 18px -6px var(--a2), inset 0 0 22px -14px var(--a) !important; }
+body[data-theme="cyberpunk"] .top{ border-bottom:1px solid var(--a); box-shadow:0 1px 22px -6px var(--a); }
+body[data-theme="cyberpunk"] .brand-name{ animation:glitchText 6s steps(1) infinite; }
+@keyframes glitchText{ 0%, 92%, 100%{ transform:none; filter:none; } 93%{ transform:translate(2px,-1px); filter:drop-shadow(-3px 0 var(--a)) drop-shadow(3px 0 var(--a2)); } 95%{ transform:translate(-2px,1px); filter:drop-shadow(3px 0 var(--a)) drop-shadow(-3px 0 var(--a2)); } 97%{ transform:none; filter:none; } }
+body[data-theme="cyberpunk"] .pt-fall.em{ text-shadow:0 0 8px currentColor; font-family:'Orbitron', monospace; }
+
+/* ============================================================
+   LENDÁRIO: Abismo
+   ============================================================ */
+.fx-ab-rays{ inset:-10% -15% 25% -15%; transform-origin:50% 0; opacity:.9;
+  background:repeating-linear-gradient(104deg, transparent 0 6%, rgba(63,255,224,.11) 8.5%, rgba(46,123,255,.07) 11%, transparent 15%);
+  -webkit-mask:linear-gradient(180deg, #000, transparent 88%); mask:linear-gradient(180deg, #000, transparent 88%); animation:raySway 17s ease-in-out infinite alternate; }
+@keyframes raySway{ from{ transform:rotate(-4deg) translateX(-3%); } to{ transform:rotate(5deg) translateX(3%); } }
+.fx-ab-deep{ inset:0; background:radial-gradient(120% 70% at 50% 110%, rgba(0,4,12,.85), transparent 70%), radial-gradient(60% 40% at 50% -10%, rgba(63,255,224,.12), transparent 70%); }
+.jelly{ left:var(--jx); top:12%; width:var(--js); height:calc(var(--js) * 1.9); animation:jellyFloat var(--jd) ease-in-out infinite alternate; }
+.jelly::before{ content:""; position:absolute; inset:0 0 auto 0; height:54%; border-radius:50% 50% 38% 38%; opacity:.8;
+  background:radial-gradient(circle at 50% 28%, color-mix(in srgb, var(--jc) 75%, #fff), color-mix(in srgb, var(--jc) 28%, transparent) 72%); box-shadow:0 0 30px var(--jc); animation:jellyPulse 3.6s ease-in-out infinite; }
+.jelly::after{ content:""; position:absolute; left:14%; right:14%; top:52%; bottom:0; opacity:.55; transform-origin:50% 0;
+  background:repeating-linear-gradient(90deg, color-mix(in srgb, var(--jc) 80%, transparent) 0 2px, transparent 2px 9px);
+  -webkit-mask:linear-gradient(#000, transparent); mask:linear-gradient(#000, transparent); animation:tentacle 3.6s ease-in-out infinite; }
+@keyframes jellyFloat{ from{ translate:0 62vh; } to{ translate:36px 8vh; } }
+@keyframes jellyPulse{ 0%, 100%{ transform:scale(1, 1); } 50%{ transform:scale(1.14, .86); } }
+@keyframes tentacle{ 0%, 100%{ transform:scaleY(1) skewX(0); } 50%{ transform:scaleY(.82) skewX(6deg); } }
+.fish{ left:0; width:var(--fw); height:calc(var(--fw) * .44); color:#8fe8ff; opacity:.2; animation:fishSwim var(--fd) linear infinite; }
+.fish svg{ width:100%; height:100%; fill:currentColor; transform:scaleX(calc(var(--fdir) * -1)); }
+.fish[style*="--fdir:-1"]{ animation-name:fishSwimRev; }
+@keyframes fishSwim{ from{ translate:-24vw 0; } to{ translate:130vw -5vh; } }
+@keyframes fishSwimRev{ from{ translate:122vw 0; } to{ translate:-30vw 5vh; } }
+
+/* ============================================================
+   LENDÁRIO: Floresta encantada
+   ============================================================ */
+.fx-fo-moon{ right:12%; top:9vh; width:72px; height:72px; border-radius:50%; opacity:.85;
+  background:radial-gradient(circle at 38% 34%, #fffbe0, #ffe9a0 60%, #e9c970); box-shadow:0 0 60px 14px rgba(255,236,160,.32), 0 0 170px 54px rgba(141,255,122,.12); animation:moonGlow 9s ease-in-out infinite alternate; }
+@keyframes moonGlow{ from{ filter:brightness(.9); } to{ filter:brightness(1.12); } }
+.fx-fo-fog{ left:-20%; right:-20%; bottom:8vh; height:26vh; opacity:.8; filter:blur(10px);
+  background:linear-gradient(90deg, transparent 0%, rgba(190,255,205,.13) 22%, transparent 42%, rgba(190,255,205,.1) 66%, transparent 86%); animation:fogMove 26s ease-in-out infinite alternate; }
+@keyframes fogMove{ from{ transform:translateX(-9%); } to{ transform:translateX(9%); } }
+.fo-trees{ left:0; right:0; bottom:0; }
+.fo-trees svg{ display:block; width:100%; height:100%; }
+.fo-trees.far{ height:22vh; color:#0b2a18; opacity:.95; transform-origin:50% 100%; animation:treeSway 11s ease-in-out infinite alternate; }
+.fo-trees.near{ height:27vh; color:#030a06; transform-origin:50% 100%; animation:treeSway 8s ease-in-out infinite alternate-reverse; }
+@keyframes treeSway{ from{ transform:skewX(-.7deg); } to{ transform:skewX(.7deg); } }
+
+/* ============================================================
+   LENDÁRIO: Cosmos
+   ============================================================ */
+.fx-co-nebula{ inset:-30%; filter:blur(24px); opacity:.9; animation:nebulaSpin 140s linear infinite;
+  background:radial-gradient(38% 34% at 28% 30%, rgba(157,140,255,.38), transparent 70%), radial-gradient(34% 38% at 74% 58%, rgba(255,122,217,.3), transparent 70%), radial-gradient(30% 28% at 48% 88%, rgba(69,208,255,.24), transparent 70%); }
+@keyframes nebulaSpin{ to{ transform:rotate(360deg); } }
+.fx-co-planet{ right:-58px; top:15vh; width:190px; height:190px; border-radius:50%; opacity:.92;
+  background:radial-gradient(circle at 32% 30%, #ffd9a0, #c9708a 46%, #3b1a5c 82%); box-shadow:inset -34px -22px 54px rgba(0,0,12,.72), 0 0 70px rgba(255,122,217,.22); animation:planetFloat 34s ease-in-out infinite alternate; }
+.fx-co-planet::after{ content:""; position:absolute; left:-42%; right:-42%; top:38%; height:26%; border-radius:50%; border:6px solid rgba(255,222,184,.5); box-shadow:0 0 0 3px rgba(255,200,160,.16), 0 0 22px rgba(255,200,160,.25); transform:rotate(-18deg); -webkit-mask:linear-gradient(180deg, transparent 38%, #000 40%); mask:linear-gradient(180deg, transparent 38%, #000 40%); }
+@keyframes planetFloat{ from{ translate:0 -12px; } to{ translate:-18px 22px; } }
+
+/* ============================================================
+   LENDÁRIO: Arcade 8-bit
+   ============================================================ */
+body[data-theme="arcade"]::after{ content:""; position:fixed; inset:0; z-index:100; pointer-events:none;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,.28) 0 2px, transparent 2px 4px), radial-gradient(120% 100% at 50% 50%, transparent 60%, rgba(0,0,0,.55)); animation:crtFlicker 5s steps(2) infinite; }
+@keyframes crtFlicker{ 0%, 100%{ opacity:.92; } 50%{ opacity:1; } }
+body[data-theme="arcade"] :is(.hero, .wallet, .task, .card, .streak, .clock-card, .alarm, .balance, .notice, .th-card, .reward-card, .sheet, .toast, .dock, .hint-card){ border:2px solid var(--line2) !important; box-shadow:4px 4px 0 rgba(0,0,0,.7) !important; }
+body[data-theme="arcade"] .btn.primary{ box-shadow:3px 3px 0 rgba(0,0,0,.7); }
+body[data-theme="arcade"] .pt-fall.em{ image-rendering:pixelated; filter:drop-shadow(2px 2px 0 rgba(0,0,0,.6)); }
+body[data-theme="arcade"] .brand-name{ font-size:13px; letter-spacing:0; }
+body[data-theme="arcade"] .pill{ font-size:12px; }

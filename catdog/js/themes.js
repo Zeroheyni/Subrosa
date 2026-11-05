@@ -47,9 +47,35 @@ window.Themes = (function(){
     mitico:   { label:'Mítico',   cls:'t-mitico' }
   };
 
+  // ---------- cenas ----------
+  const GF = 'https://fonts.googleapis.com/css2?family=';
+  const font = (family, spec, stack) => ({ url: GF + spec + '&display=swap', stack: `'${family}', ${stack || "'Outfit', system-ui, sans-serif"}` });
+  /** número pseudo-aleatório estável (as cenas ficam iguais a cada abertura) */
+  const sr = i => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+
+  function pines(count, hMin, hMax, fill, seed){
+    let p = '';
+    for(let i = 0; i < count; i++){
+      const x = (i + .5) * (1000 / count) + (sr(i + seed) - .5) * 30;
+      const h = hMin + sr(i * 3 + seed) * (hMax - hMin), w = h * .46;
+      p += `<polygon points="${(x - w / 2).toFixed(0)},200 ${x.toFixed(0)},${(200 - h).toFixed(0)} ${(x + w / 2).toFixed(0)},200"/>`;
+      p += `<polygon points="${(x - w * .38).toFixed(0)},${(200 - h * .38).toFixed(0)} ${x.toFixed(0)},${(200 - h * 1.02).toFixed(0)} ${(x + w * .38).toFixed(0)},${(200 - h * .38).toFixed(0)}"/>`;
+    }
+    return `<svg viewBox="0 0 1000 200" preserveAspectRatio="none" fill="${fill}" aria-hidden="true">${p}</svg>`;
+  }
+  function jellies(){
+    const list = [['10%', '26s', '46px', '#3fffe0', '-3s'], ['72%', '32s', '62px', '#7a9bff', '-11s'], ['44%', '38s', '34px', '#ff7ad9', '-19s']];
+    return list.map(j => `<div class="th-layer jelly" style="--jx:${j[0]};--jd:${j[1]};--js:${j[2]};--jc:${j[3]};animation-delay:${j[4]}"></div>`).join('');
+  }
+  const FISH = '<svg viewBox="0 0 64 28" aria-hidden="true"><path d="M2 14C12 2 34 2 46 14 34 26 12 26 2 14Z"/><path d="M44 14 62 3V25Z"/></svg>';
+  function fishes(){
+    return [['34%', '48s', '0s', 54, 1], ['62%', '62s', '-26s', 36, -1]].map(x =>
+      `<div class="th-layer fish" style="top:${x[0]};--fd:${x[1]};--fw:${x[3]}px;--fdir:${x[4]};animation-delay:${x[2]}">${FISH}</div>`).join('');
+  }
+
   // ---------- catálogo ----------
   // fx: partículas { t: twinkle|fall|rise|streak|drift|blob, n, c (cor ou lista), s:[min,max] px, d:[min,max] s, o, dx, ch (emoji/letra) }
-  // layers: camadas prontas em themes.css (div.fx-layer.fx-<nome>) · html: cenas desenhadas em SVG/HTML
+  // layers: camadas prontas em themes.css (div.th-layer.fx-<nome>) · html: cenas desenhadas em SVG/HTML
   const CATALOG = [
     { id:'meia-noite', tier:'padrao', name:'Meia-noite', tagline:'O visual de sempre: violeta e âmbar sobre a noite.', price:0, vars:{}, swatch:['#b48bff', '#ff6fd0', '#ffb040'] },
 
@@ -70,15 +96,51 @@ window.Themes = (function(){
       fx:[{ t:'twinkle', n:40, c:'#ffffff', s:[1, 2.4], d:[2.5, 6], o:.9 }, { t:'streak', n:9, c:'#cfe0ff', s:[70, 140], d:[3.2, 6.5], o:.85, dx:0 }] },
     { id:'lava-lamp', tier:'raro', name:'Lava lamp', tagline:'Bolhas de lava derretendo devagar.', price:150,
       pal:{ bg:'#120408', a:'#ff5a5f', a2:'#ffb347', c2:'#ff3d9a' },
-      fx:[{ t:'blob', n:6, c:['#ff4d6d', '#ff9a3d', '#ff3d9a', '#ffb347'], s:[180, 360], d:[16, 30], o:.5 }] },
+      fx:[{ t:'blob', n:6, c:['#ff4d6d', '#ff9a3d', '#ff3d9a', '#ffb347'], s:[180, 360], d:[16, 30], o:.4 }] },
     { id:'mare', tier:'raro', name:'Maré', tagline:'Ondas suaves subindo e descendo, com bolhas.', price:150,
       pal:{ bg:'#030f14', a:'#3de0d0', a2:'#3aa0ff', c2:'#3aa0ff' }, layers:['waves'],
       fx:[{ t:'rise', n:14, c:'rgba(160,240,255,.7)', s:[3, 9], d:[9, 18], o:.6, dx:14 }] }
+    ,
+    // ===== LENDÁRIOS — cor + animação + temática =====
+    { id:'cyberpunk', tier:'lendario', name:'Cyberpunk', tagline:'Neo-Tóquio: sol de synthwave, grade em movimento, chuva de código e cartões de neon.', price:500,
+      pal:{ bg:'#05020d', a:'#ff2e97', a2:'#00f0ff', c2:'#fcee09' },
+      vars:{ '--shape':'3px', '--surface':'rgba(16,6,34,.74)', '--surface2':'rgba(30,10,60,.8)', '--line':'rgba(0,240,255,.2)', '--line2':'rgba(255,46,151,.45)', '--stars-o':'0' },
+      font: font('Orbitron', 'Orbitron:wght@500;700;800'),
+      layers:['cy-sun', 'cy-grid'],
+      fx:[{ t:'fall', n:22, c:['#00f0ff', '#ff2e97', '#00f0ff'], s:[11, 17], d:[7, 14], o:.55, dx:0, ch:['0', '1', 'ア', 'カ', 'ネ', 'ン', '#', '7'] }] },
+
+    { id:'abismo', tier:'lendario', name:'Abismo', tagline:'Fundo do mar: raios de luz, águas-vivas brilhantes, peixes e bolhas subindo.', price:500,
+      pal:{ bg:'#010a12', a:'#3fffe0', a2:'#2e7bff', c2:'#7a5cff' },
+      vars:{ '--shape':'30px', '--surface':'rgba(4,30,46,.55)', '--line':'rgba(63,255,224,.15)', '--line2':'rgba(63,255,224,.32)', '--stars-o':'0' },
+      font: font('Marcellus', 'Marcellus'),
+      layers:['ab-rays', 'ab-deep'], html: jellies() + fishes(),
+      fx:[{ t:'rise', n:24, c:'rgba(150,255,240,.7)', s:[3, 11], d:[8, 17], o:.65, dx:16 }, { t:'drift', n:16, c:'#3fffe0', s:[2, 3.5], d:[3, 7], o:.8 }] },
+
+    { id:'floresta-encantada', tier:'lendario', name:'Floresta encantada', tagline:'Pinheiros na neblina, vaga-lumes dançando e folhas caindo ao luar.', price:500,
+      pal:{ bg:'#040b06', a:'#8dff7a', a2:'#ffe27a', c2:'#35c98a' },
+      vars:{ '--shape':'18px', '--surface':'rgba(8,28,16,.6)', '--line':'rgba(141,255,122,.14)', '--line2':'rgba(255,226,122,.3)', '--stars-o':'.35' },
+      font: font('Cormorant Garamond', 'Cormorant+Garamond:wght@600;700'),
+      layers:['fo-moon', 'fo-fog'], html: `<div class="th-layer fo-trees far">${pines(26, 70, 150, 'currentColor', 3)}</div><div class="th-layer fo-trees near">${pines(15, 90, 190, 'currentColor', 9)}</div>`,
+      fx:[{ t:'drift', n:26, c:['#ffe27a', '#d6ff7a', '#ffe27a'], s:[2.5, 4.5], d:[3, 8], o:.95 }, { t:'fall', n:9, c:'#8dff7a', s:[13, 21], d:[14, 26], o:.55, dx:80, ch:['🍃', '🍂', '🍃'] }] },
+
+    { id:'cosmos', tier:'lendario', name:'Cosmos', tagline:'Nebulosas girando, planeta com anéis, estrelas cintilando e cometas.', price:500,
+      pal:{ bg:'#02030a', a:'#9d8cff', a2:'#ff7ad9', c2:'#45d0ff' },
+      vars:{ '--shape':'16px', '--surface':'rgba(10,10,32,.6)', '--line':'rgba(157,140,255,.16)', '--line2':'rgba(157,140,255,.34)' },
+      font: font('Space Grotesk', 'Space+Grotesk:wght@500;700'),
+      layers:['co-nebula', 'co-planet'],
+      fx:[{ t:'twinkle', n:80, c:['#ffffff', '#cfd6ff', '#ffd9f4'], s:[1, 2.6], d:[2.5, 8], o:.95 }, { t:'streak', n:4, c:'#d9e4ff', s:[90, 170], d:[8, 15], o:.9 }] },
+
+    { id:'arcade', tier:'lendario', name:'Arcade 8-bit', tagline:'Fliperama: pixels, tela de tubo, bordas duras e fantasminhas flutuando.', price:500,
+      pal:{ bg:'#0a0a1f', a:'#ffe14d', a2:'#ff4d8d', c2:'#4dff88',
+        art:'linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px) 0 0 / 16px 16px, linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px) 0 0 / 16px 16px, radial-gradient(760px 520px at 50% -6%, rgba(255,77,141,.22), transparent 65%), radial-gradient(600px 420px at 50% 110%, rgba(77,255,136,.12), transparent 65%)' },
+      vars:{ '--shape':'0px', '--surface':'rgba(22,22,66,.74)', '--surface2':'rgba(34,34,90,.8)', '--line':'rgba(255,255,255,.2)', '--line2':'rgba(255,225,77,.55)', '--stars-o':'0' },
+      font: font('Silkscreen', 'Silkscreen:wght@400;700'),
+      fx:[{ t:'twinkle', n:30, c:['#ffe14d', '#ff4d8d', '#4dff88', '#ffffff'], s:[4, 6], d:[1.6, 4], o:.9, sq:true }, { t:'fall', n:9, c:'#ffffff', s:[20, 30], d:[18, 34], o:.7, dx:40, ch:['👾', '🕹️', '⭐', '🍒', '👾'] }] }
   ];
 
   // ----- completa cada tema com a paleta calculada -----
   CATALOG.forEach(t => {
-    if(t.pal && !t.vars) t.vars = palette(t.pal);
+    if(t.pal) t.vars = palette({ ...t.pal, vars: t.vars });
     if(t.pal && !t.swatch) t.swatch = [t.pal.a, t.pal.a2, t.pal.c2 || t.pal.a2];
   });
   const BY_ID = Object.fromEntries(CATALOG.map(t => [t.id, t]));
@@ -131,13 +193,13 @@ window.Themes = (function(){
       const sz = rnd(cfg.s[0], cfg.s[1]), d = rnd(cfg.d[0], cfg.d[1]);
       const st = [`--x:${rnd(0, 100).toFixed(1)}%`, `--y:${rnd(0, 100).toFixed(1)}%`, `--sz:${sz.toFixed(1)}px`, `--dur:${d.toFixed(1)}s`,
         `--delay:${(-rnd(0, d)).toFixed(1)}s`, `--dx:${rnd(-(cfg.dx || 18), cfg.dx || 18).toFixed(0)}px`, `--pc:${pick(cfg.c)}`, `--po:${cfg.o || .8}`].join(';');
-      out += `<i class="pt pt-${cfg.t}${cfg.ch ? ' em' : ''}" style="${st}">${cfg.ch ? esc(pick(cfg.ch)) : ''}</i>`;
+      out += `<i class="pt pt-${cfg.t}${cfg.ch ? ' em' : ''}${cfg.sq ? ' sq' : ''}" style="${st}">${cfg.ch ? esc(pick(cfg.ch)) : ''}</i>`;
     }
     return out;
   }
   function buildFx(th){
     let out = '';
-    (th.layers || []).forEach(n => { out += `<div class="fx-layer fx-${n}"></div>`; });
+    (th.layers || []).forEach(n => { out += `<div class="th-layer fx-${n}"></div>`; });
     if(th.html) out += th.html;
     (th.fx || []).forEach(c => { out += particles(c); });
     return out;
@@ -157,6 +219,7 @@ window.Themes = (function(){
     }
     body.dataset.theme = th.id;
     body.dataset.tier = th.tier;
+    if(th.vars && th.vars['--shape']) body.dataset.shape = '1'; else delete body.dataset.shape;
     if(!fxEl){
       fxEl = document.createElement('div');
       fxEl.id = 'fx'; fxEl.setAttribute('aria-hidden', 'true');
