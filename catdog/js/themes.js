@@ -73,6 +73,58 @@ window.Themes = (function(){
       `<div class="th-layer fish" style="top:${x[0]};--fd:${x[1]};--fw:${x[3]}px;--fdir:${x[4]};animation-delay:${x[2]}">${FISH}</div>`).join('');
   }
 
+  /** Eclipse: disco escuro com coroa girando, a Lua (violeta) e o Sol (âmbar) orbitando. */
+  function eclipseScene(){
+    return `
+      <div class="th-layer ec-rays"></div>
+      <div class="th-layer ec-orbit"><i class="ec-moon"></i><i class="ec-sun"></i></div>
+      <div class="th-layer ec-eclipse"><i class="ec-corona"></i><i class="ec-disc"></i><i class="ec-ring"></i></div>`;
+  }
+
+  /** Yin-yang girando, borrões de tinta e o selo vermelho. */
+  function yinyangScene(){
+    const yy = '<svg viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="97" fill="none" stroke="currentColor" stroke-width="3"/>'
+      + '<path d="M100 3A97 97 0 0 1 100 197A48.5 48.5 0 0 1 100 100A48.5 48.5 0 0 0 100 3Z" fill="currentColor"/>'
+      + '<circle cx="100" cy="51.5" r="14" fill="#0b0a0c"/><circle cx="100" cy="148.5" r="14" fill="currentColor"/></svg>';
+    return `
+      <div class="th-layer yy-wash a"></div><div class="th-layer yy-wash b"></div>
+      <div class="th-layer yy-symbol">${yy}</div>
+      <div class="th-layer yy-seal"><span>猫</span><span>犬</span></div>`;
+  }
+
+  /** Telhados: lua, nuvens, silhueta da cidade com janelas acendendo; o gato de um lado e o cão do outro. */
+  function cityCluster(side){
+    // [x, largura, altura] dentro de uma caixa 200 x 230
+    const blds = side === 'l' ? [[0, 62, 118], [62, 72, 152], [134, 66, 96]] : [[0, 64, 100], [64, 76, 158], [140, 60, 124]];
+    let g = '', k = 0;
+    blds.forEach(([x, w, h]) => {
+      g += `<rect x="${x}" y="${230 - h}" width="${w + 1}" height="${h}"/>`;
+      for(let wy = 230 - h + 12; wy < 222; wy += 15){
+        for(let wx = x + 9; wx < x + w - 8; wx += 14){
+          k++;
+          const r = sr(k + (side === 'l' ? 0 : 99));
+          if(r < .42) g += `<rect class="skw${r < .12 ? ' bl' : ''}" x="${wx}" y="${wy}" width="6" height="8" style="animation-delay:-${(r * 40).toFixed(1)}s"/>`;
+        }
+      }
+    });
+    const cat = '<g class="pet cat" transform="translate(82 78)"><path class="tail" d="M18 70C-2 70 -4 44 8 34" /><ellipse cx="32" cy="56" rx="16" ry="20"/><circle cx="40" cy="30" r="11.5"/><polygon points="31,22 34,9 41,20"/><polygon points="41,20 49,10 51,24"/><circle class="eye" cx="37" cy="29" r="1.9"/><circle class="eye" cx="44" cy="29" r="1.9"/></g>';
+    const dog = '<g class="pet dog" transform="translate(30 70)"><path class="tail" d="M52 74C66 72 70 58 62 48"/><ellipse cx="34" cy="58" rx="17" ry="21"/><ellipse cx="24" cy="30" rx="12.5" ry="11.5"/><ellipse cx="12" cy="35" rx="8.5" ry="5.5"/><ellipse class="ear" cx="33" cy="26" rx="5" ry="11" transform="rotate(16 33 26)"/><circle class="eye" cx="22" cy="27" r="1.9"/></g>';
+    return `<svg viewBox="0 0 200 230" preserveAspectRatio="xMinYMax meet" aria-hidden="true">${g}${side === 'l' ? cat.replace('translate(82 78)', 'translate(76 2)') : dog.replace('translate(30 70)', 'translate(70 -7)')}</svg>`;
+  }
+  function cityScene(){
+    let strip = '';
+    for(let i = 0; i < 16; i++){
+      const w = 40 + sr(i + 5) * 40, h = 20 + sr(i * 2 + 1) * 54, x = i * 64 + sr(i) * 10;
+      strip += `<rect x="${x.toFixed(0)}" y="${(100 - h).toFixed(0)}" width="${w.toFixed(0)}" height="${h.toFixed(0)}"/>`;
+    }
+    return `
+      <div class="th-layer ct-moon"></div>
+      <div class="th-layer ct-cloud a"></div><div class="th-layer ct-cloud b"></div>
+      <div class="th-layer ct-strip"><svg viewBox="0 0 1024 100" preserveAspectRatio="none" aria-hidden="true">${strip}</svg></div>
+      <div class="th-layer ct-side l">${cityCluster('l')}</div>
+      <div class="th-layer ct-side r">${cityCluster('r')}</div>`;
+  }
+
   // ---------- catálogo ----------
   // fx: partículas { t: twinkle|fall|rise|streak|drift|blob, n, c (cor ou lista), s:[min,max] px, d:[min,max] s, o, dx, ch (emoji/letra) }
   // layers: camadas prontas em themes.css (div.th-layer.fx-<nome>) · html: cenas desenhadas em SVG/HTML
@@ -136,6 +188,34 @@ window.Themes = (function(){
       vars:{ '--shape':'0px', '--surface':'rgba(22,22,66,.74)', '--surface2':'rgba(34,34,90,.8)', '--line':'rgba(255,255,255,.2)', '--line2':'rgba(255,225,77,.55)', '--stars-o':'0' },
       font: font('Silkscreen', 'Silkscreen:wght@400;700'),
       fx:[{ t:'twinkle', n:30, c:['#ffe14d', '#ff4d8d', '#4dff88', '#ffffff'], s:[4, 6], d:[1.6, 4], o:.9, sq:true }, { t:'fall', n:9, c:'#ffffff', s:[20, 30], d:[18, 34], o:.7, dx:40, ch:['👾', '🕹️', '⭐', '🍒', '👾'] }] }
+    ,
+    // ===== MÍTICOS — conjuntos (os dois lados depositam moedas para liberar) =====
+    { id:'eclipse', tier:'mitico', name:'Eclipse', tagline:'A Lua e o Sol se encontrando: coroa girando, órbitas e bordas de ouro e prata.', price:600,
+      pal:{ bg:'#06030c', a:'#ffc46b', a2:'#ff8a3d', c2:'#8c6bff' },
+      sideAcc:{ gato:['#cdbdff', '#8c6bff'], cao:['#ffc46b', '#ff8a3d'] },
+      vars:{ '--shape':'14px', '--surface':'rgba(14,7,28,.66)', '--surface2':'rgba(26,14,48,.74)', '--line':'rgba(255,200,120,.16)', '--line2':'rgba(200,170,255,.34)', '--stars-o':'.7',
+        '--bg-art':'radial-gradient(700px 520px at 50% 18%, rgba(255,196,107,.16), transparent 62%), radial-gradient(900px 600px at 50% 0%, rgba(140,107,255,.2), transparent 66%), radial-gradient(600px 400px at 50% 110%, rgba(140,107,255,.14), transparent 65%)' },
+      font: font('Cinzel', 'Cinzel:wght@600;800'),
+      html: eclipseScene(),
+      fx:[{ t:'twinkle', n:60, c:['#ffffff', '#ffe9c4', '#dcd2ff'], s:[1, 2.4], d:[2.5, 7], o:.95 }] },
+
+    { id:'yin-yang', tier:'mitico', name:'Yin-Yang', tagline:'Tinta e papel: um equilíbrio girando, borrões de nanquim, pétalas e o selo vermelho.', price:600,
+      pal:{ bg:'#0b0a0c', a:'#e8402f', a2:'#ff8a5c', c2:'#f1ece0' },
+      sideAcc:{ gato:['#f1ece0', '#b9b2a2'], cao:['#e8402f', '#ff8a5c'] },
+      vars:{ '--shape':'3px', '--surface':'rgba(22,19,19,.7)', '--surface2':'rgba(34,29,29,.78)', '--line':'rgba(241,236,224,.14)', '--line2':'rgba(241,236,224,.34)', '--text':'#f1ece0', '--muted':'#aaa396', '--faint':'#6c675d', '--stars-o':'0',
+        '--bg-art':'radial-gradient(120% 90% at 50% 40%, transparent 50%, rgba(0,0,0,.6)), radial-gradient(500px 360px at 18% 12%, rgba(241,236,224,.06), transparent 70%), repeating-linear-gradient(0deg, rgba(255,255,255,.012) 0 2px, transparent 2px 5px)' },
+      font: font('Shippori Mincho', 'Shippori+Mincho:wght@500;800', "'Noto Serif JP', serif"),
+      html: yinyangScene(),
+      fx:[{ t:'fall', n:12, c:['#f1ece0', '#e8402f'], s:[12, 20], d:[14, 26], o:.5, dx:90, ch:['🌸', '🌸', '❀'] }] },
+
+    { id:'telhados', tier:'mitico', name:'Telhados da cidade', tagline:'Noite na cidade: o gato e o cão nos telhados, janelas acendendo e a lua alta.', price:600,
+      pal:{ bg:'#070b1c', a:'#ffd36b', a2:'#ff9a5a', c2:'#6bb8ff' },
+      sideAcc:{ gato:['#7db8ff', '#9a8aff'], cao:['#ffd36b', '#ff9a5a'] },
+      vars:{ '--shape':'24px', '--surface':'rgba(10,16,40,.62)', '--surface2':'rgba(18,26,60,.7)', '--line':'rgba(125,184,255,.16)', '--line2':'rgba(255,211,107,.3)', '--stars-o':'.55',
+        '--bg-art':'linear-gradient(180deg, rgba(40,52,120,.35), transparent 60%), radial-gradient(800px 520px at 80% 8%, rgba(125,184,255,.16), transparent 62%)' },
+      font: font('Fredoka', 'Fredoka:wght@500;600;700'),
+      html: cityScene(),
+      fx:[{ t:'twinkle', n:46, c:['#ffffff', '#cfe0ff', '#ffe9b0'], s:[1, 2.4], d:[2.5, 7], o:.9 }, { t:'streak', n:2, c:'#e6f0ff', s:[80, 130], d:[10, 18], o:.8 }] }
   ];
 
   // ----- completa cada tema com a paleta calculada -----
@@ -152,6 +232,7 @@ window.Themes = (function(){
   const SS_PREVIEW = 'catdog.preview';
   let applied = [];                       // variáveis colocadas no <body>
   let appliedId = null;
+  let appliedSide = null;
   let fxEl = null;
   let view = null;
 
@@ -212,7 +293,9 @@ window.Themes = (function(){
     const body = document.body;
     applied.forEach(k => body.style.removeProperty(k));
     applied = [];
-    Object.entries(th.vars || {}).forEach(([k, v]) => { body.style.setProperty(k, v); applied.push(k); });
+    const acc = th.sideAcc && window.App && App.side ? th.sideAcc[App.side] : null;
+    const vars = acc ? { ...th.vars, '--a': acc[0], '--a2': acc[1], '--ag': rgba(acc[0], .34) } : (th.vars || {});
+    Object.entries(vars).forEach(([k, v]) => { body.style.setProperty(k, v); applied.push(k); });
     if(th.font){
       loadFont(th.font);
       body.style.setProperty('--display', th.font.stack); applied.push('--display');
@@ -233,7 +316,10 @@ window.Themes = (function(){
   }
   /** Reaplica o tema certo (equipado, ou a prévia do modo Debug). */
   function sync(){
-    apply(currentId());
+    const want = currentId();
+    if(want === appliedId && BY_ID[want].sideAcc && appliedSide !== (window.App && App.side)) appliedId = null;   // acento depende do lado
+    apply(want);
+    appliedSide = window.App && App.side;
     paintChip();
   }
 

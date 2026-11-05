@@ -191,3 +191,78 @@ body[data-theme="arcade"] .btn.primary{ box-shadow:3px 3px 0 rgba(0,0,0,.7); }
 body[data-theme="arcade"] .pt-fall.em{ image-rendering:pixelated; filter:drop-shadow(2px 2px 0 rgba(0,0,0,.6)); }
 body[data-theme="arcade"] .brand-name{ font-size:13px; letter-spacing:0; }
 body[data-theme="arcade"] .pill{ font-size:12px; }
+
+/* ============================================================
+   MÍTICO: Eclipse (a Lua e o Sol)
+   ============================================================ */
+@keyframes spinSlow{ to{ transform:rotate(360deg); } }
+@keyframes rotProp{ to{ rotate:360deg; } }
+.ec-rays{ left:50%; top:calc(16vh + min(27vw, 120px)); width:170vmax; height:170vmax; translate:-50% -50%; opacity:.9;
+  background:repeating-conic-gradient(from 0deg, rgba(255,196,107,.075) 0 5deg, transparent 5deg 12deg);
+  -webkit-mask:radial-gradient(circle, transparent 3%, #000 12%, transparent 46%); mask:radial-gradient(circle, transparent 3%, #000 12%, transparent 46%); animation:spinSlow 150s linear infinite; }
+.ec-eclipse{ left:50%; top:16vh; width:min(54vw, 240px); aspect-ratio:1; margin-left:calc(min(54vw, 240px) / -2); }
+.ec-eclipse i{ position:absolute; border-radius:50%; }
+.ec-corona{ inset:-30%; filter:blur(15px); animation:spinSlow 18s linear infinite;
+  background:conic-gradient(from 0deg, transparent, rgba(255,196,107,.85), rgba(140,107,255,.7), transparent 52%, rgba(255,196,107,.8) 70%, rgba(140,107,255,.6), transparent);
+  -webkit-mask:radial-gradient(circle, transparent 36%, #000 50%, transparent 70%); mask:radial-gradient(circle, transparent 36%, #000 50%, transparent 70%); }
+.ec-disc{ inset:0; background:radial-gradient(circle at 36% 32%, #1c1134, #03020a 72%); box-shadow:0 0 0 2px rgba(255,220,160,.6), 0 0 36px 6px rgba(255,196,107,.55), 0 0 90px 16px rgba(140,107,255,.35), inset -10px -8px 30px rgba(120,90,255,.28); }
+.ec-ring{ inset:-4%; border:2px solid rgba(255,236,190,.85); box-shadow:0 0 22px rgba(255,210,140,.8); animation:spinSlow 11s linear infinite;
+  -webkit-mask:conic-gradient(#000 0 16%, transparent 16% 100%); mask:conic-gradient(#000 0 16%, transparent 16% 100%); }
+.ec-orbit{ left:50%; top:16vh; width:min(54vw, 240px); aspect-ratio:1; margin-left:calc(min(54vw, 240px) / -2); animation:spinSlow 46s linear infinite; }
+.ec-moon, .ec-sun{ position:absolute; left:50%; width:30px; height:30px; margin-left:-15px; border-radius:50%; }
+.ec-moon{ top:-62%; background:radial-gradient(circle at 36% 32%, #fff, #cdbdff 55%, #8c6bff); box-shadow:0 0 22px 4px rgba(190,170,255,.7); }
+.ec-sun{ bottom:-62%; background:radial-gradient(circle at 36% 32%, #fff6c8, #ffc46b 50%, #ff7a2e); box-shadow:0 0 28px 8px rgba(255,170,70,.75); }
+body[data-theme="eclipse"] :is(.hero, .wallet, .task, .card, .streak, .clock-card, .alarm, .balance, .notice, .th-card, .reward-card){
+  border:1px solid rgba(255,214,150,.3) !important; box-shadow:0 0 0 1px rgba(160,130,255,.28), 0 12px 34px -18px rgba(255,170,70,.5) !important; }
+body[data-theme="eclipse"] h1, body[data-theme="eclipse"] h2{ letter-spacing:.04em; }
+
+/* ============================================================
+   MÍTICO: Yin-Yang (nanquim)
+   ============================================================ */
+.yy-symbol{ left:50%; top:46%; width:min(130vw, 640px); aspect-ratio:1; margin-left:calc(min(130vw, 640px) / -2); margin-top:calc(min(130vw, 640px) / -2); color:#f1ece0; opacity:.075; animation:spinSlow 95s linear infinite; }
+.yy-symbol svg{ display:block; width:100%; height:100%; }
+.yy-wash{ border-radius:50%; filter:blur(70px); background:rgba(241,236,224,.07); animation:washDrift 42s ease-in-out infinite alternate; }
+.yy-wash.a{ width:70vmax; height:70vmax; left:-26vmax; top:-18vmax; }
+.yy-wash.b{ width:56vmax; height:56vmax; right:-22vmax; bottom:-14vmax; background:rgba(232,64,47,.1); animation-duration:58s; animation-direction:alternate-reverse; }
+@keyframes washDrift{ from{ transform:translate(0,0) scale(1); } to{ transform:translate(7vw, 5vh) scale(1.18); } }
+.yy-seal{ left:12px; bottom:calc(104px + var(--safe-b)); display:flex; flex-direction:column; gap:3px; padding:8px 7px; border-radius:2px; transform:rotate(-4deg); opacity:.72;
+  background:#c8301f; color:#f6e9d8; font-family:'Shippori Mincho', 'Noto Serif JP', serif; font-weight:800; font-size:15px; line-height:1; box-shadow:inset 0 0 0 2px rgba(0,0,0,.35); }
+body[data-theme="yin-yang"] :is(.hero, .wallet, .task, .card, .streak, .clock-card, .alarm, .balance, .notice, .th-card, .reward-card){
+  border:1px solid rgba(241,236,224,.2) !important; border-top:2px solid var(--a) !important; box-shadow:0 14px 30px -22px #000 !important; }
+body[data-theme="yin-yang"] .pt-fall.em{ filter:saturate(.5); }
+body[data-theme="yin-yang"] .top{ border-bottom:1px solid rgba(241,236,224,.2); }
+
+/* ============================================================
+   MÍTICO: Telhados da cidade (o gato e o cão)
+   ============================================================ */
+.ct-moon{ right:9%; top:7vh; width:84px; height:84px; border-radius:50%;
+  background:radial-gradient(circle at 30% 40%, rgba(0,0,0,.1) 0 7px, transparent 8px), radial-gradient(circle at 64% 64%, rgba(0,0,0,.09) 0 10px, transparent 11px), radial-gradient(circle at 58% 24%, rgba(0,0,0,.08) 0 5px, transparent 6px), radial-gradient(circle at 36% 32%, #fffbe8, #f3e7b9 62%, #d6c58a);
+  box-shadow:0 0 70px 16px rgba(255,244,200,.26), 0 0 200px 60px rgba(125,184,255,.12); }
+.ct-cloud{ left:-34%; width:60%; height:64px; border-radius:50%; background:rgba(160,184,255,.11); filter:blur(14px); animation:cloudMove 90s linear infinite; }
+.ct-cloud.a{ top:19vh; }
+.ct-cloud.b{ top:35vh; height:46px; opacity:.8; animation-duration:130s; animation-delay:-55s; }
+@keyframes cloudMove{ from{ transform:translateX(0); } to{ transform:translateX(230%); } }
+.ct-strip{ left:0; right:0; bottom:0; height:11vh; opacity:.95; }
+.ct-strip svg{ display:block; width:100%; height:100%; fill:#0a1030; stroke:rgba(125,184,255,.1); stroke-width:1; }
+.ct-side{ bottom:0; width:250px; height:288px; }
+.ct-side.l{ left:-8px; } .ct-side.r{ right:-8px; }
+.ct-side svg{ display:block; width:100%; height:100%; fill:#0b1233; stroke:rgba(125,184,255,.14); stroke-width:.8; overflow:visible; }
+.skw{ fill:#ffd36b; opacity:.9; }
+.skw.bl{ animation:winBlink 8s steps(1) infinite; }
+@keyframes winBlink{ 0%, 70%{ opacity:.9; } 74%, 90%{ opacity:.06; } 94%, 100%{ opacity:.9; } }
+.pet{ fill:#02040f; }
+.pet .tail{ fill:none; stroke:#02040f; stroke-width:6; stroke-linecap:round; transform-box:fill-box; transform-origin:0% 100%; }
+.cat .tail{ animation:tailSway 3.4s ease-in-out infinite alternate; }
+.dog .tail{ animation:tailWag .55s ease-in-out infinite alternate; transform-origin:0% 100%; }
+.dog .ear{ transform-box:fill-box; transform-origin:50% 0%; animation:earFlick 6s ease-in-out infinite; }
+.pet .eye{ fill:#ffd36b; filter:drop-shadow(0 0 3px #ffd36b); }
+.cat .eye{ transform-box:fill-box; transform-origin:50% 50%; animation:blinkEye 5.5s infinite; }
+@keyframes tailSway{ from{ transform:rotate(-9deg); } to{ transform:rotate(11deg); } }
+@keyframes tailWag{ from{ transform:rotate(-14deg); } to{ transform:rotate(18deg); } }
+@keyframes earFlick{ 0%, 86%, 100%{ transform:rotate(0); } 90%{ transform:rotate(-14deg); } 94%{ transform:rotate(6deg); } }
+@keyframes blinkEye{ 0%, 92%, 100%{ transform:scaleY(1); } 95%{ transform:scaleY(.1); } }
+body[data-theme="telhados"] :is(.hero, .wallet, .task, .card, .streak, .clock-card, .alarm, .balance, .notice, .th-card, .reward-card){
+  border:1px solid rgba(125,184,255,.22) !important; box-shadow:0 14px 34px -20px rgba(0,0,10,.9), 0 0 0 1px rgba(255,211,107,.07) !important; }
+.ct-side svg .skw{ stroke:none; }
+.ct-side svg .pet, .ct-side svg .pet *{ stroke:none; }
+.ct-side svg .pet .tail{ stroke:#02040f; }
